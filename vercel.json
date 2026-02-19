@@ -8,15 +8,5 @@
       "path": "/api/cron/weekly-insights",
       "schedule": "0 9 * * 1"
     }
-  ],
-  "env": {
-    "RESEND_API_KEY": "@resend_api_key",
-    "NEXT_PUBLIC_SUPABASE_URL": "@supabase_url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase_anon_key",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
-    "CRON_SECRET": "@cron_secret",
-    "MANUAL_CRON_KEY": "@manual_cron_key",
-    "NEXTAUTH_SECRET": "@nextauth_secret",
-    "NEXTAUTH_URL": "@nextauth_url"
-  }
+  ]
 }
