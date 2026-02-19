@@ -57,7 +57,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
   const { signOut } = useAuth()
   const [sidebarOpen, setSidebarOpen] = React.useState(false) // Mobile-first: start closed
-  const [showUserMenu, setShowUserMenu] = React.useState(false)
 
   const handleLogout = async () => {
     await signOut()
