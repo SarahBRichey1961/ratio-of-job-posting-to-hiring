@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { DashboardLayout } from '@/components/DashboardLayout'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
 import {
   PageHeader,
   FilterBar,
