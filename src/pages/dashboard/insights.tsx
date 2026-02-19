@@ -7,6 +7,7 @@ import {
   MetricCard,
   StatsSection,
 } from '@/components/DashboardUI'
+import { TrendChart, RoleDistributionChart, BoardScoresChart } from '@/components/Charts'
 
 interface BoardInsight {
   name: string
@@ -284,6 +285,36 @@ export default function InsightsPage() {
           icon="⭐"
         />
       </StatsSection>
+
+      {/* Visualizations */}
+      <Section title="Board Performance Trends">
+        <Card>
+          <BoardScoresChart
+            data={[
+              insights.bestOverall,
+              insights.bestForSpeed,
+              insights.bestForQuality,
+              insights.worstPerformer,
+              insights.risingBoards[0] || insights.bestOverall,
+            ]}
+            title="Top & Bottom Performing Boards"
+            height={300}
+          />
+        </Card>
+      </Section>
+
+      <Section title="Role Distribution Across Job Market">
+        <Card>
+          <RoleDistributionChart
+            data={insights.roleAnalysis.map((r) => ({
+              name: r.roleName,
+              value: r.totalJobs,
+            }))}
+            title="Total Job Openings by Role"
+            height={300}
+          />
+        </Card>
+      </Section>
 
       {/* Rising and Declining Boards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
