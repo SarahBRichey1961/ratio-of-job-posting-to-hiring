@@ -8,7 +8,7 @@
 - [x] **Day 4 — Build Scraper Framework:** Choose Python/Node; scaffold scraper template; logging + error handling; test scraping (e.g., Indeed)
 - [x] **Day 5 — Normalize Job Titles:** Create title→role-family mapping; normalization function; store normalized titles
 - [x] **Day 6 — Track Posting Lifespan:** Implement `first_seen`, `last_seen`, `disappeared`; record `posting_events`
-- [ ] **Day 7 — Repost Detection:** Add repost detection logic; store repost events; validate with sample data
+- [x] **Day 7 — Repost Detection:** Add repost detection logic; store repost events; validate with sample data
 
 ## Week 2 — Data Pipeline & Scoring Engine (Days 8–14)
 - [ ] **Day 8 — Build Data Pipeline:** Create cron jobs (Supabase/server); schedule daily scrapers; store raw snapshots
