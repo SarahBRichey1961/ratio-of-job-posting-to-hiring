@@ -3,7 +3,6 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import React, { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/context/AuthContext'
 import { CategoryGroup } from '@/components/JobBoardsDisplay'
 
 interface JobBoard {
@@ -20,16 +19,13 @@ interface HomeProps {
 }
 
 const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, totalBoards }) => {
-  const { isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
   const categories = ['general', 'tech', 'remote', 'niche']
 
-  // Redirect to dashboard if authenticated
+  // Bypass auth and go straight to dashboard
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      router.push('/dashboard')
-    }
-  }, [isAuthenticated, isLoading, router])
+    router.push('/dashboard')
+  }, [router])
 
   return (
     <>
@@ -50,18 +46,6 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, totalBoards }) => {
             <p className="text-xl text-gray-600 mb-8">
               Analyze job board efficiency and hiring trends across {totalBoards} major US job boards
             </p>
-            
-            {!isLoading && !isAuthenticated && (
-              <div className="mb-8">
-                <a
-                  href="/login"
-                  className="inline-block px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
-                >
-                  Sign In to Dashboard →
-                </a>
-                <p className="text-sm text-gray-600 mt-2">New user? <a href="/signup" className="text-blue-600 hover:underline">Create an account</a></p>
-              </div>
-            )}
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white border border-blue-200 rounded-lg p-6">

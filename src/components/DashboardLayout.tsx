@@ -39,12 +39,12 @@ const navItems: NavItem[] = [
     icon: '💡',
     description: 'Trends & market analysis',
   },
-  {
-    label: 'Surveys',
-    href: '/dashboard/surveys',
-    icon: '📝',
-    description: 'Submit feedback & surveys',
-  },
+  // {
+  //   label: 'Surveys',
+  //   href: '/dashboard/surveys',
+  //   icon: '📝',
+  //   description: 'Submit feedback & surveys',
+  // },
   {
     label: 'QA Status',
     href: '/dashboard/qa',
@@ -103,7 +103,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <Link href="/dashboard">
             <div className="flex items-center gap-3 cursor-pointer">
               <div className="text-2xl">📊</div>
-              {sidebarOpen && <h1 className="text-xl font-bold text-white">JobScore</h1>}
+              {sidebarOpen && <h1 className="text-xl font-bold text-white">Job Board Score</h1>}
             </div>
           </Link>
         </div>
@@ -152,7 +152,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700 bg-gray-800">
           {sidebarOpen && (
             <div className="text-xs text-gray-500">
-              <p className="font-semibold mb-1">JobScore MVP</p>
+              <p className="font-semibold mb-1">Job Board Score MVP</p>
               <p>Week 3 - Frontend Build</p>
             </div>
           )}
@@ -192,7 +192,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               })}
             </div>
 
-            {/* User Menu */}
+            {/* User Menu - Hidden */}
+            {/* 
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -210,26 +211,24 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
               </button>
 
-              {/* Dropdown Menu */}
-              {showUserMenu && (
-                <div 
-                  className="absolute right-0 mt-2 w-48 bg-gray-700 rounded-lg shadow-xl border border-gray-600 z-50"
-                  role="menu"
-                  aria-orientation="vertical"
-                >
-                  <div className="p-3 border-b border-gray-600">
-                    <p className="text-sm font-medium text-white truncate">{profile?.email}</p>
-                    <p className="text-xs text-gray-400 mt-1">{profile?.role === 'admin' ? 'Administrator' : 'Viewer'}</p>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full px-4 py-2 text-left text-red-400 hover:bg-gray-600 transition-colors text-sm"
-                  >
-                    Sign Out
-                  </button>
+              <div 
+                className="absolute right-0 mt-2 w-48 bg-gray-700 rounded-lg shadow-xl border border-gray-600 z-50"
+                role="menu"
+                aria-orientation="vertical"
+              >
+                <div className="p-3 border-b border-gray-600">
+                  <p className="text-sm font-medium text-white truncate">{profile?.email}</p>
+                  <p className="text-xs text-gray-400 mt-1">{profile?.role === 'admin' ? 'Administrator' : 'Viewer'}</p>
                 </div>
-              )}
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-2 text-left text-red-400 hover:bg-gray-600 transition-colors text-sm"
+                >
+                  Sign Out
+                </button>
+              </div>
             </div>
+            */}
           </div>
         </header>
 
