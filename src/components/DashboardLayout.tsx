@@ -40,6 +40,12 @@ const navItems: NavItem[] = [
     description: 'Trends & market analysis',
   },
   {
+    label: 'Surveys',
+    href: '/dashboard/surveys',
+    icon: '📝',
+    description: 'Submit feedback & surveys',
+  },
+  {
     label: 'QA Status',
     href: '/dashboard/qa',
     icon: '✅',
