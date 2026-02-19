@@ -8,7 +8,7 @@ export default function AuthPage() {
 
   return (
     <DashboardLayout>
-      <PageHeader title="Authentication" description="Sign in to your JobScore account" />
+      <PageHeader title="Authentication" description="Sign in to your Job Board Score account" />
 
       <div className="max-w-md mx-auto">
         <Card>

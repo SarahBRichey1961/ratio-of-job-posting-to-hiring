@@ -1,6 +1,6 @@
 import React from 'react'
+import Link from 'next/link'
 import { DashboardLayout } from '@/components/DashboardLayout'
-import { ProtectedRoute } from '@/components/ProtectedRoute'
 import {
   PageHeader,
   StatsSection,
@@ -11,8 +11,7 @@ import {
 
 export default function DashboardHome() {
   return (
-    <ProtectedRoute>
-      <DashboardLayout>
+    <DashboardLayout>
       <PageHeader
         title="Dashboard"
         description="Overall job board efficiency metrics and market overview"
@@ -22,7 +21,7 @@ export default function DashboardHome() {
       <StatsSection>
         <MetricCard
           label="Total Boards"
-          value="28"
+          value="35"
           subtitle="Across all categories"
           icon="📊"
         />
@@ -53,34 +52,94 @@ export default function DashboardHome() {
       </StatsSection>
 
       {/* Market Overview */}
-      <Section title="Market Overview">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <Card>
-            <h3 className="font-semibold text-white mb-3">🏆 Top 5 Boards</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400">1. Stack Overflow</span>
-                <span className="text-white font-semibold">88</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400">2. LinkedIn</span>
-                <span className="text-white font-semibold">85</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400">3. GitHub Jobs</span>
-                <span className="text-white font-semibold">84</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400">4. Indeed</span>
-                <span className="text-white font-semibold">72</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400">5. Glassdoor</span>
-                <span className="text-white font-semibold">68</span>
-              </div>
-            </div>
-          </Card>
+      <Section title="All Job Boards Rankings">
+        <Card>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-gray-700">
+                <tr>
+                  <th className="text-left py-3 px-4 text-gray-200">Rank</th>
+                  <th className="text-left py-3 px-4 text-gray-200">Board</th>
+                  <th className="text-center py-3 px-4 text-gray-200">Score</th>
+                  <th className="text-center py-3 px-4 text-gray-200">Grade</th>
+                  <th className="text-center py-3 px-4 text-gray-200">Category</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { rank: 1, name: 'Stack Overflow', score: 88, grade: 'A+', category: 'Tech' },
+                  { rank: 2, name: 'LinkedIn Jobs', score: 85, grade: 'A', category: 'General' },
+                  { rank: 3, name: 'GitHub Jobs', score: 84, grade: 'A', category: 'Tech' },
+                  { rank: 4, name: 'HackerNews', score: 82, grade: 'A', category: 'Tech' },
+                  { rank: 5, name: 'We Work Remotely', score: 74, grade: 'B+', category: 'Remote' },
+                  { rank: 6, name: 'Indeed', score: 72, grade: 'B', category: 'General' },
+                  { rank: 7, name: 'Glassdoor', score: 68, grade: 'B', category: 'General' },
+                  { rank: 8, name: 'Built In', score: 67, grade: 'B', category: 'Tech' },
+                  { rank: 9, name: 'Remote Tech Jobs', score: 65, grade: 'B-', category: 'Remote' },
+                  { rank: 10, name: 'ZipRecruiter', score: 65, grade: 'B-', category: 'General' },
+                  { rank: 11, name: 'Remotive', score: 63, grade: 'B-', category: 'Remote' },
+                  { rank: 12, name: 'RemoteOK', score: 62, grade: 'C+', category: 'Remote' },
+                  { rank: 13, name: 'The Muse', score: 60, grade: 'C+', category: 'Tech' },
+                  { rank: 14, name: 'CareerBuilder', score: 58, grade: 'C', category: 'General' },
+                  { rank: 15, name: 'Hired', score: 57, grade: 'C', category: 'Tech' },
+                  { rank: 16, name: 'FlexJobs', score: 56, grade: 'C', category: 'Remote' },
+                  { rank: 17, name: 'AngelList', score: 54, grade: 'C', category: 'Tech' },
+                  { rank: 18, name: 'WellFound', score: 53, grade: 'C', category: 'Tech' },
+                  { rank: 19, name: 'Remote.co', score: 52, grade: 'D', category: 'Remote' },
+                  { rank: 20, name: 'Dribbble Jobs', score: 51, grade: 'D', category: 'Tech' },
+                  { rank: 21, name: 'Idealist.org', score: 49, grade: 'D', category: 'Niche' },
+                  { rank: 22, name: 'Virtual Vocations', score: 47, grade: 'D', category: 'Remote' },
+                  { rank: 23, name: 'Crunchboard', score: 45, grade: 'F', category: 'Tech' },
+                  { rank: 24, name: 'Dice', score: 44, grade: 'F', category: 'Tech' },
+                  { rank: 25, name: 'Data Jobs', score: 43, grade: 'F', category: 'Niche' },
+                  { rank: 26, name: 'ProBlogger', score: 42, grade: 'F', category: 'Niche' },
+                  { rank: 27, name: 'Design Observer', score: 41, grade: 'F', category: 'Niche' },
+                  { rank: 28, name: 'Geekwork', score: 39, grade: 'F', category: 'Niche' },
+                  { rank: 29, name: 'Blind', score: 39, grade: 'F', category: 'Tech' },
+                  { rank: 30, name: 'iCrunchData', score: 38, grade: 'F', category: 'Niche' },
+                  { rank: 31, name: 'EnvironmentalCareer.com', score: 37, grade: 'F', category: 'Niche' },
+                  { rank: 32, name: 'Monster', score: 35, grade: 'F', category: 'General' },
+                  { rank: 33, name: 'Mediabistro', score: 32, grade: 'F', category: 'Niche' },
+                  { rank: 34, name: 'Reddit /r/sysadminjobs', score: 29, grade: 'F', category: 'Niche' },
+                  { rank: 35, name: 'CraigsList', score: 28, grade: 'F', category: 'General' },
+                ].map((board) => (
+                  <tr key={board.name} className="border-b border-gray-800 hover:bg-gray-800/50">
+                    <td className="py-3 px-4 text-gray-300 font-semibold">{board.rank}</td>
+                    <td className="py-3 px-4 text-gray-200">
+                      <Link href={`/dashboard/profile?board=${encodeURIComponent(board.name)}`}>
+                        <span className="text-blue-400 hover:text-blue-300 hover:underline cursor-pointer">
+                          {board.name}
+                        </span>
+                      </Link>
+                    </td>
+                    <td className="text-center py-3 px-4 text-white font-bold">{board.score}</td>
+                    <td className="text-center py-3 px-4">
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-semibold text-white ${
+                          board.score >= 80
+                            ? 'bg-green-600'
+                            : board.score >= 60
+                            ? 'bg-blue-600'
+                            : board.score >= 40
+                            ? 'bg-yellow-600'
+                            : 'bg-red-600'
+                        }`}
+                      >
+                        {board.grade}
+                      </span>
+                    </td>
+                    <td className="text-center py-3 px-4 text-gray-400 text-xs">{board.category}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </Section>
 
+      {/* Activity Section */}
+      <Section title="Market Insights">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <h3 className="font-semibold text-white mb-3">⚡ Hottest Roles</h3>
             <div className="space-y-2">
@@ -226,6 +285,5 @@ export default function DashboardHome() {
         </div>
       </Section>
     </DashboardLayout>
-    </ProtectedRoute>
   )
 }

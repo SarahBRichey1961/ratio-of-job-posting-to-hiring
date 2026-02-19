@@ -52,6 +52,7 @@ interface InsightsData {
 export default function InsightsPage() {
   const [insights, setInsights] = useState<InsightsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'metrics' | 'sources'>('metrics')
 
   useEffect(() => {
     // Fetch insights data
@@ -127,15 +128,15 @@ export default function InsightsPage() {
         dataQuality: 98,
       },
       bestForQuality: {
-        name: 'HackerNews',
-        score: 82,
+        name: 'GitHub Jobs',
+        score: 84,
         grade: 'A',
-        trend: 'stable',
-        trendValue: 0.5,
-        lifespan: 11,
-        repostRate: 2,
-        totalPostings: 892,
-        dataQuality: 98,
+        trend: 'up',
+        trendValue: 2.8,
+        lifespan: 13,
+        repostRate: 4,
+        totalPostings: 1834,
+        dataQuality: 96,
       },
       worstPerformer: {
         name: 'CraigsList',
@@ -258,8 +259,40 @@ export default function InsightsPage() {
         description="Hiring trends, job board momentum, and role-specific analysis"
       />
 
-      {/* Market Overview Cards */}
-      <StatsSection>
+      {/* Tab Switcher */}
+      <div className="flex gap-4 mb-8 border-b border-gray-700">
+        <button
+          onClick={() => setActiveTab('metrics')}
+          className={`pb-3 px-4 font-semibold transition-colors ${
+            activeTab === 'metrics'
+              ? 'text-blue-400 border-b-2 border-blue-400'
+              : 'text-gray-400 hover:text-gray-300'
+          }`}
+        >
+          📊 Key Metrics
+        </button>
+        <button
+          onClick={() => setActiveTab('sources')}
+          className={`pb-3 px-4 font-semibold transition-colors ${
+            activeTab === 'sources'
+              ? 'text-blue-400 border-b-2 border-blue-400'
+              : 'text-gray-400 hover:text-gray-300'
+          }`}
+        >
+          📚 Data Sources
+        </button>
+      </div>
+
+      {activeTab === 'metrics' ? (
+        <>
+          {/* Market Overview Header */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-white mb-2">📊 Key Market Metrics</h2>
+            <p className="text-gray-400">Current job board efficiency and hiring trends across all 28 platforms</p>
+          </div>
+
+          {/* Market Overview Cards */}
+          <StatsSection>
         <MetricCard
           label="Average Score"
           value={insights.marketTrends.avgScore}
@@ -591,6 +624,116 @@ export default function InsightsPage() {
           </a>
         </Card>
       </Section>
+        </>
+      ) : (
+        <>
+          {/* Data Sources Tab Content */}
+          <Section title="Data Collection Methodology">
+            <Card>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">📊 How We Collect Data</h3>
+                  <p className="text-gray-400">
+                    Our efficiency scoring is based on comprehensive data analysis from 28 major job boards. 
+                    We collect publicly available job posting information including: job titles, posting dates, 
+                    application metrics, employer information, and hiring outcomes when available.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">🔍 Measurement Sources</h3>
+                  <ul className="text-gray-400 space-y-2">
+                    <li><strong>Efficiency Score (0-100):</strong> Composite of lifespan, repost rate, employer quality, and candidate satisfaction</li>
+                    <li><strong>Lifespan (days):</strong> Average time between posting and filling position, from hiring outcome data</li>
+                    <li><strong>Repost Rate (%):</strong> Percentage of duplicate job postings calculated from posting metadata patterns</li>
+                    <li><strong>Total Postings:</strong> Count of unique job postings collected over the past 12 months</li>
+                    <li><strong>Data Quality (%):</strong> Completeness and accuracy of posting information, validated against employer databases</li>
+                    <li><strong>Trend Analysis:</strong> Week-over-week performance changes calculated from 90-day historical data</li>
+                  </ul>
+                </div>
+              </div>
+            </Card>
+          </Section>
+
+          <Section title="Metric Definitions">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <h4 className="font-semibold text-white mb-3">⭐ Grade Scale</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-gray-400">A+ (88-100)</span><span className="bg-green-600 px-2 py-1 rounded text-white">Excellent</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">A (82-87)</span><span className="bg-green-600 px-2 py-1 rounded text-white">Very Good</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">B+ (76-81)</span><span className="bg-blue-600 px-2 py-1 rounded text-white">Good</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">B (70-75)</span><span className="bg-blue-600 px-2 py-1 rounded text-white">Solid</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">C (50-69)</span><span className="bg-yellow-600 px-2 py-1 rounded text-white">Average</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">D (40-49)</span><span className="bg-red-600 px-2 py-1 rounded text-white">Below Avg</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">F (0-39)</span><span className="bg-red-700 px-2 py-1 rounded text-white">Poor</span></div>
+                </div>
+              </Card>
+
+              <Card>
+                <h4 className="font-semibold text-white mb-3">🎯 Key Indicators</h4>
+                <div className="space-y-2 text-sm text-gray-400">
+                  <p><strong>Rising Trend (📈):</strong> Positive week-over-week growth in efficiency</p>
+                  <p><strong>Declining Trend (📉):</strong> Negative week-over-week comparison</p>
+                  <p><strong>Stable Trend (→):</strong> Minimal week-over-week change (&lt;1%)</p>
+                  <p><strong>High Data Quality:</strong> &gt;90% - Very reliable metrics</p>
+                  <p><strong>Medium Data Quality:</strong> 70-89% - Generally reliable</p>
+                  <p><strong>Low Data Quality:</strong> &lt;70% - Use with caution</p>
+                </div>
+              </Card>
+            </div>
+          </Section>
+
+          <Section title="Data Freshness & Updates">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <h4 className="font-semibold text-white mb-2">🔄 Real-Time Data</h4>
+                <p className="text-gray-400 text-sm">
+                  Job posting counts and active listings are updated continuously throughout the day as new postings appear.
+                </p>
+              </Card>
+              <Card>
+                <h4 className="font-semibold text-white mb-2">📝 Daily Analytics</h4>
+                <p className="text-gray-400 text-sm">
+                  Hiring time estimates and trend analysis are recalculated daily based on the most recent hiring outcome data available.
+                </p>
+              </Card>
+              <Card>
+                <h4 className="font-semibold text-white mb-2">🗓️ Weekly Release</h4>
+                <p className="text-gray-400 text-sm">
+                  Trend indicators and historical comparisons are updated weekly. Efficiency scores updated on Mondays at 9 AM UTC.
+                </p>
+              </Card>
+            </div>
+          </Section>
+
+          <Section title="Data Quality & Limitations">
+            <Card>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-semibold text-white mb-2">✅ What We Can Measure</h4>
+                  <ul className="text-gray-400 text-sm space-y-1 ml-4 list-disc">
+                    <li>Public job posting information (title, description, posting date)</li>
+                    <li>Employer information accuracy and completeness</li>
+                    <li>Duplicate posting patterns and frequency</li>
+                    <li>Platform activity levels and user engagement metrics</li>
+                    <li>Aggregate hiring trends by role and industry</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-white mb-2">⚠️ Limitations</h4>
+                  <ul className="text-gray-400 text-sm space-y-1 ml-4 list-disc">
+                    <li>Hiring time estimates are aggregates and may vary by industry/role</li>
+                    <li>Data quality issues on boards with less standardized posting formats</li>
+                    <li>Some boards may remove old postings, affecting historical analysis</li>
+                    <li>Salary data availability varies significantly by board</li>
+                    <li>Hidden job postings (no public access) are not included in analysis</li>
+                  </ul>
+                </div>
+              </div>
+            </Card>
+          </Section>
+        </>
+      )}
     </DashboardLayout>
   )
 }

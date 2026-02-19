@@ -1,6 +1,5 @@
 import React from 'react'
 import { DashboardLayout } from '@/components/DashboardLayout'
-import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { PageHeader, Section, Card } from '@/components/DashboardUI'
 import { EmployerSurveyForm } from '@/components/EmployerSurveyForm'
 
@@ -15,8 +14,7 @@ export default function SurveysPage() {
   }
 
   return (
-    <ProtectedRoute>
-      <DashboardLayout>
+    <DashboardLayout>
         <PageHeader
           title="Survey Feedback"
           description="Share your experience with job boards and help us improve the efficiency scoring"
@@ -110,6 +108,6 @@ export default function SurveysPage() {
           </div>
         </Section>
       </DashboardLayout>
-    </ProtectedRoute>
-  )
-}
+    )
+  }
+
