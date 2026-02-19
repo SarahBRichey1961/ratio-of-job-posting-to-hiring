@@ -25,7 +25,7 @@
 - [x] **Day 17 — Job Board Profile Page:** Show score, trend chart, strengths, weaknesses, best/worst roles
 - [x] **Day 18 — Insights Page:** Rising job boards, declining job boards, best/worst by role
 - [x] **Day 19 — Add Charts:** Integrate chart library (Recharts/Chart.js); add trend lines + bar charts
-- [ ] **Day 20 — Add Auth:** Supabase Auth; email/password login; basic roles (admin/viewer)
+- [x] **Day 20 — Add Auth:** Supabase Auth; email/password login; basic roles (admin/viewer)
 - [ ] **Day 21 — Polish UI:** TailwindCSS styling; responsive layout; clean typography
 
 ## Week 4 — Surveys, Reports & Launch Prep (Days 22–30)
