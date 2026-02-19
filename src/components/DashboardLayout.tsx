@@ -55,7 +55,6 @@ const navItems: NavItem[] = [
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
-  const { signOut } = useAuth()
   const [sidebarOpen, setSidebarOpen] = React.useState(false) // Mobile-first: start closed
 
   React.useEffect(() => {
