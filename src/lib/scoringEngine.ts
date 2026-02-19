@@ -27,7 +27,7 @@ export interface ScoreComponentBreakdown {
     contribution: number
   }
   reposts: {
-    weight: number // 30%
+    weight: number // 25%
     score: number
     contribution: number
   }
@@ -37,7 +37,7 @@ export interface ScoreComponentBreakdown {
     contribution: number
   }
   candidateSurvey: {
-    weight: number // 10%
+    weight: number // 15%
     score: number
     contribution: number
   }
@@ -88,14 +88,12 @@ function calculateRepostScore(repostRate: number): number {
 
 /**
  * Calculate survey component score (0-100)
- * Based on average rating from surveys
+ * Based on average rating from surveys (1-5 scale)
  */
-function calculateSurveyScore(ratings?: number[]): number {
-  if (!ratings || ratings.length === 0) return 50 // neutral if no data
-  
-  const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length
-  // Assume ratings are 1-5, convert to 0-100
-  return (avg / 5) * 100
+function calculateSurveyScore(rating?: number): number {
+  if (!rating || rating === 0) return 50 // neutral if no data
+  // Assume rating is 1-5, convert to 0-100
+  return Math.round((rating / 5) * 100)
 }
 
 /**
@@ -105,8 +103,8 @@ function calculateSurveyScore(ratings?: number[]): number {
 function calculateDataCompletenessRatio(
   hasLifespan: boolean,
   hasReposts: boolean,
-  employerSurveyCount: number,
-  candidateSurveyCount: number
+  hasEmployerSurvey: boolean,
+  hasCandidateSurvey: boolean
 ): number {
   let components = 0
   let complete = 0
@@ -121,12 +119,12 @@ function calculateDataCompletenessRatio(
   }
   components++
 
-  if (employerSurveyCount > 0) {
+  if (hasEmployerSurvey) {
     complete++
   }
   components++
 
-  if (candidateSurveyCount > 0) {
+  if (hasCandidateSurvey) {
     complete++
   }
   components++
@@ -159,28 +157,41 @@ export async function getScoreComponentBreakdown(
       return null
     }
 
-    // Get survey data
-    const { data: employerSurveys } = await supabase
-      .from('employer_surveys')
-      .select('board_hiring_efficiency')
+    // Get survey data from aggregation views
+    const { data: employerStats } = await supabase
+      .from('employer_survey_stats_by_board')
+      .select(
+        'survey_count, avg_candidate_quality, avg_posting_experience, avg_recommendation'
+      )
       .eq('job_board_id', jobBoardId)
+      .single()
 
-    const { data: candidateSurveys } = await supabase
-      .from('candidate_surveys')
-      .select('board_visibility_rating')
+    const { data: candidateStats } = await supabase
+      .from('candidate_survey_stats_by_board')
+      .select(
+        'survey_count, avg_application_experience, avg_posting_clarity, overall_satisfaction_score, avg_recommendation'
+      )
       .eq('job_board_id', jobBoardId)
+      .single()
 
-    const employerRatings = employerSurveys
-      ?.map((s) => s.board_hiring_efficiency)
-      .filter((r) => r !== null) || []
-    const candidateRatings = candidateSurveys
-      ?.map((s) => s.board_visibility_rating)
-      .filter((r) => r !== null) || []
+    // Calculate survey scores from aggregates
+    // Employer: average of candidate quality, posting experience, and recommendation (each 1-5)
+    const employerScore = employerStats
+      ? ((employerStats.avg_candidate_quality || 3 +
+            employerStats.avg_posting_experience || 3 +
+            employerStats.avg_recommendation || 3) /
+          3 /
+          5) *
+        100
+      : 50
+
+    // Candidate: use overall satisfaction score which is already aggregated
+    const candidateScore = candidateStats
+      ? (candidateStats.overall_satisfaction_score || 3 / 5) * 100
+      : 50
 
     const lifespanScore = calculateLifespanScore(lifespanMetrics.avgLifespan)
     const repostScore = calculateRepostScore(repostMetrics.repostRate)
-    const employerScore = calculateSurveyScore(employerRatings)
-    const candidateScore = calculateSurveyScore(candidateRatings)
 
     return {
       lifespan: {
@@ -189,9 +200,9 @@ export async function getScoreComponentBreakdown(
         contribution: lifespanScore * 0.4,
       },
       reposts: {
-        weight: 0.3,
+        weight: 0.25,
         score: repostScore,
-        contribution: repostScore * 0.3,
+        contribution: repostScore * 0.25,
       },
       employerSurvey: {
         weight: 0.2,
@@ -199,9 +210,9 @@ export async function getScoreComponentBreakdown(
         contribution: employerScore * 0.2,
       },
       candidateSurvey: {
-        weight: 0.1,
+        weight: 0.15,
         score: candidateScore,
-        contribution: candidateScore * 0.1,
+        contribution: candidateScore * 0.15,
       },
     }
   } catch (error) {
@@ -237,7 +248,20 @@ export async function calculateBoardScore(jobBoardId: number): Promise<Efficienc
       return null
     }
 
-    // Calculate base score
+    // Get survey metadata for completeness calculation
+    const { data: employerStats } = await supabase
+      .from('employer_survey_stats_by_board')
+      .select('survey_count')
+      .eq('job_board_id', jobBoardId)
+      .single()
+
+    const { data: candidateStats } = await supabase
+      .from('candidate_survey_stats_by_board')
+      .select('survey_count')
+      .eq('job_board_id', jobBoardId)
+      .single()
+
+    // Calculate base score (sum of weighted components)
     const baseScore = Math.round(
       breakdown.lifespan.contribution +
         breakdown.reposts.contribution +
@@ -253,8 +277,8 @@ export async function calculateBoardScore(jobBoardId: number): Promise<Efficienc
     const completeness = calculateDataCompletenessRatio(
       lifespanMetrics.totalPostings > 0,
       repostMetrics.totalPostings > 0,
-      Math.max(0, breakdown.employerSurvey.score),
-      Math.max(0, breakdown.candidateSurvey.score)
+      (employerStats?.survey_count || 0) > 0,
+      (candidateStats?.survey_count || 0) > 0
     )
 
     // Store the score
