@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { useAuth } from '@/context/AuthContext'
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -48,7 +49,14 @@ const navItems: NavItem[] = [
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
+  const { signOut, profile } = useAuth()
   const [sidebarOpen, setSidebarOpen] = React.useState(true)
+  const [showUserMenu, setShowUserMenu] = React.useState(false)
+
+  const handleLogout = async () => {
+    await signOut()
+    router.push('/login')
+  }
 
   return (
     <div className="flex h-screen bg-gray-900">
@@ -127,7 +135,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             {navItems.find((item) => item.href === router.pathname)?.label || 'Dashboard'}
           </h2>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             <div className="text-sm text-gray-400">
               {new Date().toLocaleDateString('en-US', {
                 weekday: 'short',
@@ -136,8 +144,37 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 year: 'numeric',
               })}
             </div>
-            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
-              👤
+
+            {/* User Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
+                  {profile?.email?.charAt(0).toUpperCase() || '👤'}
+                </div>
+                <div className="text-left hidden sm:block">
+                  <p className="text-sm font-medium text-white">{profile?.email?.split('@')[0] || 'User'}</p>
+                  <p className="text-xs text-gray-400">{profile?.role === 'admin' ? 'Admin' : 'Viewer'}</p>
+                </div>
+              </button>
+
+              {/* Dropdown Menu */}
+              {showUserMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-gray-700 rounded-lg shadow-lg border border-gray-600 z-50">
+                  <div className="p-3 border-b border-gray-600">
+                    <p className="text-sm font-medium text-white">{profile?.email}</p>
+                    <p className="text-xs text-gray-400 mt-1">{profile?.role === 'admin' ? 'Administrator' : 'Viewer'}</p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full px-4 py-2 text-left text-red-400 hover:bg-gray-600 transition-colors text-sm"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>

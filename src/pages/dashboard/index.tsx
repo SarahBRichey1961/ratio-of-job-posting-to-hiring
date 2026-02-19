@@ -1,5 +1,6 @@
 import React from 'react'
 import { DashboardLayout } from '@/components/DashboardLayout'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
 import {
   PageHeader,
   StatsSection,
@@ -10,7 +11,8 @@ import {
 
 export default function DashboardHome() {
   return (
-    <DashboardLayout>
+    <ProtectedRoute>
+      <DashboardLayout>
       <PageHeader
         title="Dashboard"
         description="Overall job board efficiency metrics and market overview"
@@ -224,5 +226,6 @@ export default function DashboardHome() {
         </div>
       </Section>
     </DashboardLayout>
+    </ProtectedRoute>
   )
 }
