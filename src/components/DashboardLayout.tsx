@@ -58,11 +58,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { signOut } = useAuth()
   const [sidebarOpen, setSidebarOpen] = React.useState(false) // Mobile-first: start closed
 
-  const handleLogout = async () => {
-    await signOut()
-    router.push('/login')
-  }
-
   React.useEffect(() => {
     // Open sidebar on larger screens
     const handleResize = () => {
