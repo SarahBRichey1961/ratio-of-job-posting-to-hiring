@@ -31,7 +31,7 @@
 ## Week 4 — Surveys, Reports & Launch Prep (Days 22–30)
 - [x] **Day 22 — Employer Survey Form:** Build form with validation; store in `employer_surveys`
 - [x] **Day 23 — Candidate Survey Form:** Build form; store in `candidate_surveys`
-- [ ] **Day 24 — Integrate Surveys into Scoring:** Update scoring weights; add survey influence; recompute scores
+- [x] **Day 24 — Integrate Surveys into Scoring:** Update scoring weights; add survey influence; recompute scores
 - [ ] **Day 25 — Weekly Insights Email:** Generate automated report (top/worst boards, trends); send via email API (Resend/SendGrid)
 - [ ] **Day 26 — Add Export Features:** CSV export for tables; optional PDF export for insights
 - [ ] **Day 27 — Add Onboarding Flow:** Welcome screen; product tour; “How to read the score” guide
