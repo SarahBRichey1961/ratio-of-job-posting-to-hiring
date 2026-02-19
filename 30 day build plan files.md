@@ -29,7 +29,7 @@
 - [x] **Day 21 — Polish UI:** TailwindCSS styling; responsive layout; clean typography
 
 ## Week 4 — Surveys, Reports & Launch Prep (Days 22–30)
-- [ ] **Day 22 — Employer Survey Form:** Build form with validation; store in `employer_surveys`
+- [x] **Day 22 — Employer Survey Form:** Build form with validation; store in `employer_surveys`
 - [ ] **Day 23 — Candidate Survey Form:** Build form; store in `candidate_surveys`
 - [ ] **Day 24 — Integrate Surveys into Scoring:** Update scoring weights; add survey influence; recompute scores
 - [ ] **Day 25 — Weekly Insights Email:** Generate automated report (top/worst boards, trends); send via email API (Resend/SendGrid)
