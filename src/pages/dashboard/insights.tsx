@@ -1,188 +1,563 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/DashboardLayout'
 import {
   PageHeader,
-  Section,
   Card,
+  Section,
   MetricCard,
   StatsSection,
 } from '@/components/DashboardUI'
 
+interface BoardInsight {
+  name: string
+  score: number
+  grade: string
+  trend: 'up' | 'down' | 'stable'
+  trendValue: number
+  lifespan: number
+  repostRate: number
+  totalPostings: number
+  dataQuality: number
+}
+
+interface RoleInsight {
+  roleName: string
+  totalJobs: number
+  topBoards: Array<{
+    boardName: string
+    jobCount: number
+    avgSalary?: number
+  }>
+  avgHiringTime: number
+  trend: 'up' | 'down' | 'stable'
+}
+
+interface InsightsData {
+  risingBoards: BoardInsight[]
+  decliningBoards: BoardInsight[]
+  bestOverall: BoardInsight
+  bestForSpeed: BoardInsight
+  bestForQuality: BoardInsight
+  worstPerformer: BoardInsight
+  roleAnalysis: RoleInsight[]
+  marketTrends: {
+    avgScore: number
+    medianLifespan: number
+    topRole: string
+    topBoard: string
+  }
+}
+
 export default function InsightsPage() {
+  const [insights, setInsights] = useState<InsightsData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Fetch insights data
+    const mockData: InsightsData = {
+      risingBoards: [
+        {
+          name: 'Stack Overflow',
+          score: 88,
+          grade: 'A+',
+          trend: 'up',
+          trendValue: 5.2,
+          lifespan: 12,
+          repostRate: 3,
+          totalPostings: 2456,
+          dataQuality: 97,
+        },
+        {
+          name: 'LinkedIn',
+          score: 85,
+          grade: 'A',
+          trend: 'up',
+          trendValue: 3.1,
+          lifespan: 14,
+          repostRate: 5,
+          totalPostings: 5432,
+          dataQuality: 95,
+        },
+      ],
+      decliningBoards: [
+        {
+          name: 'CraigsList',
+          score: 45,
+          grade: 'F',
+          trend: 'down',
+          trendValue: -8.5,
+          lifespan: 35,
+          repostRate: 42,
+          totalPostings: 789,
+          dataQuality: 58,
+        },
+        {
+          name: 'Indeed',
+          score: 72,
+          grade: 'B',
+          trend: 'down',
+          trendValue: -2.3,
+          lifespan: 18,
+          repostRate: 12,
+          totalPostings: 3200,
+          dataQuality: 88,
+        },
+      ],
+      bestOverall: {
+        name: 'Stack Overflow',
+        score: 88,
+        grade: 'A+',
+        trend: 'up',
+        trendValue: 5.2,
+        lifespan: 12,
+        repostRate: 3,
+        totalPostings: 2456,
+        dataQuality: 97,
+      },
+      bestForSpeed: {
+        name: 'HackerNews',
+        score: 82,
+        grade: 'A',
+        trend: 'stable',
+        trendValue: 0.5,
+        lifespan: 11,
+        repostRate: 2,
+        totalPostings: 892,
+        dataQuality: 98,
+      },
+      bestForQuality: {
+        name: 'HackerNews',
+        score: 82,
+        grade: 'A',
+        trend: 'stable',
+        trendValue: 0.5,
+        lifespan: 11,
+        repostRate: 2,
+        totalPostings: 892,
+        dataQuality: 98,
+      },
+      worstPerformer: {
+        name: 'CraigsList',
+        score: 45,
+        grade: 'F',
+        trend: 'down',
+        trendValue: -8.5,
+        lifespan: 35,
+        repostRate: 42,
+        totalPostings: 789,
+        dataQuality: 58,
+      },
+      roleAnalysis: [
+        {
+          roleName: 'Software Engineer',
+          totalJobs: 8456,
+          topBoards: [
+            { boardName: 'LinkedIn', jobCount: 1876 },
+            { boardName: 'Stack Overflow', jobCount: 1842 },
+            { boardName: 'Indeed', jobCount: 1230 },
+            { boardName: 'GitHub Jobs', jobCount: 1456 },
+          ],
+          avgHiringTime: 13,
+          trend: 'up',
+        },
+        {
+          roleName: 'Product Manager',
+          totalJobs: 2145,
+          topBoards: [
+            { boardName: 'LinkedIn', jobCount: 2145 },
+            { boardName: 'We Work Remotely', jobCount: 300 },
+            { boardName: 'Glassdoor', jobCount: 280 },
+          ],
+          avgHiringTime: 19,
+          trend: 'stable',
+        },
+        {
+          roleName: 'Data Scientist',
+          totalJobs: 1524,
+          topBoards: [
+            { boardName: 'LinkedIn', jobCount: 654 },
+            { boardName: 'Stack Overflow', jobCount: 412 },
+            { boardName: 'GitHub Jobs', jobCount: 234 },
+          ],
+          avgHiringTime: 14,
+          trend: 'up',
+        },
+        {
+          roleName: 'DevOps Engineer',
+          totalJobs: 987,
+          topBoards: [
+            { boardName: 'Stack Overflow', jobCount: 287 },
+            { boardName: 'GitHub Jobs', jobCount: 234 },
+            { boardName: 'LinkedIn', jobCount: 298 },
+          ],
+          avgHiringTime: 12,
+          trend: 'up',
+        },
+        {
+          roleName: 'Sales',
+          totalJobs: 2314,
+          topBoards: [
+            { boardName: 'LinkedIn', jobCount: 1050 },
+            { boardName: 'Indeed', jobCount: 654 },
+            { boardName: 'Glassdoor', jobCount: 450 },
+          ],
+          avgHiringTime: 22,
+          trend: 'down',
+        },
+      ],
+      marketTrends: {
+        avgScore: 70.1,
+        medianLifespan: 16,
+        topRole: 'Software Engineer',
+        topBoard: 'Stack Overflow',
+      },
+    }
+
+    setInsights(mockData)
+    setLoading(false)
+  }, [])
+
+  if (loading || !insights) {
+    return (
+      <DashboardLayout>
+        <PageHeader title="Market Insights" description="Loading..." />
+        <Card>
+          <p className="text-gray-400">Loading insights...</p>
+        </Card>
+      </DashboardLayout>
+    )
+  }
+
+  const getTrendIcon = (trend: string) => {
+    switch (trend) {
+      case 'up':
+        return '📈'
+      case 'down':
+        return '📉'
+      default:
+        return '→'
+    }
+  }
+
+  const getTrendColor = (trend: string) => {
+    switch (trend) {
+      case 'up':
+        return 'text-green-400'
+      case 'down':
+        return 'text-red-400'
+      default:
+        return 'text-gray-400'
+    }
+  }
+
   return (
     <DashboardLayout>
       <PageHeader
-        title="Insights & Analytics"
-        description="Market trends, role analysis, and strategic recommendations"
+        title="Market Insights"
+        description="Hiring trends, job board momentum, and role-specific analysis"
       />
 
-      {/* Market Trends */}
-      <Section title="Market Trends">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card>
-            <h3 className="font-semibold text-white mb-4">🚀 Rising Opportunities</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-white font-medium">ML/AI Roles</p>
-                  <p className="text-gray-400 text-sm">+48% new postings this month</p>
-                </div>
-                <span className="text-2xl">📈</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-white font-medium">DevOps Engineers</p>
-                  <p className="text-gray-400 text-sm">+32% new postings this month</p>
-                </div>
-                <span className="text-2xl">📈</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-white font-medium">Security Engineers</p>
-                  <p className="text-gray-400 text-sm">+28% new postings this month</p>
-                </div>
-                <span className="text-2xl">📈</span>
-              </div>
-            </div>
-          </Card>
+      {/* Market Overview Cards */}
+      <StatsSection>
+        <MetricCard
+          label="Average Score"
+          value={insights.marketTrends.avgScore}
+          subtitle="Across all boards"
+          icon="📊"
+        />
+        <MetricCard
+          label="Median Hiring Time"
+          value={`${insights.marketTrends.medianLifespan}d`}
+          subtitle="Days to fill position"
+          icon="⏱️"
+        />
+        <MetricCard
+          label="Top Role"
+          value={insights.marketTrends.topRole}
+          subtitle={`${insights.roleAnalysis[0]?.totalJobs || 0} openings`}
+          icon="👤"
+        />
+        <MetricCard
+          label="Best Board"
+          value={insights.marketTrends.topBoard}
+          subtitle={`Score: ${insights.bestOverall.score}`}
+          icon="⭐"
+        />
+      </StatsSection>
 
-          <Card>
-            <h3 className="font-semibold text-white mb-4">📉 Declining Opportunities</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-white font-medium">QA Automation</p>
-                  <p className="text-gray-400 text-sm">-18% fewer postings</p>
+      {/* Rising and Declining Boards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+        {/* Rising Boards */}
+        <Section title="📈 Rising Job Boards">
+          <div className="space-y-3">
+            {insights.risingBoards.map((board) => (
+              <Card key={board.name}>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h4 className="text-white font-semibold">{board.name}</h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-gray-400 text-sm">Score: {board.score}</span>
+                      <span className={`text-sm font-semibold ${
+                        board.grade.startsWith('A')
+                          ? 'text-green-400'
+                          : board.grade.startsWith('B')
+                          ? 'text-blue-400'
+                          : 'text-yellow-400'
+                      }`}>
+                        {board.grade}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl">📈</div>
+                    <p className="text-green-400 font-semibold text-sm">
+                      +{board.trendValue}%
+                    </p>
+                  </div>
                 </div>
-                <span className="text-2xl">📉</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-white font-medium">Business Analysts</p>
-                  <p className="text-gray-400 text-sm">-12% fewer postings</p>
+                <div className="mt-3 pt-3 border-t border-gray-700">
+                  <p className="text-gray-400 text-xs">
+                    {board.totalPostings} jobs • {board.lifespan}d avg fill time
+                  </p>
                 </div>
-                <span className="text-2xl">📉</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-white font-medium">Web Developers</p>
-                  <p className="text-gray-400 text-sm">-8% fewer postings</p>
-                </div>
-                <span className="text-2xl">📉</span>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </Section>
-
-      {/* Industry Analysis */}
-      <Section title="Industry Performance Comparison">
-        <StatsSection>
-          <MetricCard
-            label="Tech Industry"
-            value="78"
-            subtitle="12 boards, 8,450 jobs"
-            trend="up"
-            trendValue="+5.2%"
-            icon="💻"
-          />
-          <MetricCard
-            label="Remote Focus"
-            value="71"
-            subtitle="5 boards, 2,134 jobs"
-            trend="stable"
-            trendValue="No change"
-            icon="🌍"
-          />
-          <MetricCard
-            label="General Boards"
-            value="65"
-            subtitle="10 boards, 5,234 jobs"
-            trend="down"
-            trendValue="-2.3%"
-            icon="📋"
-          />
-          <MetricCard
-            label="Niche Boards"
-            value="42"
-            subtitle="6 boards, 1,234 jobs"
-            trend="stable"
-            trendValue="No change"
-            icon="🎯"
-          />
-        </StatsSection>
-      </Section>
-
-      {/* Recommendations */}
-      <Section title="Strategic Recommendations">
-        <div className="space-y-4">
-          <Card>
-            <div className="flex gap-4">
-              <div className="text-3xl">💡</div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-white mb-2">For Job Seekers</h4>
-                <p className="text-gray-400 text-sm">
-                  ML/AI and DevOps roles are hot right now with the fastest hiring times (11-13 days).
-                  These boards are also very clean with low repost rates. Post on Stack Overflow and
-                  GitHub Jobs for maximum visibility.
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex gap-4">
-              <div className="text-3xl">🎯</div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-white mb-2">For Recruiters</h4>
-                <p className="text-gray-400 text-sm">
-                  Tech-focused boards (score 78) attract the most qualified candidates with 40%
-                  faster hiring cycles than general boards. Consider prioritizing Stack Overflow,
-                  GitHub, and LinkedIn for your tech roles.
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex gap-4">
-              <div className="text-3xl">📊</div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-white mb-2">For Product Teams</h4>
-                <p className="text-gray-400 text-sm">
-                  Data quality is excellent (92.1% duplication-free), but posting lifespan varies
-                  from 11-35 days depending on board. Focus on high-efficiency boards to improve
-                  overall candidate experience and reduce time-to-hire.
-                </p>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </Section>
-
-      {/* Comparative Analysis */}
-      <Section title="Board Positioning">
-        <Card>
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <h4 className="font-semibold text-white mb-4">🏆 High Quality & Fast</h4>
-              <ul className="space-y-2">
-                <li className="text-gray-300">✓ Stack Overflow (88, 12d)</li>
-                <li className="text-gray-300">✓ GitHub Jobs (84, 13d)</li>
-                <li className="text-gray-300">✓ HackerNews (82, 11d)</li>
-              </ul>
-              <p className="text-gray-500 text-sm mt-4">Best for tech-focused hiring</p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-white mb-4">📊 Volume & Reach</h4>
-              <ul className="space-y-2">
-                <li className="text-gray-300">✓ LinkedIn (85, 5432 jobs)</li>
-                <li className="text-gray-300">✓ Indeed (72, 3200 jobs)</li>
-                <li className="text-gray-300">✓ Glassdoor (68, 2890 jobs)</li>
-              </ul>
-              <p className="text-gray-500 text-sm mt-4">Best for broad reach</p>
-            </div>
+              </Card>
+            ))}
           </div>
+        </Section>
+
+        {/* Declining Boards */}
+        <Section title="📉 Declining Job Boards">
+          <div className="space-y-3">
+            {insights.decliningBoards.map((board) => (
+              <Card key={board.name}>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h4 className="text-white font-semibold">{board.name}</h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-gray-400 text-sm">Score: {board.score}</span>
+                      <span className={`text-sm font-semibold ${
+                        board.grade.startsWith('A')
+                          ? 'text-green-400'
+                          : board.grade.startsWith('B')
+                          ? 'text-blue-400'
+                          : board.grade.startsWith('C')
+                          ? 'text-yellow-400'
+                          : 'text-red-400'
+                      }`}>
+                        {board.grade}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl">📉</div>
+                    <p className="text-red-400 font-semibold text-sm">
+                      {board.trendValue}%
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-gray-700">
+                  <p className="text-gray-400 text-xs">
+                    {board.totalPostings} jobs • {board.lifespan}d avg fill time
+                  </p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </Section>
+      </div>
+
+      {/* Top Performers */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+        <Section title="🏆 Best Overall">
+          <Card>
+            <div className="text-center">
+              <h4 className="text-white font-semibold text-lg">
+                {insights.bestOverall.name}
+              </h4>
+              <div className="mt-3">
+                <p className="text-4xl font-bold text-green-400">
+                  {insights.bestOverall.score}
+                </p>
+                <p className="text-gray-400 text-sm mt-1">
+                  Grade: {insights.bestOverall.grade}
+                </p>
+              </div>
+              <div className="mt-4 pt-4 border-t border-gray-700 text-left">
+                <p className="text-gray-400 text-xs">
+                  📝 {insights.bestOverall.totalPostings} jobs<br />
+                  ⏱️ {insights.bestOverall.lifespan}d avg<br />
+                  ✅ {insights.bestOverall.dataQuality}% quality
+                </p>
+              </div>
+            </div>
+          </Card>
+        </Section>
+
+        <Section title="⚡ Fastest to Hire">
+          <Card>
+            <div className="text-center">
+              <h4 className="text-white font-semibold text-lg">
+                {insights.bestForSpeed.name}
+              </h4>
+              <div className="mt-3">
+                <p className="text-4xl font-bold text-blue-400">
+                  {insights.bestForSpeed.lifespan}d
+                </p>
+                <p className="text-gray-400 text-sm mt-1">Average fill time</p>
+              </div>
+              <div className="mt-4 pt-4 border-t border-gray-700 text-left">
+                <p className="text-gray-400 text-xs">
+                  📊 {insights.bestForSpeed.score} score<br />
+                  🔄 {insights.bestForSpeed.repostRate}% repost rate<br />
+                  📝 {insights.bestForSpeed.totalPostings} jobs
+                </p>
+              </div>
+            </div>
+          </Card>
+        </Section>
+
+        <Section title="✨ Cleanest Data">
+          <Card>
+            <div className="text-center">
+              <h4 className="text-white font-semibold text-lg">
+                {insights.bestForQuality.name}
+              </h4>
+              <div className="mt-3">
+                <p className="text-4xl font-bold text-purple-400">
+                  {insights.bestForQuality.dataQuality}%
+                </p>
+                <p className="text-gray-400 text-sm mt-1">Data quality score</p>
+              </div>
+              <div className="mt-4 pt-4 border-t border-gray-700 text-left">
+                <p className="text-gray-400 text-xs">
+                  📊 {insights.bestForQuality.score} score<br />
+                  🔄 {insights.bestForQuality.repostRate}% duplication<br />
+                  📝 {insights.bestForQuality.totalPostings} jobs
+                </p>
+              </div>
+            </div>
+          </Card>
+        </Section>
+      </div>
+
+      {/* Role Analysis */}
+      <Section title="👔 Role-Specific Analysis">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {insights.roleAnalysis.map((role) => (
+            <Card key={role.roleName}>
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-white font-semibold">{role.roleName}</h4>
+                  <span className={`text-lg ${getTrendColor(role.trend)}`}>
+                    {getTrendIcon(role.trend)}
+                  </span>
+                </div>
+                <div className="text-gray-400 text-sm">
+                  {role.totalJobs} total openings
+                </div>
+              </div>
+
+              <div className="space-y-2 mb-4">
+                <p className="text-gray-400 text-xs font-semibold uppercase">
+                  Top Boards
+                </p>
+                {role.topBoards.map((board, idx) => (
+                  <div key={board.boardName} className="flex items-center justify-between">
+                    <a
+                      href={`/dashboard/profile?board=${encodeURIComponent(board.boardName)}`}
+                      className="text-blue-400 hover:text-blue-300 text-sm"
+                    >
+                      #{idx + 1} {board.boardName}
+                    </a>
+                    <span className="text-gray-400 text-xs">
+                      {board.jobCount} jobs
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-3 border-t border-gray-700">
+                <p className="text-gray-400 text-xs">
+                  ⏱️ Avg fill: {role.avgHiringTime} days
+                </p>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </Section>
+
+      {/* Strategic Insights */}
+      <Section title="💡 Strategic Insights">
+        <div className="space-y-3">
+          <Card>
+            <div className="flex gap-3">
+              <span className="text-2xl">🎯</span>
+              <p className="text-gray-300">
+                <strong>Specialize by Role:</strong> Software Engineer roles cluster on
+                Stack Overflow, LinkedIn, and GitHub Jobs. Product Manager roles are
+                heavily concentrated on LinkedIn (100% of top 3 boards).
+              </p>
+            </div>
+          </Card>
+
+          <Card>
+            <div className="flex gap-3">
+              <span className="text-2xl">⚡</span>
+              <p className="text-gray-300">
+                <strong>Speed Leaders:</strong> HackerNews (11d) and Stack Overflow (12d)
+                consistently deliver the fastest hiring. CraigsList (35d) and Monster (28d)
+                should be deprioritized unless volume is your goal.
+              </p>
+            </div>
+          </Card>
+
+          <Card>
+            <div className="flex gap-3">
+              <span className="text-2xl">📊</span>
+              <p className="text-gray-300">
+                <strong>Quality Variance:</strong> Data quality ranges from 98%
+                (HackerNews) to 58% (CraigsList). High-quality data directly correlates
+                with faster hiring and better outcomes.
+              </p>
+            </div>
+          </Card>
+
+          <Card>
+            <div className="flex gap-3">
+              <span className="text-2xl">📈</span>
+              <p className="text-gray-300">
+                <strong>Momentum Matters:</strong> Stack Overflow (+5.2%) and LinkedIn
+                (+3.1%) are in growth phases. CraigsList (-8.5%) is in decline and not
+                recommended for new initiatives.
+              </p>
+            </div>
+          </Card>
+
+          <Card>
+            <div className="flex gap-3">
+              <span className="text-2xl">🎓</span>
+              <p className="text-gray-300">
+                <strong>Recommended Strategy:</strong> For tech hiring, use Stack
+                Overflow + GitHub Jobs + LinkedIn. For broad roles, add Indeed. For remote
+                positions, prioritize We Work Remotely + LinkedIn.
+              </p>
+            </div>
+          </Card>
+        </div>
+      </Section>
+
+      {/* Comparison Link */}
+      <Section title="Compare Job Boards">
+        <Card>
+          <p className="text-gray-400 mb-4">
+            Compare all metrics side-by-side with real-time sorting and filtering.
+          </p>
+          <a
+            href="/dashboard/comparison"
+            className="inline-block px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            View Comparison Table →
+          </a>
         </Card>
       </Section>
     </DashboardLayout>
