@@ -16,7 +16,7 @@
 - [x] **Day 10 — Compute Repost Frequency:** Count repost events per posting; persist to `job_postings`
 - [x] **Day 11 — Build Scoring Algorithm (V1):** Implement weighted formula (40% lifespan, 30% reposts, 20% employer surveys, 10% candidate surveys); store `efficiency_scores`
 - [x] **Day 12 — Add Role/Industry Dimensions:** Score per role family, per industry, per job board
-- [ ] **Day 13 — Build Trend Tracking:** Store weekly snapshots; compute week‑over‑week changes
+- [x] **Day 13 — Build Trend Tracking:** Store weekly snapshots; compute week‑over‑week changes
 - [ ] **Day 14 — Internal QA:** Validate data; fix anomalies; ensure scoring runs end‑to‑end
 
 ## Week 3 — Frontend Dashboard (Days 15–21)
