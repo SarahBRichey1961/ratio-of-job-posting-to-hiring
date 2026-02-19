@@ -11,7 +11,7 @@
 - [x] **Day 7 — Repost Detection:** Add repost detection logic; store repost events; validate with sample data
 
 ## Week 2 — Data Pipeline & Scoring Engine (Days 8–14)
-- [ ] **Day 8 — Build Data Pipeline:** Create cron jobs (Supabase/server); schedule daily scrapers; store raw snapshots
+- [x] **Day 8 — Build Data Pipeline:** Create cron jobs (Supabase/server); schedule daily scrapers; store raw snapshots
 - [ ] **Day 9 — Compute Posting Lifespan:** Calculate `lifespan = last_seen - first_seen`; persist to `job_postings`
 - [ ] **Day 10 — Compute Repost Frequency:** Count repost events per posting; persist to `job_postings`
 - [ ] **Day 11 — Build Scoring Algorithm (V1):** Implement weighted formula (40% lifespan, 30% reposts, 20% employer surveys, 10% candidate surveys); store `efficiency_scores`
