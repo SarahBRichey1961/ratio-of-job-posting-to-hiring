@@ -22,7 +22,7 @@
 ## Week 3 — Frontend Dashboard (Days 15–21)
 - [x] **Day 15 — Dashboard Layout:** Create pages — Home, Comparison table, Job board profile, Insights
 - [x] **Day 16 — Comparison Table:** Display job board, efficiency score, lifespan, reposts, best roles; add sorting + filtering
-- [ ] **Day 17 — Job Board Profile Page:** Show score, trend chart, strengths, weaknesses, best/worst roles
+- [x] **Day 17 — Job Board Profile Page:** Show score, trend chart, strengths, weaknesses, best/worst roles
 - [ ] **Day 18 — Insights Page:** Rising job boards, declining job boards, best/worst by role
 - [ ] **Day 19 — Add Charts:** Integrate chart library (Recharts/Chart.js); add trend lines + bar charts
 - [ ] **Day 20 — Add Auth:** Supabase Auth; email/password login; basic roles (admin/viewer)
