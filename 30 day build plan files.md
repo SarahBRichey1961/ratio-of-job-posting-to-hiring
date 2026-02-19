@@ -4,7 +4,7 @@
 ## Week 1 — Foundation & Data Model (Days 1–7)
 - [x] **Day 1 — Project Setup:** Create GitHub repo; folder structure; init Next.js; init Supabase
 - [x] **Day 2 — Implement Database Schema:** Add `job_boards`, `job_postings`, `posting_events`, `employer_surveys`, `candidate_surveys`, `efficiency_scores`; test inserts
-- [ ] **Day 3 — Add Job Boards:** Seed 20–30 U.S. job boards; add categories (general, tech, remote, niche)
+- [x] **Day 3 — Add Job Boards:** Seed 20–30 U.S. job boards; add categories (general, tech, remote, niche)
 - [ ] **Day 4 — Build Scraper Framework:** Choose Python/Node; scaffold scraper template; logging + error handling; test scraping (e.g., Indeed)
 - [ ] **Day 5 — Normalize Job Titles:** Create title→role-family mapping; normalization function; store normalized titles
 - [ ] **Day 6 — Track Posting Lifespan:** Implement `first_seen`, `last_seen`, `disappeared`; record `posting_events`
