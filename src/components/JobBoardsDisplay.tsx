@@ -13,7 +13,7 @@ interface JobBoardsGridProps {
   category?: string
 }
 
-export function JobBoardsGrid({ boards, category }: JobBoardsGridProps) {
+export function JobBoardsGrid({ boards }: JobBoardsGridProps) {
   if (boards.length === 0) {
     return (
       <div className="text-center py-8">
