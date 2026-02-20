@@ -1148,6 +1148,47 @@ export default function ProfilePage() {
         },
         dataQuality: 32,
       },
+      'microsoft': {
+        name: 'Microsoft',
+        score: 27,
+        grade: 'F',
+        lifespan: 35,
+        repostRate: 22,
+        totalPostings: 25000,
+        topRoles: [
+          { name: 'Software Engineer', count: 8900 },
+          { name: 'Product Manager', count: 2100 },
+          { name: 'Cloud Solutions Architect', count: 1800 },
+        ],
+        trend: 'stable',
+        trendValue: 0.2,
+        strengths: [
+          'Direct from company',
+          'High-quality positions',
+          'Competitive compensation',
+          'Large volume of opportunities',
+          'Strong company reputation',
+        ],
+        weaknesses: [
+          'Limited to Microsoft roles',
+          'Extremely competitive',
+          'Geographic limitations',
+          'High qualifications required',
+          'Single company focus',
+        ],
+        recommendations: [
+          'Great if interested in Microsoft specifically',
+          'Not for diverse opportunities',
+          'Best combined with other boards',
+        ],
+        scoreBreakdown: {
+          lifespan: 12,
+          reposts: 15,
+          employer: 22,
+          candidate: 18,
+        },
+        dataQuality: 88,
+      },
     }
 
   const [profile, setProfile] = useState<BoardProfile>(() => {
