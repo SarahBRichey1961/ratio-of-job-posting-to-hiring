@@ -68,10 +68,9 @@ export function LifespanStatsCard({ stats }: LifespanCardProps) {
 
 interface LifespanTimelineProps {
   events: PostingEvent[]
-  jobPostingId: number
 }
 
-export function PostingTimeline({ events, _jobPostingId }: LifespanTimelineProps) {
+export function PostingTimeline({ events }: LifespanTimelineProps) {
   const eventColors: Record<string, string> = {
     appeared: 'bg-green-100 text-green-800 border-green-300',
     reappeared: 'bg-blue-100 text-blue-800 border-blue-300',
