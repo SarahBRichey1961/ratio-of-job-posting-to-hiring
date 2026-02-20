@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { LifespanStats, PostingEvent } from '@/lib/lifespanTracking'
 
 interface LifespanCardProps {
