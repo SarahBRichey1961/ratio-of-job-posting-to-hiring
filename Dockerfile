@@ -27,14 +27,16 @@ COPY package*.json ./
 RUN npm ci --only=production
 
 # Copy built application from builder
-COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
 # Set NODE_ENV
 ENV NODE_ENV=production
+ENV PORT=3000
 
-# Expose port (Railway uses PORT env variable)
+# Expose port
 EXPOSE 3000
 
 # Start the application
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
