@@ -1,7 +1,6 @@
 import React, { ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useAuth } from '@/context/AuthContext'
 
 interface DashboardLayoutProps {
   children: ReactNode
