@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { LifespanMetrics, LifespanBucket, RoleFamilyLifespan } from '@/lib/lifespanMetrics'
 
 interface LifespanMetricsCardProps {
