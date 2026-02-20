@@ -15,6 +15,7 @@ import {
   scrapeIndeed,
   scrapeGitHubJobs,
   scrapeGlassdoor,
+  scrapeMicrosoftCareers,
 } from '@/lib/scrapers/jobBoardScraper'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -57,7 +58,7 @@ const ALL_BOARDS = [
   { name: 'Mediabistro', scraper: getEstimatedMetrics('Mediabistro') },
   { name: 'Reddit /r/sysadminjobs', scraper: getEstimatedMetrics('Reddit /r/sysadminjobs') },
   { name: 'CraigsList', scraper: getEstimatedMetrics('CraigsList') },
-  { name: 'Microsoft', scraper: getEstimatedMetrics('Microsoft') },
+  { name: 'Microsoft', scraper: scrapeMicrosoftCareers },
 ]
 
 function getEstimatedMetrics(boardName: string) {
