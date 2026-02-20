@@ -21,7 +21,7 @@ export default function DashboardHome() {
       <StatsSection>
         <MetricCard
           label="Total Boards"
-          value="35"
+          value="36"
           subtitle="Across all categories"
           icon="📊"
         />
@@ -102,6 +102,7 @@ export default function DashboardHome() {
                   { rank: 33, name: 'Mediabistro', score: 32, grade: 'F', category: 'Niche' },
                   { rank: 34, name: 'Reddit /r/sysadminjobs', score: 29, grade: 'F', category: 'Niche' },
                   { rank: 35, name: 'CraigsList', score: 28, grade: 'F', category: 'General' },
+                  { rank: 36, name: 'Microsoft', score: 27, grade: 'F', category: 'Company Career Site' },
                 ].map((board) => (
                   <tr key={board.name} className="border-b border-gray-800 hover:bg-gray-800/50">
                     <td className="py-3 px-4 text-gray-300 font-semibold">{board.rank}</td>
