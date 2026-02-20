@@ -450,6 +450,18 @@ export default function ComparisonPage() {
       trendValue: -6.8,
       dataQuality: 32,
     },
+    {
+      name: 'Microsoft',
+      score: 27,
+      grade: 'F',
+      avgLifespan: 35,
+      repostRate: 22,
+      totalPostings: 25000,
+      topRole: 'Software Engineer',
+      trend: 'stable',
+      trendValue: 0.2,
+      dataQuality: 88,
+    },
   ]
 
   const filtered = useMemo(() => {
