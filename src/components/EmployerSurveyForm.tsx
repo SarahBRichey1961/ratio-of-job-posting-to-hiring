@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Button, Input } from '@/components/DashboardUI'
+import { Button } from '@/components/DashboardUI'
 
 interface EmployerSurveyFormProps {
   boardId?: string
