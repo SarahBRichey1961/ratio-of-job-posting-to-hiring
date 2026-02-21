@@ -11,17 +11,21 @@ import { NextRequest, NextResponse } from 'next/server'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Supabase credentials are missing')
-}
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '')
 
 /**
  * GET /api/metrics
  * Retrieves the latest metrics for all job boards
  */
 export async function GET(request: NextRequest) {
+  // Validate environment variables at request time
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return NextResponse.json(
+      { error: 'Supabase credentials not configured' },
+      { status: 500 }
+    )
+  }
+
   try {
     const { searchParams } = new URL(request.url)
     const boardName = searchParams.get('boardName')
@@ -57,6 +61,14 @@ export async function GET(request: NextRequest) {
  * Triggers data collection from all job boards
  */
 export async function POST(request: NextRequest) {
+  // Validate environment variables at request time
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return NextResponse.json(
+      { error: 'Supabase credentials not configured' },
+      { status: 500 }
+    )
+  }
+
   try {
     const { boardName, metrics } = await request.json()
 
