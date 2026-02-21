@@ -5,8 +5,13 @@ import { Logger } from '@/lib/logging/logger'
 
 const logger = new Logger('logs')
 
-// Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Initialize Resend client lazily to handle missing API key gracefully
+const getResendClient = () => {
+  if (!process.env.RESEND_API_KEY) {
+    return null
+  }
+  return new Resend(process.env.RESEND_API_KEY)
+}
 
 export interface EmailRecipient {
   email: string
@@ -32,6 +37,15 @@ export async function sendInsightsEmail(
       return {
         success: false,
         error: 'Email service not configured',
+      }
+    }
+
+    const resend = getResendClient()
+    if (!resend) {
+      logger.warn('Failed to initialize Resend client')
+      return {
+        success: false,
+        error: 'Email service not available',
       }
     }
 
@@ -129,6 +143,14 @@ export async function sendInsightsEmailsBatch(
  */
 export async function sendTestEmail(email: string): Promise<EmailSendResult> {
   try {
+    const resend = getResendClient()
+    if (!resend) {
+      return {
+        success: false,
+        error: 'Email service not available',
+      }
+    }
+
     const response = await resend.emails.send({
       from: 'test@jobboardscorer.com',
       to: email,
