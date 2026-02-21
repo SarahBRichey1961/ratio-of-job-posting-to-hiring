@@ -169,7 +169,7 @@ export async function createRawDataSnapshot(
 
     if (error) throw error
 
-    logger.info(`Created snapshot for board ${snapshot.boardId}`)
+    logger.info(`Created snapshot for board ${data.job_board_id}`)
 
     return {
       id: data.id,

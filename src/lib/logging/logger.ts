@@ -17,12 +17,10 @@ interface LogEntry {
 }
 
 export class Logger {
-  private logDir: string
   private logFile: string
   private minLevel: LogLevel
 
   constructor(logDir: string = 'logs', minLevel: LogLevel = LogLevel.INFO) {
-    this.logDir = logDir
     this.minLevel = minLevel
 
     // Ensure log directory exists

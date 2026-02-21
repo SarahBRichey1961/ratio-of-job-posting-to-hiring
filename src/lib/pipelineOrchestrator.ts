@@ -6,7 +6,6 @@ import {
   createPipelineRunLog,
   updatePipelineRunStatus,
 } from './pipeline'
-import { LifespanScraper } from './logging/lifespanScraper'
 import { getJobBoards } from './jobBoards'
 import { bulkUpdateAllLifespans } from './lifespanTracking'
 import { bulkDetectAllReposts } from './repostDetection'
@@ -54,23 +53,23 @@ export class DataPipelineOrchestrator {
 
       // Phase 1: Scraping
       logger.info('Phase 1: Running scrapers...')
-      const scrapingResult = await this.runScrapingPhase()
+      await this.runScrapingPhase()
 
       // Phase 2: Raw snapshots
       logger.info('Phase 2: Creating data snapshots...')
-      const snapshotResult = await this.recordRawSnapshots()
+      await this.recordRawSnapshots()
 
       // Phase 3: Lifespan tracking
       logger.info('Phase 3: Updating lifespans...')
-      const lifespanResult = await this.updateLifespans()
+      await this.updateLifespans()
 
       // Phase 4: Repost detection
       logger.info('Phase 4: Detecting reposts...')
-      const repostResult = await this.detectReposts()
+      await this.detectReposts()
 
       // Phase 5: Compute metrics
       logger.info('Phase 5: Computing metrics...')
-      const metricsResult = await this.computeMetrics()
+      await this.computeMetrics()
 
       // Update run log with final status
       const totalJobs = this.jobs.length
