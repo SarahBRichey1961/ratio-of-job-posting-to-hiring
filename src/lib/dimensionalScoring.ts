@@ -154,14 +154,19 @@ export async function getRoleScores(): Promise<RoleScore[]> {
       const avg = scores.reduce((a: number, b: number) => a + b, 0) / scores.length
       const median = scores[Math.floor(scores.length / 2)]
 
-      const boardArray = Array.from(data.boards.values())
-      const best: { id: number; name: string; score: number } | undefined = boardArray
-        .sort((a, b) => b.score - a.score)[0]
-      const worst: { id: number; name: string; score: number } | undefined = boardArray
-        .sort((a, b) => a.score - b.score)[0]
+      // Explicitly type the board array to satisfy TypeScript
+      type BoardInfo = { id: number; name: string; score: number }
+      const boardArray = Array.from(data.boards.values()) as BoardInfo[]
+      
+      const best = boardArray.length > 0 
+        ? boardArray.sort((a: BoardInfo, b: BoardInfo) => b.score - a.score)[0]
+        : undefined
+      const worst = boardArray.length > 0
+        ? boardArray.sort((a: BoardInfo, b: BoardInfo) => a.score - b.score)[0]
+        : undefined
 
       // Provide defaults if no boards found
-      const defaultBoard = { id: 0, name: 'Unknown', score: 0 }
+      const defaultBoard: BoardInfo = { id: 0, name: 'Unknown', score: 0 }
 
       return {
         roleFamily: role,
