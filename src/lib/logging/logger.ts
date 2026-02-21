@@ -50,6 +50,12 @@ export class Logger {
   }
 
   private writeToFile(message: string): void {
+    // In production/Railway, skip file logging (ephemeral file system)
+    // Logs are captured via console output by hosting platforms
+    if (process.env.NODE_ENV === 'production') {
+      return
+    }
+    
     try {
       fs.appendFileSync(this.logFile, message + '\n')
     } catch (err) {
