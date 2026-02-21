@@ -460,7 +460,13 @@ export async function getRoleRecommendations(): Promise<RoleRecommendation[]> {
       // Get top 3 boards for this role
       const topBoards = role.jobCount > 0
         ? [
-            { rank: 1, ...role.bestBoard, jobCount: role.jobCount / role.boards },
+            {
+              rank: 1,
+              boardId: role.bestBoard.id,
+              boardName: role.bestBoard.name,
+              score: role.bestBoard.score,
+              jobCount: role.jobCount / role.boards,
+            },
           ]
         : []
 
