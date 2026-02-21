@@ -3,11 +3,11 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy only package files first (small, cacheable)
+COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies with timeout
+RUN npm ci --omit=dev --legacy-peer-deps --prefer-offline --no-audit
 
 # Copy source code
 COPY . .
@@ -20,23 +20,21 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-
-# Install production dependencies only
-RUN npm ci --only=production
-
-# Copy built application from builder
+# Copy only necessary files from builder
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# Set NODE_ENV
+# Set environment
 ENV NODE_ENV=production
 ENV PORT=3000
 
 # Expose port
 EXPOSE 3000
 
-# Start the application
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+
+# Start application
 CMD ["node", "server.js"]
