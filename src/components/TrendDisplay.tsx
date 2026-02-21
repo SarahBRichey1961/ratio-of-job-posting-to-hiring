@@ -254,7 +254,6 @@ export function TrendSummary({ trends, anomalies }: TrendSummaryProps) {
   const declining = trends.filter((t) => t.trend === 'down').length
   const stable = trends.filter((t) => t.trend === 'stable').length
 
-  const strongTrends = trends.filter((t) => t.trendStrength === 'strong')
   const bestPerformer = trends.length > 0 ? trends[0] : null
 
   return (
