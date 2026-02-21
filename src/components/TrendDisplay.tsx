@@ -281,7 +281,7 @@ export function TrendSummary({ trends, anomalies }: TrendSummaryProps) {
           <div className="space-y-2">
             {anomalies.slice(0, 3).map((alert) => (
               <p key={alert.boardId} className="text-sm">
-                <span className={alert.severity === 'high' ? 'text-red-600' : 'text-orange-600'} className="font-semibold">
+                <span className={`${alert.severity === 'high' ? 'text-red-600' : 'text-orange-600'} font-semibold`}>
                   {alert.boardName}
                 </span>
                 : {alert.metric} anomaly
