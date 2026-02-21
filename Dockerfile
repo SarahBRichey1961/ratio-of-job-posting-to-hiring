@@ -4,10 +4,10 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy only package files first (small, cacheable)
-COPY package.json package-lock.json ./
+COPY package*.json ./
 
 # Install dependencies with timeout
-RUN npm ci --omit=dev --legacy-peer-deps --prefer-offline --no-audit
+RUN npm install --omit=dev --legacy-peer-deps --prefer-offline --no-audit
 
 # Copy source code
 COPY . .
