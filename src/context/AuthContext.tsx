@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { User, Session } from '@supabase/supabase-js'
+import { User } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
