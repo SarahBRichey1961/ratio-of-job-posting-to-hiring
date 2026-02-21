@@ -30,11 +30,7 @@ import {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Supabase credentials missing')
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey)
+const supabase = createClient(supabaseUrl || '', supabaseKey || '')
 
 // All job boards we track
 const ALL_BOARDS = [
@@ -82,6 +78,14 @@ function getEstimatedMetrics(boardName: string) {
 
 export async function GET(request: NextRequest) {
   try {
+    // Validate environment variables at request time
+    if (!supabaseUrl || !supabaseKey) {
+      return NextResponse.json(
+        { error: 'Supabase credentials not configured' },
+        { status: 500 }
+      )
+    }
+
     // Verify this is a valid cron request (could add authentication)
     const authHeader = request.headers.get('authorization')
     
