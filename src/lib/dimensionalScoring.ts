@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase'
-import { calculateBoardScore } from './scoringEngine'
 import { Logger } from './logging/logger'
 
 const logger = new Logger('logs')
