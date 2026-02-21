@@ -2,7 +2,7 @@ import type { GetStaticProps, NextPage } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import React, { useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '@/lib/supabase'
 import { CategoryGroup } from '@/components/JobBoardsDisplay'
 
 interface JobBoard {
@@ -95,7 +95,25 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, totalBoards }) => {
 
 export const getStaticProps: GetStaticProps<HomeProps> = async () => {
   try {
-    const { data: boards, error } = await supabase
+    const client = getSupabase()
+    
+    // If Supabase not initialized (missing env vars during build), return empty data
+    if (!client) {
+      return {
+        props: {
+          jobBoardsByCategory: {
+            general: [],
+            tech: [],
+            remote: [],
+            niche: [],
+          },
+          totalBoards: 0,
+        },
+        revalidate: 60, // Retry after 60 seconds
+      }
+    }
+
+    const { data: boards, error } = await client
       .from('job_boards')
       .select('*')
       .order('category')
