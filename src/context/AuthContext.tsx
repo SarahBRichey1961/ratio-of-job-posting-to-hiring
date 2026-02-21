@@ -2,8 +2,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { User } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 interface UserProfile {
   id: string
@@ -25,7 +25,18 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export const supabase = createClient(supabaseUrl, supabaseKey)
+// Lazy initialization of Supabase client - only created when needed, not at module load
+let supabaseClient: any = null
+
+export const getSupabase = () => {
+  if (!supabaseClient && supabaseUrl && supabaseKey) {
+    supabaseClient = createClient(supabaseUrl, supabaseKey)
+  }
+  return supabaseClient
+}
+
+// For backward compatibility with imports
+export const supabase = { getSupabase }
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
@@ -33,14 +44,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    const client = getSupabase()
+    if (!client) {
+      setIsLoading(false)
+      return
+    }
+
     // Check active sessions and subscribe to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = client.auth.onAuthStateChange(
       async (_event, session) => {
         setUser(session?.user || null)
 
         if (session?.user) {
           // Fetch user profile
-          const { data, error } = await supabase
+          const { data, error } = await client
             .from('user_profiles')
             .select('*')
             .eq('id', session.user.id)
@@ -49,7 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (error) {
             console.error('Error fetching profile:', error)
             // Create default profile if it doesn't exist
-            await supabase
+            await client
               .from('user_profiles')
               .insert({
                 id: session.user.id,
@@ -80,7 +97,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string) => {
     setIsLoading(true)
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const client = getSupabase()
+      if (!client) throw new Error('Supabase not initialized')
+      
+      const { data, error } = await client.auth.signUp({
         email,
         password,
       })
@@ -89,7 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Create user profile
       if (data.user) {
-        await supabase
+        await client
           .from('user_profiles')
           .insert({
             id: data.user.id,
@@ -105,7 +125,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     setIsLoading(true)
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const client = getSupabase()
+      if (!client) throw new Error('Supabase not initialized')
+      
+      const { error } = await client.auth.signInWithPassword({
         email,
         password,
       })
@@ -119,7 +142,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     setIsLoading(true)
     try {
-      const { error } = await supabase.auth.signOut()
+      const client = getSupabase()
+      if (!client) throw new Error('Supabase not initialized')
+      
+      const { error } = await client.auth.signOut()
       if (error) throw error
       setUser(null)
       setProfile(null)
