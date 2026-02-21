@@ -6,7 +6,7 @@ import { Logger, LogLevel } from '@/lib/logging/logger'
  * This is a template implementation showing the pattern for creating job board scrapers
  */
 export class IndeedScraper extends BaseScraper {
-  private logger: Logger
+  protected logger: Logger
 
   constructor() {
     super(1, 'Indeed', 'https://www.indeed.com')
