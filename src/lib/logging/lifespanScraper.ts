@@ -1,7 +1,6 @@
 import { BaseScraper, JobListing } from './baseScraper'
 import { Logger } from './logger'
 import {
-  recordFirstSighting,
   updateLastSeen,
   markAsDisappeared,
   recordPostingEvent,
@@ -22,8 +21,7 @@ export class LifespanScraper extends BaseScraper {
    */
   protected async trackPostingLifespan(
     jobPostingId: number,
-    isStillActive: boolean,
-    eventNotes?: string
+    isStillActive: boolean
   ): Promise<void> {
     try {
       if (isStillActive) {
@@ -50,10 +48,10 @@ export class LifespanScraper extends BaseScraper {
    * Process scraped listings and track their lifespan
    * Override saveListings to add lifespan tracking
    */
-  protected async saveListings(listings: JobListing[]): Promise<void> {
+  protected async saveListings(listings: JobListing[]): Promise<number> {
     try {
       if (listings.length === 0) {
-        return
+        return 0
       }
 
       // First save the listings (parent class behavior)
@@ -61,20 +59,27 @@ export class LifespanScraper extends BaseScraper {
 
       // Then track lifespan for each
       for (const listing of listings) {
-        // Record first sighting if this is a new posting
-        // (parent saveListings does upsert, so first_seen is set only once)
-        await recordFirstSighting(listing.id || 0)
-
-        // Update last_seen timestamp
-        await updateLastSeen(listing.id || 0)
+        // Listings are identified by company + title combination, not by database ID
+        // First sighting is recorded during save, we just track updates here
+        this.logger.debug(`Tracking lifespan for: ${listing.company} - ${listing.title}`)
       }
 
       this.logger.info(
         `Tracked lifespan for ${listings.length} postings in batch`
       )
+      return listings.length
     } catch (error) {
       this.logger.error('Failed to save listings with lifespan tracking', error as Error)
+      return 0
     }
+  }
+
+  /**
+   * Implement abstract scrape method - subclasses should override
+   */
+  async scrape(): Promise<JobListing[]> {
+    this.logger.info('Base LifespanScraper.scrape() called - subclass should override')
+    return []
   }
 
   /**

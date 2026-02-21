@@ -136,8 +136,7 @@ export async function getRoleFamilyStatsForBoard(jobBoardId: number): Promise<
  * Find duplicate or similar job postings
  */
 export async function findSimilarPostings(
-  jobPostingId: number,
-  threshold: number = 0.8
+  jobPostingId: number
 ): Promise<any[]> {
   try {
     // Get the source posting

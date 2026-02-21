@@ -369,7 +369,7 @@ export async function getRepostStatsForBoard(
       postingsWithReposts,
       totalRepostEvents: totalReposts,
       averageRepostsPerPosting:
-        postings.length > 0 ? (totalReposts / postings.length).toFixed(2) : '0',
+        postings.length > 0 ? parseFloat((totalReposts / postings.length).toFixed(2)) : 0,
       repostPercentage:
         postings.length > 0
           ? Math.round((postingsWithReposts / postings.length) * 100)

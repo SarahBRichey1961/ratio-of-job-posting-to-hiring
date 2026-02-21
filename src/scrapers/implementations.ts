@@ -1,5 +1,5 @@
 import { BaseScraper, JobListing } from '@/lib/logging/baseScraper'
-import { Logger, LogLevel } from './logger'
+import { Logger, LogLevel } from '@/lib/logging/logger'
 
 /**
  * Example scraper for Indeed.com
