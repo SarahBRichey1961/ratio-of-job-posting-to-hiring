@@ -155,8 +155,13 @@ export async function getRoleScores(): Promise<RoleScore[]> {
       const median = scores[Math.floor(scores.length / 2)]
 
       const boardArray = Array.from(data.boards.values())
-      const best = boardArray.sort((a, b) => b.score - a.score)[0]
-      const worst = boardArray.sort((a, b) => a.score - b.score)[0]
+      const best: { id: number; name: string; score: number } | undefined = boardArray
+        .sort((a, b) => b.score - a.score)[0]
+      const worst: { id: number; name: string; score: number } | undefined = boardArray
+        .sort((a, b) => a.score - b.score)[0]
+
+      // Provide defaults if no boards found
+      const defaultBoard = { id: 0, name: 'Unknown', score: 0 }
 
       return {
         roleFamily: role,
@@ -166,8 +171,8 @@ export async function getRoleScores(): Promise<RoleScore[]> {
         minScore: scores[0],
         maxScore: scores[scores.length - 1],
         jobCount: data.jobCount,
-        bestBoard: best,
-        worstBoard: worst,
+        bestBoard: best || defaultBoard,
+        worstBoard: worst || defaultBoard,
         trend: 0, // Would calculate from history
       }
     })
