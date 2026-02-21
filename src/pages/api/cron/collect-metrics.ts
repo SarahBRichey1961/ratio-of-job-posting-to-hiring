@@ -99,8 +99,6 @@ export async function GET(request: NextRequest) {
           board_name: metrics.boardName,
           total_postings: metrics.totalPostings,
           avg_lifespan_days: metrics.avgLifespanDays,
-          response_rate: metrics.responseRate || null,
-          acceptance_rate: metrics.acceptanceRate || null,
           data_source: metrics.dataSource,
           collected_date: metrics.collectDate,
         }
