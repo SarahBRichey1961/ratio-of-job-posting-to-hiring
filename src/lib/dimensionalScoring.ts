@@ -252,7 +252,10 @@ export async function getIndustryScores(): Promise<IndustryScore[]> {
       .map(([industry, data]) => {
         const avg =
           data.scores.length > 0 ? data.scores.reduce((a: number, b: number) => a + b, 0) / data.scores.length : 0
-        const topRole = Object.entries(data.roles).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A'
+        const roleEntries = Object.entries(data.roles) as [string, number][]
+        const topRole = roleEntries.length > 0
+          ? roleEntries.sort((a: [string, number], b: [string, number]) => b[1] - a[1])[0]?.[0]
+          : 'N/A'
 
         return {
           industry,
