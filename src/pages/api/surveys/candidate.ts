@@ -185,7 +185,7 @@ export default async function handler(
         submitted_at: new Date(submittedAt).toISOString(),
         // created_at is set by database DEFAULT NOW()
       },
-    ]);
+    ]).select();
 
     if (error) {
       console.error('Survey insertion error:', error);
@@ -200,13 +200,14 @@ export default async function handler(
       });
     }
 
+    const surveyData = data as Array<{ id: string; candidate_email: string; job_title: string; created_at: string }>
     return res.status(200).json({
       success: true,
       data: {
-        id: data[0].id,
-        candidate_email: data[0].candidate_email,
-        job_title: data[0].job_title,
-        created_at: data[0].created_at,
+        id: surveyData[0].id,
+        candidate_email: surveyData[0].candidate_email,
+        job_title: surveyData[0].job_title,
+        created_at: surveyData[0].created_at,
       },
     });
   } catch (err) {
