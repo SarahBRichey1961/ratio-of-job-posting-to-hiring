@@ -307,13 +307,19 @@ export async function getBestBoardsForRole(roleFamily: string): Promise<RolePerB
 
     // Get board names and scores
     const { data: boards } = await supabase.from('job_boards').select('id, name')
-    const boardMap = new Map(boards?.map((b) => [b.id, b.name]) || [])
+    const boardMap = new Map<number, string>()
+    ;(boards || []).forEach((b) => {
+      boardMap.set(b.id, b.name)
+    })
 
     const { data: scores } = await supabase
       .from('efficiency_scores')
       .select('job_board_id, overall_score')
 
-    const scoreMap = new Map(scores?.map((s) => [s.job_board_id, s.overall_score || 50]) || [])
+    const scoreMap = new Map<number, number>()
+    ;(scores || []).forEach((s) => {
+      scoreMap.set(s.job_board_id, s.overall_score || 50)
+    })
 
     // Group by board
     const byBoard: Record<number, any> = {}
@@ -340,7 +346,7 @@ export async function getBestBoardsForRole(roleFamily: string): Promise<RolePerB
 
       return {
         boardId: Number(boardId),
-        boardName: (boardMap.get(Number(boardId)) || 'Unknown') as string,
+        boardName: boardMap.get(Number(boardId)) || 'Unknown',
         roleFamily,
         jobCount: data.count,
         avgLifespan: Math.round(avgLifespan),
