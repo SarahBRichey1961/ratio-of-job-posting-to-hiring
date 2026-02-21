@@ -279,7 +279,10 @@ export async function getLifespanByRoleFamily(
 
     // Get board names for most common board
     const { data: boards } = await supabase.from('job_boards').select('id, name')
-    const boardMap = new Map(boards?.map((b) => [b.id, b.name]) || [])
+    const boardMap = new Map<number, string>()
+    ;(boards || []).forEach((b) => {
+      boardMap.set(b.id, b.name)
+    })
 
     // Calculate metrics for each role family
     const results: RoleFamilyLifespan[] = Object.entries(grouped).map(
@@ -295,8 +298,8 @@ export async function getLifespanByRoleFamily(
         const medianLifespan = lifespans[medianIndex]
 
         // Find most common board
-        const boardIds = Array.from(data.boards)
-        const mostCommonBoard = boardMap.get(boardIds[0]) || 'Unknown'
+        const boardIds = Array.from(data.boards) as number[]
+        const mostCommonBoard = (boardMap.get(boardIds[0]) || 'Unknown') as string
 
         return {
           roleFamily: role,

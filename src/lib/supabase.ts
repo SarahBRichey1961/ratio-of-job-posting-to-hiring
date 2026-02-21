@@ -21,4 +21,7 @@ export const supabase = {
   from(table: string) {
     return getSupabase()?.from(table)
   },
+  rpc(name: string, params?: any) {
+    return getSupabase()?.rpc(name, params)
+  },
 }
