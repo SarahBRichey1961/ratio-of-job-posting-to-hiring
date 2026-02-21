@@ -78,7 +78,7 @@ export interface RoleRecommendation {
 /**
  * Categorize board by industry
  */
-function getBoardIndustry(boardId: number, boardName: string): string {
+function getBoardIndustry(boardName: string): string {
   const name = boardName.toLowerCase()
 
   if (TECH_BOARDS.some((b) => name.includes(b))) return 'Tech'
@@ -222,7 +222,7 @@ export async function getIndustryScores(): Promise<IndustryScore[]> {
     }
 
     ;(boards || []).forEach((board) => {
-      const industry = getBoardIndustry(board.id, board.name)
+      const industry = getBoardIndustry(board.name)
       const score = scoreMap.get(board.id) || 0
       const jobsForBoard = postingsByBoard.get(board.id) || []
 
