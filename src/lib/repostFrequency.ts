@@ -235,10 +235,10 @@ export async function getRepostFrequencyByRoleFamily(
         const avgReposts = totalReposts / totalPostings
 
         // Find worst board
-        const boardEntries = Array.from(data.boards.entries())
+        const boardEntries = Array.from(data.boards.entries()) as [string, number][]
         const worstBoard =
           boardEntries.length > 0
-            ? boardEntries.sort((a, b) => b[1] - a[1])[0][0]
+            ? boardEntries.sort((a: [string, number], b: [string, number]) => b[1] - a[1])[0][0]
             : 'Unknown'
 
         return {
