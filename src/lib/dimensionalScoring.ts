@@ -340,7 +340,7 @@ export async function getBestBoardsForRole(roleFamily: string): Promise<RolePerB
 
       return {
         boardId: Number(boardId),
-        boardName: boardMap.get(Number(boardId)) || 'Unknown',
+        boardName: (boardMap.get(Number(boardId)) || 'Unknown') as string,
         roleFamily,
         jobCount: data.count,
         avgLifespan: Math.round(avgLifespan),
@@ -348,7 +348,7 @@ export async function getBestBoardsForRole(roleFamily: string): Promise<RolePerB
         score,
         grade,
       }
-    })
+    }) as RolePerBoardScore[]
 
     return results.sort((a, b) => b.score - a.score)
   } catch (error) {
