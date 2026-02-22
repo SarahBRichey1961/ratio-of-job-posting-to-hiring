@@ -256,7 +256,7 @@ export default function ComparisonPage() {
       trend: 'stable',
       trendValue: 1.2,
       dataQuality: 89,
-      affiliateUrl: 'https://www.flexjobs.com',
+      affiliateUrl: 'https://www.flexjobs.com/14079534',
     },
     {
       name: 'AngelList',
