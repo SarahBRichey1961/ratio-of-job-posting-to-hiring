@@ -21,6 +21,7 @@ interface ComparisonRow {
   trend: 'up' | 'down' | 'stable'
   trendValue: number
   dataQuality: number
+  affiliateUrl: string
 }
 
 export default function ComparisonPage() {
@@ -45,6 +46,7 @@ export default function ComparisonPage() {
       trend: 'up',
       trendValue: 5.2,
       dataQuality: 97,
+      affiliateUrl: 'https://stackoverflow.com/jobs',
     },
     {
       name: 'LinkedIn Jobs',
@@ -58,6 +60,7 @@ export default function ComparisonPage() {
       trend: 'up',
       trendValue: 3.1,
       dataQuality: 95,
+      affiliateUrl: 'https://www.linkedin.com/jobs',
     },
     {
       name: 'GitHub Jobs',
@@ -71,6 +74,7 @@ export default function ComparisonPage() {
       trend: 'up',
       trendValue: 2.8,
       dataQuality: 96,
+      affiliateUrl: 'https://github.com/jobs',
     },
     {
       name: 'HackerNews',
@@ -84,6 +88,7 @@ export default function ComparisonPage() {
       trend: 'up',
       trendValue: 3.5,
       dataQuality: 94,
+      affiliateUrl: 'https://news.ycombinator.com/jobs',
     },
     {
       name: 'We Work Remotely',
@@ -97,6 +102,7 @@ export default function ComparisonPage() {
       trend: 'up',
       trendValue: 4.2,
       dataQuality: 90,
+      affiliateUrl: 'https://www.weworkremotely.com',
     },
     {
       name: 'Indeed',
@@ -110,6 +116,7 @@ export default function ComparisonPage() {
       trend: 'down',
       trendValue: -2.3,
       dataQuality: 88,
+      affiliateUrl: 'https://www.indeed.com/jobs',
     },
     {
       name: 'Glassdoor',
@@ -123,6 +130,7 @@ export default function ComparisonPage() {
       trend: 'stable',
       trendValue: 0.1,
       dataQuality: 82,
+      affiliateUrl: 'https://www.glassdoor.com/Job/index.htm',
     },
     {
       name: 'Built In',
@@ -136,6 +144,7 @@ export default function ComparisonPage() {
       trend: 'up',
       trendValue: 2.5,
       dataQuality: 85,
+      affiliateUrl: 'https://builtin.com/jobs',
     },
     {
       name: 'Remote Tech Jobs',
@@ -149,6 +158,7 @@ export default function ComparisonPage() {
       trend: 'up',
       trendValue: 3.2,
       dataQuality: 80,
+      affiliateUrl: 'https://www.remotetechjobs.com',
     },
     {
       name: 'ZipRecruiter',
@@ -162,6 +172,7 @@ export default function ComparisonPage() {
       trend: 'down',
       trendValue: -1.8,
       dataQuality: 76,
+      affiliateUrl: 'https://www.ziprecruiter.com/Jobs',
     },
     {
       name: 'Remotive',
@@ -175,6 +186,7 @@ export default function ComparisonPage() {
       trend: 'stable',
       trendValue: 0.5,
       dataQuality: 87,
+      affiliateUrl: 'https://remotive.com',
     },
     {
       name: 'RemoteOK',
@@ -188,6 +200,7 @@ export default function ComparisonPage() {
       trend: 'up',
       trendValue: 2.1,
       dataQuality: 80,
+      affiliateUrl: 'https://remoteok.com',
     },
     {
       name: 'The Muse',
@@ -201,6 +214,7 @@ export default function ComparisonPage() {
       trend: 'stable',
       trendValue: -0.3,
       dataQuality: 78,
+      affiliateUrl: 'https://www.themuse.com/jobs',
     },
     {
       name: 'CareerBuilder',
@@ -214,6 +228,7 @@ export default function ComparisonPage() {
       trend: 'down',
       trendValue: -3.2,
       dataQuality: 74,
+      affiliateUrl: 'https://www.careerbuilder.com',
     },
     {
       name: 'Hired',
@@ -227,6 +242,7 @@ export default function ComparisonPage() {
       trend: 'stable',
       trendValue: 0.8,
       dataQuality: 92,
+      affiliateUrl: 'https://hired.com',
     },
     {
       name: 'FlexJobs',
@@ -240,6 +256,7 @@ export default function ComparisonPage() {
       trend: 'stable',
       trendValue: 1.2,
       dataQuality: 89,
+      affiliateUrl: 'https://www.flexjobs.com',
     },
     {
       name: 'AngelList',
@@ -253,6 +270,7 @@ export default function ComparisonPage() {
       trend: 'down',
       trendValue: -2.5,
       dataQuality: 81,
+      affiliateUrl: 'https://www.angellist.com',
     },
     {
       name: 'WellFound',
@@ -266,6 +284,7 @@ export default function ComparisonPage() {
       trend: 'up',
       trendValue: 1.8,
       dataQuality: 79,
+      affiliateUrl: 'https://wellfound.com',
     },
     {
       name: 'Remote.co',
@@ -279,6 +298,7 @@ export default function ComparisonPage() {
       trend: 'down',
       trendValue: -1.9,
       dataQuality: 72,
+      affiliateUrl: 'https://remote.co/remote-jobs',
     },
     {
       name: 'Dribbble Jobs',
@@ -292,6 +312,7 @@ export default function ComparisonPage() {
       trend: 'stable',
       trendValue: 0.3,
       dataQuality: 70,
+      affiliateUrl: 'https://dribbble.com/jobs',
     },
     {
       name: 'Idealist.org',
@@ -305,6 +326,7 @@ export default function ComparisonPage() {
       trend: 'down',
       trendValue: -2.1,
       dataQuality: 65,
+      affiliateUrl: 'https://www.idealist.org/en/jobs',
     },
     {
       name: 'Virtual Vocations',
@@ -318,6 +340,7 @@ export default function ComparisonPage() {
       trend: 'down',
       trendValue: -0.8,
       dataQuality: 61,
+      affiliateUrl: 'https://www.virtualvocations.com',
     },
     {
       name: 'Crunchboard',
@@ -331,6 +354,7 @@ export default function ComparisonPage() {
       trend: 'down',
       trendValue: -3.4,
       dataQuality: 58,
+      affiliateUrl: 'https://crunchboard.com',
     },
     {
       name: 'Dice',
@@ -344,6 +368,7 @@ export default function ComparisonPage() {
       trend: 'down',
       trendValue: -4.2,
       dataQuality: 54,
+      affiliateUrl: 'https://www.dice.com',
     },
     {
       name: 'ProBlogger',
@@ -357,6 +382,7 @@ export default function ComparisonPage() {
       trend: 'down',
       trendValue: -1.6,
       dataQuality: 51,
+      affiliateUrl: 'https://problogger.com/jobs',
     },
     {
       name: 'Design Observer',
@@ -370,6 +396,7 @@ export default function ComparisonPage() {
       trend: 'stable',
       trendValue: -0.2,
       dataQuality: 49,
+      affiliateUrl: 'https://designobserver.com/jobs',
     },
     {
       name: 'Blind',
@@ -383,6 +410,7 @@ export default function ComparisonPage() {
       trend: 'up',
       trendValue: 1.3,
       dataQuality: 45,
+      affiliateUrl: 'https://www.teamblind.com/jobs',
     },
     {
       name: 'Data Jobs',
@@ -396,6 +424,7 @@ export default function ComparisonPage() {
       trend: 'stable',
       trendValue: -0.4,
       dataQuality: 52,
+      affiliateUrl: 'https://datajobs.com',
     },
     {
       name: 'Geekwork',
@@ -409,6 +438,7 @@ export default function ComparisonPage() {
       trend: 'down',
       trendValue: -1.2,
       dataQuality: 48,
+      affiliateUrl: 'https://www.geekwork.com',
     },
     {
       name: 'iCrunchData',
@@ -422,6 +452,7 @@ export default function ComparisonPage() {
       trend: 'down',
       trendValue: -0.8,
       dataQuality: 46,
+      affiliateUrl: 'https://www.icrunchdata.com',
     },
     {
       name: 'EnvironmentalCareer.com',
@@ -435,6 +466,7 @@ export default function ComparisonPage() {
       trend: 'down',
       trendValue: -0.9,
       dataQuality: 43,
+      affiliateUrl: 'https://www.environmentalcareer.com',
     },
     {
       name: 'Monster',
@@ -448,6 +480,7 @@ export default function ComparisonPage() {
       trend: 'down',
       trendValue: -5.1,
       dataQuality: 38,
+      affiliateUrl: 'https://www.monster.com/jobs',
     },
     {
       name: 'Mediabistro',
@@ -461,6 +494,7 @@ export default function ComparisonPage() {
       trend: 'down',
       trendValue: -2.3,
       dataQuality: 40,
+      affiliateUrl: 'https://jobs.mediabistro.com',
     },
     {
       name: 'Reddit /r/sysadminjobs',
@@ -474,6 +508,7 @@ export default function ComparisonPage() {
       trend: 'down',
       trendValue: -1.5,
       dataQuality: 35,
+      affiliateUrl: 'https://www.reddit.com/r/sysadminjobs',
     },
     {
       name: 'CraigsList',
@@ -487,6 +522,7 @@ export default function ComparisonPage() {
       trend: 'down',
       trendValue: -6.8,
       dataQuality: 32,
+      affiliateUrl: 'https://craigslist.org/search/jjj',
     },
     {
       name: 'Microsoft',
@@ -500,6 +536,7 @@ export default function ComparisonPage() {
       trend: 'stable',
       trendValue: 0.2,
       dataQuality: 88,
+      affiliateUrl: 'https://careers.microsoft.com',
     },
   ]
 
@@ -616,6 +653,7 @@ export default function ComparisonPage() {
                 <th className="text-center py-3 px-4 text-gray-200">Lifespan</th>
                 <th className="text-center py-3 px-4 text-gray-200">Reposts</th>
                 <th className="text-center py-3 px-4 text-gray-200">Quality</th>
+                <th className="text-center py-3 px-4 text-gray-200">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -627,6 +665,16 @@ export default function ComparisonPage() {
                   <td className="text-center py-4 px-4 text-gray-400">{b.avgLifespan}d</td>
                   <td className="text-center py-4 px-4 text-gray-400">{b.repostRate}%</td>
                   <td className="text-center py-4 px-4 text-green-400">{b.dataQuality}%</td>
+                  <td className="text-center py-4 px-4">
+                    <a
+                      href={b.affiliateUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition"
+                    >
+                      Visit
+                    </a>
+                  </td>
                 </tr>
               ))}
             </tbody>
