@@ -28,6 +28,7 @@ export default function ComparisonPage() {
   )
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [minScore, setMinScore] = useState(0)
+  const [selectedRole, setSelectedRole] = useState<string>('All Roles')
 
   const boards: ComparisonRow[] = [
     {
@@ -465,7 +466,11 @@ export default function ComparisonPage() {
   ]
 
   const filtered = useMemo(() => {
-    let result = boards.filter((b) => b.score >= minScore)
+    let result = boards.filter((b) => {
+      const scoreMatch = b.score >= minScore
+      const roleMatch = selectedRole === 'All Roles' || b.topRole === selectedRole
+      return scoreMatch && roleMatch
+    })
     result.sort((a, b) => {
       let aVal: any = 0,
         bVal: any = 0
@@ -497,11 +502,50 @@ export default function ComparisonPage() {
       return sortOrder === 'asc' ? aVal - bVal : bVal - aVal
     })
     return result
-  }, [sortBy, sortOrder, minScore])
+  }, [sortBy, sortOrder, minScore, selectedRole])
+
+  // Extract unique roles
+  const uniqueRoles = useMemo(() => {
+    const roles = boards.map((b) => b.topRole)
+    return ['All Roles', ...Array.from(new Set(roles))].sort()
+  }, [])
 
   return (
     <DashboardLayout>
       <PageHeader title="Board Comparison" description="Compare efficiency scores across all job boards" />
+      
+      {/* Filters */}
+      <Section title="Filters">
+        <div className="flex gap-4 mb-6 flex-wrap">
+          <div>
+            <label className="block text-sm text-gray-400 mb-2">Filter by Job Role</label>
+            <select
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+              className="px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white hover:border-gray-600"
+            >
+              {uniqueRoles.map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-gray-400 mb-2">Minimum Score</label>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={minScore}
+              onChange={(e) => setMinScore(Number(e.target.value))}
+              className="w-48"
+            />
+            <span className="ml-2 text-gray-300">{minScore}+</span>
+          </div>
+        </div>
+      </Section>
+
       <Section title="Board Rankings">
         <div className="overflow-x-auto">
           <table className="w-full">
