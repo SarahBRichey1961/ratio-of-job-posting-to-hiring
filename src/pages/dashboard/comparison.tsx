@@ -17,6 +17,7 @@ interface ComparisonRow {
   repostRate: number
   totalPostings: number
   topRole: string
+  industry: 'Tech' | 'General' | 'Remote' | 'Niche'
   trend: 'up' | 'down' | 'stable'
   trendValue: number
   dataQuality: number
@@ -29,6 +30,7 @@ export default function ComparisonPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [minScore, setMinScore] = useState(0)
   const [selectedRole, setSelectedRole] = useState<string>('All Roles')
+  const [selectedIndustry, setSelectedIndustry] = useState<string>('All Industries')
 
   const boards: ComparisonRow[] = [
     {
@@ -38,6 +40,7 @@ export default function ComparisonPage() {
       avgLifespan: 12,
       repostRate: 3,
       totalPostings: 2456,
+      industry: 'Tech',
       topRole: 'Software Engineer',
       trend: 'up',
       trendValue: 5.2,
@@ -50,6 +53,7 @@ export default function ComparisonPage() {
       avgLifespan: 14,
       repostRate: 5,
       totalPostings: 5432,
+      industry: 'General',
       topRole: 'Product Manager',
       trend: 'up',
       trendValue: 3.1,
@@ -62,6 +66,7 @@ export default function ComparisonPage() {
       avgLifespan: 13,
       repostRate: 4,
       totalPostings: 1834,
+      industry: 'Tech',
       topRole: 'Software Engineer',
       trend: 'up',
       trendValue: 2.8,
@@ -74,6 +79,7 @@ export default function ComparisonPage() {
       avgLifespan: 11,
       repostRate: 2,
       totalPostings: 1245,
+      industry: 'Tech',
       topRole: 'Software Engineer',
       trend: 'up',
       trendValue: 3.5,
@@ -86,6 +92,7 @@ export default function ComparisonPage() {
       avgLifespan: 15,
       repostRate: 6,
       totalPostings: 1567,
+      industry: 'Remote',
       topRole: 'Product Manager',
       trend: 'up',
       trendValue: 4.2,
@@ -98,6 +105,7 @@ export default function ComparisonPage() {
       avgLifespan: 18,
       repostRate: 12,
       totalPostings: 3200,
+      industry: 'General',
       topRole: 'Software Engineer',
       trend: 'down',
       trendValue: -2.3,
@@ -110,6 +118,7 @@ export default function ComparisonPage() {
       avgLifespan: 20,
       repostRate: 14,
       totalPostings: 2890,
+      industry: 'General',
       topRole: 'Software Engineer',
       trend: 'stable',
       trendValue: 0.1,
@@ -122,6 +131,7 @@ export default function ComparisonPage() {
       avgLifespan: 16,
       repostRate: 7,
       totalPostings: 1200,
+      industry: 'Tech',
       topRole: 'Software Engineer',
       trend: 'up',
       trendValue: 2.5,
@@ -134,6 +144,7 @@ export default function ComparisonPage() {
       avgLifespan: 17,
       repostRate: 8,
       totalPostings: 567,
+      industry: 'Remote',
       topRole: 'Software Engineer',
       trend: 'up',
       trendValue: 3.2,
@@ -146,6 +157,7 @@ export default function ComparisonPage() {
       avgLifespan: 22,
       repostRate: 18,
       totalPostings: 3100,
+      industry: 'General',
       topRole: 'Sales',
       trend: 'down',
       trendValue: -1.8,
@@ -158,6 +170,7 @@ export default function ComparisonPage() {
       avgLifespan: 16,
       repostRate: 8,
       totalPostings: 1034,
+      industry: 'Remote',
       topRole: 'Customer Support',
       trend: 'stable',
       trendValue: 0.5,
@@ -170,6 +183,7 @@ export default function ComparisonPage() {
       avgLifespan: 17,
       repostRate: 9,
       totalPostings: 892,
+      industry: 'Remote',
       topRole: 'Software Engineer',
       trend: 'up',
       trendValue: 2.1,
@@ -182,6 +196,7 @@ export default function ComparisonPage() {
       avgLifespan: 19,
       repostRate: 11,
       totalPostings: 756,
+      industry: 'General',
       topRole: 'Product Manager',
       trend: 'stable',
       trendValue: -0.3,
@@ -194,6 +209,7 @@ export default function ComparisonPage() {
       avgLifespan: 24,
       repostRate: 16,
       totalPostings: 2345,
+      industry: 'General',
       topRole: 'Sales',
       trend: 'down',
       trendValue: -3.2,
@@ -206,6 +222,7 @@ export default function ComparisonPage() {
       avgLifespan: 14,
       repostRate: 7,
       totalPostings: 567,
+      industry: 'Tech',
       topRole: 'Software Engineer',
       trend: 'stable',
       trendValue: 0.8,
@@ -218,6 +235,7 @@ export default function ComparisonPage() {
       avgLifespan: 18,
       repostRate: 5,
       totalPostings: 423,
+      industry: 'Remote',
       topRole: 'Virtual Assistant',
       trend: 'stable',
       trendValue: 1.2,
@@ -230,6 +248,7 @@ export default function ComparisonPage() {
       avgLifespan: 12,
       repostRate: 4,
       totalPostings: 234,
+      industry: 'Tech',
       topRole: 'Software Engineer',
       trend: 'down',
       trendValue: -2.5,
@@ -242,6 +261,7 @@ export default function ComparisonPage() {
       avgLifespan: 14,
       repostRate: 6,
       totalPostings: 456,
+      industry: 'Tech',
       topRole: 'Software Engineer',
       trend: 'up',
       trendValue: 1.8,
@@ -254,6 +274,7 @@ export default function ComparisonPage() {
       avgLifespan: 21,
       repostRate: 13,
       totalPostings: 345,
+      industry: 'Remote',
       topRole: 'Software Engineer',
       trend: 'down',
       trendValue: -1.9,
@@ -266,6 +287,7 @@ export default function ComparisonPage() {
       avgLifespan: 16,
       repostRate: 10,
       totalPostings: 234,
+      industry: 'Tech',
       topRole: 'UI Designer',
       trend: 'stable',
       trendValue: 0.3,
@@ -278,6 +300,7 @@ export default function ComparisonPage() {
       avgLifespan: 26,
       repostRate: 19,
       totalPostings: 567,
+      industry: 'Niche',
       topRole: 'Program Manager',
       trend: 'down',
       trendValue: -2.1,
@@ -290,6 +313,7 @@ export default function ComparisonPage() {
       avgLifespan: 23,
       repostRate: 15,
       totalPostings: 289,
+      industry: 'Remote',
       topRole: 'Virtual Assistant',
       trend: 'down',
       trendValue: -0.8,
@@ -302,6 +326,7 @@ export default function ComparisonPage() {
       avgLifespan: 20,
       repostRate: 22,
       totalPostings: 189,
+      industry: 'Tech',
       topRole: 'Software Engineer',
       trend: 'down',
       trendValue: -3.4,
@@ -314,6 +339,7 @@ export default function ComparisonPage() {
       avgLifespan: 25,
       repostRate: 24,
       totalPostings: 1234,
+      industry: 'Tech',
       topRole: 'Software Engineer',
       trend: 'down',
       trendValue: -4.2,
@@ -326,6 +352,7 @@ export default function ComparisonPage() {
       avgLifespan: 19,
       repostRate: 17,
       totalPostings: 145,
+      industry: 'Niche',
       topRole: 'Content Writer',
       trend: 'down',
       trendValue: -1.6,
@@ -338,6 +365,7 @@ export default function ComparisonPage() {
       avgLifespan: 18,
       repostRate: 12,
       totalPostings: 89,
+      industry: 'Niche',
       topRole: 'Designer',
       trend: 'stable',
       trendValue: -0.2,
@@ -350,6 +378,7 @@ export default function ComparisonPage() {
       avgLifespan: 8,
       repostRate: 4,
       totalPostings: 67,
+      industry: 'Tech',
       topRole: 'Software Engineer',
       trend: 'up',
       trendValue: 1.3,
@@ -362,6 +391,7 @@ export default function ComparisonPage() {
       avgLifespan: 21,
       repostRate: 16,
       totalPostings: 234,
+      industry: 'Niche',
       topRole: 'Data Scientist',
       trend: 'stable',
       trendValue: -0.4,
@@ -374,6 +404,7 @@ export default function ComparisonPage() {
       avgLifespan: 19,
       repostRate: 14,
       totalPostings: 123,
+      industry: 'Tech',
       topRole: 'Software Engineer',
       trend: 'down',
       trendValue: -1.2,
@@ -386,6 +417,7 @@ export default function ComparisonPage() {
       avgLifespan: 20,
       repostRate: 15,
       totalPostings: 89,
+      industry: 'Niche',
       topRole: 'Data Scientist',
       trend: 'down',
       trendValue: -0.8,
@@ -398,6 +430,7 @@ export default function ComparisonPage() {
       avgLifespan: 22,
       repostRate: 18,
       totalPostings: 123,
+      industry: 'Niche',
       topRole: 'Environmental Officer',
       trend: 'down',
       trendValue: -0.9,
@@ -410,6 +443,7 @@ export default function ComparisonPage() {
       avgLifespan: 28,
       repostRate: 26,
       totalPostings: 4567,
+      industry: 'General',
       topRole: 'Sales',
       trend: 'down',
       trendValue: -5.1,
@@ -422,6 +456,7 @@ export default function ComparisonPage() {
       avgLifespan: 24,
       repostRate: 20,
       totalPostings: 156,
+      industry: 'Niche',
       topRole: 'Journalist',
       trend: 'down',
       trendValue: -2.3,
@@ -434,6 +469,7 @@ export default function ComparisonPage() {
       avgLifespan: 25,
       repostRate: 28,
       totalPostings: 78,
+      industry: 'Tech',
       topRole: 'System Admin',
       trend: 'down',
       trendValue: -1.5,
@@ -446,6 +482,7 @@ export default function ComparisonPage() {
       avgLifespan: 30,
       repostRate: 35,
       totalPostings: 5234,
+      industry: 'General',
       topRole: 'General Labor',
       trend: 'down',
       trendValue: -6.8,
@@ -458,6 +495,7 @@ export default function ComparisonPage() {
       avgLifespan: 35,
       repostRate: 22,
       totalPostings: 25000,
+      industry: 'Tech',
       topRole: 'Software Engineer',
       trend: 'stable',
       trendValue: 0.2,
@@ -469,7 +507,8 @@ export default function ComparisonPage() {
     let result = boards.filter((b) => {
       const scoreMatch = b.score >= minScore
       const roleMatch = selectedRole === 'All Roles' || b.topRole === selectedRole
-      return scoreMatch && roleMatch
+      const industryMatch = selectedIndustry === 'All Industries' || b.industry === selectedIndustry
+      return scoreMatch && roleMatch && industryMatch
     })
     result.sort((a, b) => {
       let aVal: any = 0,
@@ -502,12 +541,18 @@ export default function ComparisonPage() {
       return sortOrder === 'asc' ? aVal - bVal : bVal - aVal
     })
     return result
-  }, [sortBy, sortOrder, minScore, selectedRole])
+  }, [sortBy, sortOrder, minScore, selectedRole, selectedIndustry])
 
   // Extract unique roles
   const uniqueRoles = useMemo(() => {
     const roles = boards.map((b) => b.topRole)
     return ['All Roles', ...Array.from(new Set(roles))].sort()
+  }, [])
+
+  // Extract unique industries
+  const uniqueIndustries = useMemo(() => {
+    const industries = boards.map((b) => b.industry)
+    return ['All Industries', ...Array.from(new Set(industries))].sort()
   }, [])
 
   return (
@@ -517,6 +562,20 @@ export default function ComparisonPage() {
       {/* Filters */}
       <Section title="Filters">
         <div className="flex gap-4 mb-6 flex-wrap">
+          <div>
+            <label className="block text-sm text-gray-400 mb-2">Filter by Industry</label>
+            <select
+              value={selectedIndustry}
+              onChange={(e) => setSelectedIndustry(e.target.value)}
+              className="px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white hover:border-gray-600"
+            >
+              {uniqueIndustries.map((industry) => (
+                <option key={industry} value={industry}>
+                  {industry}
+                </option>
+              ))}
+            </select>
+          </div>
           <div>
             <label className="block text-sm text-gray-400 mb-2">Filter by Job Role</label>
             <select
