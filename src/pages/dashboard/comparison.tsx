@@ -698,6 +698,20 @@ export default function ComparisonPage() {
               Get Started
             </a>
           </div>
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 hover:border-blue-600 transition">
+            <h3 className="text-lg font-semibold text-white mb-2">FlexJobs</h3>
+            <p className="text-gray-400 text-sm mb-4">
+              Hand-screened remote, part-time, and flexible job listings. Skip the scams and apply directly to verified employers with flexible work options.
+            </p>
+            <a
+              href="https://www.flexjobs.com/14079534"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition"
+            >
+              Get Started
+            </a>
+          </div>
         </div>
       </Section>
     </DashboardLayout>
