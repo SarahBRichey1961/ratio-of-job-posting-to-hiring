@@ -59,17 +59,6 @@ export default function InsightsPage() {
     const mockData: InsightsData = {
       risingBoards: [
         {
-          name: 'Stack Overflow',
-          score: 88,
-          grade: 'A+',
-          trend: 'up',
-          trendValue: 5.2,
-          lifespan: 12,
-          repostRate: 3,
-          totalPostings: 2456,
-          dataQuality: 97,
-        },
-        {
           name: 'LinkedIn',
           score: 85,
           grade: 'A',
@@ -79,6 +68,17 @@ export default function InsightsPage() {
           repostRate: 5,
           totalPostings: 5432,
           dataQuality: 95,
+        },
+        {
+          name: 'GitHub Jobs',
+          score: 84,
+          grade: 'A',
+          trend: 'up',
+          trendValue: 2.8,
+          lifespan: 13,
+          repostRate: 4,
+          totalPostings: 1834,
+          dataQuality: 96,
         },
       ],
       decliningBoards: [
