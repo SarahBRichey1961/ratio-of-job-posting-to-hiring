@@ -681,6 +681,25 @@ export default function ComparisonPage() {
           </table>
         </div>
       </Section>
+
+      <Section title="Recommended Tools">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 hover:border-blue-600 transition">
+            <h3 className="text-lg font-semibold text-white mb-2">MyPerfectResume</h3>
+            <p className="text-gray-400 text-sm mb-4">
+              Build a professional resume with expert templates and AI-powered suggestions. Increase your chances of getting noticed by recruiters.
+            </p>
+            <a
+              href="https://myperfectresume.com/c/20681"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition"
+            >
+              Get Started
+            </a>
+          </div>
+        </div>
+      </Section>
     </DashboardLayout>
   )
 }
