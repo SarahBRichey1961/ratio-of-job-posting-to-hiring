@@ -39,13 +39,15 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, allBoards, industries,
       filtered = filtered.filter(b => b.industry === selectedIndustry)
     }
     
+    if (selectedRole) {
+      filtered = filtered.filter(b => {
+        // This will work better once roles are seeded in job_board_roles table
+        return true
+      })
+    }
+    
     setFilteredBoards(filtered)
   }, [selectedIndustry, selectedRole, allBoards])
-
-  // Bypass auth and go straight to dashboard
-  useEffect(() => {
-    router.push('/dashboard')
-  }, [router])
 
   return (
     <>
@@ -69,42 +71,58 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, allBoards, industries,
             
             {/* Filters */}
             <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Filter by Industry</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">🔍 Find Job Boards by Industry</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Industry
+                    Select Industry <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={selectedIndustry}
-                    onChange={(e) => setSelectedIndustry(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    onChange={(e) => {
+                      setSelectedIndustry(e.target.value)
+                      setSelectedRole('')
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                   >
-                    <option value="">All Industries</option>
+                    <option value="">-- All Industries ({industries.length}) --</option>
                     {industries.map((industry) => (
                       <option key={industry} value={industry}>
                         {industry}
                       </option>
                     ))}
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">Choose an industry to see relevant job boards</p>
                 </div>
+                
                 {selectedIndustry && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Role (Coming Soon)
+                      Filter by Role <span className="text-gray-400 text-xs">(optional)</span>
                     </label>
                     <select
-                      disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+                      value={selectedRole}
+                      onChange={(e) => setSelectedRole(e.target.value)}
+                      className="w-full px-4 py-2 border border-blue-300 bg-blue-50 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     >
-                      <option>Role filtering coming soon</option>
+                      <option value="">-- All Roles in {selectedIndustry} --</option>
+                      {roles.map((role) => (
+                        <option key={role} value={role}>
+                          {role}
+                        </option>
+                      ))}
                     </select>
+                    <p className="text-xs text-gray-500 mt-1">Coming soon: Role-specific boards within this industry</p>
                   </div>
                 )}
               </div>
+              
               {selectedIndustry && (
-                <div className="mt-4 text-sm text-gray-600">
-                  Showing {filteredBoards.length} job boards in {selectedIndustry}
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm font-medium text-blue-900">
+                    📊 {filteredBoards.length} {filteredBoards.length === 1 ? 'board' : 'boards'} in <strong>{selectedIndustry}</strong>
+                    {selectedRole && ` with <strong>${selectedRole}</strong> roles`}
+                  </p>
                 </div>
               )}
             </div>
