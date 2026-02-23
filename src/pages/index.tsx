@@ -1,7 +1,7 @@
 import type { GetStaticProps, NextPage } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { getSupabase } from '@/lib/supabase'
 import { CategoryGroup } from '@/components/JobBoardsDisplay'
 
@@ -10,17 +10,37 @@ interface JobBoard {
   name: string
   url: string
   category: string
+  industry: string
   description: string
 }
 
 interface HomeProps {
   jobBoardsByCategory: Record<string, JobBoard[]>
+  allBoards: JobBoard[]
+  industries: string[]
+  roles: string[]
   totalBoards: number
 }
 
-const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, totalBoards }) => {
+const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, allBoards, industries, roles, totalBoards }) => {
   const router = useRouter()
   const categories = ['general', 'tech', 'remote', 'niche']
+  
+  // Filter state
+  const [selectedIndustry, setSelectedIndustry] = useState<string>('')
+  const [selectedRole, setSelectedRole] = useState<string>('')
+  const [filteredBoards, setFilteredBoards] = useState<JobBoard[]>(allBoards)
+  
+  // Apply filters
+  useEffect(() => {
+    let filtered = allBoards
+    
+    if (selectedIndustry) {
+      filtered = filtered.filter(b => b.industry === selectedIndustry)
+    }
+    
+    setFilteredBoards(filtered)
+  }, [selectedIndustry, selectedRole, allBoards])
 
   // Bypass auth and go straight to dashboard
   useEffect(() => {
@@ -47,10 +67,52 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, totalBoards }) => {
               Analyze job board efficiency and hiring trends across {totalBoards} major US job boards
             </p>
             
+            {/* Filters */}
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Filter by Industry</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Industry
+                  </label>
+                  <select
+                    value={selectedIndustry}
+                    onChange={(e) => setSelectedIndustry(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">All Industries</option>
+                    {industries.map((industry) => (
+                      <option key={industry} value={industry}>
+                        {industry}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {selectedIndustry && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Role (Coming Soon)
+                    </label>
+                    <select
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+                    >
+                      <option>Role filtering coming soon</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+              {selectedIndustry && (
+                <div className="mt-4 text-sm text-gray-600">
+                  Showing {filteredBoards.length} job boards in {selectedIndustry}
+                </div>
+              )}
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white border border-blue-200 rounded-lg p-6">
                 <h3 className="font-semibold text-gray-900 text-lg">Job Boards Tracked</h3>
-                <p className="text-3xl font-bold text-blue-600 mt-2">{totalBoards}</p>
+                <p className="text-3xl font-bold text-blue-600 mt-2">{filteredBoards.length || totalBoards}</p>
               </div>
               <div className="bg-white border border-green-200 rounded-lg p-6">
                 <h3 className="font-semibold text-gray-900 text-lg">Efficiency Scores</h3>
@@ -65,15 +127,21 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, totalBoards }) => {
 
           {/* Job Boards by Category */}
           <div className="space-y-8">
-            {categories.map((category) => (
-              jobBoardsByCategory[category] && jobBoardsByCategory[category].length > 0 && (
-                <CategoryGroup
-                  key={category}
-                  categoryName={category}
-                  boards={jobBoardsByCategory[category]}
-                />
+            {categories.map((category) => {
+              const boardsInCategory = selectedIndustry
+                ? filteredBoards.filter(b => b.category === category)
+                : jobBoardsByCategory[category]
+              
+              return (
+                boardsInCategory && boardsInCategory.length > 0 && (
+                  <CategoryGroup
+                    key={category}
+                    categoryName={category}
+                    boards={boardsInCategory}
+                  />
+                )
               )
-            ))}
+            })}
           </div>
 
           {/* Footer Info */}
@@ -107,20 +175,42 @@ export const getStaticProps: GetStaticProps<HomeProps> = async () => {
             remote: [],
             niche: [],
           },
+          allBoards: [],
+          industries: [],
+          roles: [],
           totalBoards: 0,
         },
-        revalidate: 60, // Retry after 60 seconds
+        revalidate: 60,
       }
     }
 
-    const { data: boards, error } = await client
+    // Fetch all job boards
+    const { data: boards, error: boardsError } = await client
       .from('job_boards')
       .select('*')
-      .order('category')
+      .order('industry')
       .order('name')
 
-    if (error) throw error
+    if (boardsError) throw boardsError
 
+    // Fetch all industries
+    const uniqueIndustries = Array.from(
+      new Set((boards || []).map((b: JobBoard) => b.industry).filter(Boolean))
+    ).sort() as string[]
+
+    // Fetch roles
+    const { data: roleData, error: rolesError } = await client
+      .from('job_roles')
+      .select('name')
+      .order('name')
+
+    if (rolesError) {
+      console.warn('Could not fetch job roles:', rolesError)
+    }
+
+    const roles = (roleData || []).map((r: any) => r.name)
+
+    // Group by category
     const grouped: Record<string, JobBoard[]> = {
       general: [],
       tech: [],
@@ -137,6 +227,9 @@ export const getStaticProps: GetStaticProps<HomeProps> = async () => {
     return {
       props: {
         jobBoardsByCategory: grouped,
+        allBoards: boards || [],
+        industries: uniqueIndustries,
+        roles: roles,
         totalBoards: boards?.length || 0,
       },
       revalidate: 3600, // ISR: revalidate every hour
@@ -152,9 +245,12 @@ export const getStaticProps: GetStaticProps<HomeProps> = async () => {
           remote: [],
           niche: [],
         },
+        allBoards: [],
+        industries: [],
+        roles: [],
         totalBoards: 0,
       },
-      revalidate: 60, // Retry after 60 seconds on error
+      revalidate: 60,
     }
   }
 }
