@@ -1,6 +1,7 @@
 import type { GetServerSideProps, NextPage } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
+import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import { getSupabase } from '@/lib/supabase'
 import { CategoryGroup } from '@/components/JobBoardsDisplay'
@@ -92,6 +93,30 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, allBoards, industries,
 
       <main className="min-h-screen bg-gray-50">
         <div className="max-w-6xl mx-auto py-12 px-4">
+          {/* Navigation Menu */}
+          <nav className="mb-12 bg-white rounded-lg shadow-sm p-4">
+            <div className="flex flex-wrap gap-2 justify-center md:justify-start items-center">
+              <Link href="/" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition">
+                🏠 Home
+              </Link>
+              <Link href="/dashboard/comparison" className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg font-medium hover:bg-gray-200 transition">
+                📊 Comparison
+              </Link>
+              <Link href="/dashboard/insights" className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg font-medium hover:bg-gray-200 transition">
+                💡 Insights
+              </Link>
+              <Link href="/dashboard" className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg font-medium hover:bg-gray-200 transition">
+                📈 Dashboard
+              </Link>
+              <Link href="/dashboard/surveys" className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg font-medium hover:bg-gray-200 transition">
+                📝 Surveys
+              </Link>
+              <Link href="/dashboard/qa" className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg font-medium hover:bg-gray-200 transition">
+                ✓ QA Tools
+              </Link>
+            </div>
+          </nav>
+
           {/* Header */}
           <div className="mb-12">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -160,18 +185,27 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, allBoards, industries,
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white border border-blue-200 rounded-lg p-6">
-                <h3 className="font-semibold text-gray-900 text-lg">Job Boards Tracked</h3>
-                <p className="text-3xl font-bold text-blue-600 mt-2">{filteredBoards.length || totalBoards}</p>
-              </div>
-              <div className="bg-white border border-green-200 rounded-lg p-6">
-                <h3 className="font-semibold text-gray-900 text-lg">Efficiency Scores</h3>
-                <p className="text-gray-600 text-sm mt-2">Weighted algorithm (40% lifespan, 30% reposts, 20% employer, 10% candidate)</p>
-              </div>
-              <div className="bg-white border border-purple-200 rounded-lg p-6">
-                <h3 className="font-semibold text-gray-900 text-lg">Analytics</h3>
-                <p className="text-gray-600 text-sm mt-2">Weekly insights and trend tracking</p>
-              </div>
+              <Link href="/dashboard">
+                <div className="bg-white border border-blue-200 rounded-lg p-6 hover:shadow-lg transition cursor-pointer">
+                  <h3 className="font-semibold text-gray-900 text-lg">Job Boards Tracked</h3>
+                  <p className="text-3xl font-bold text-blue-600 mt-2">{filteredBoards.length || totalBoards}</p>
+                  <p className="text-xs text-gray-500 mt-2">View detailed board metrics →</p>
+                </div>
+              </Link>
+              <Link href="/dashboard/comparison">
+                <div className="bg-white border border-green-200 rounded-lg p-6 hover:shadow-lg transition cursor-pointer">
+                  <h3 className="font-semibold text-gray-900 text-lg">Efficiency Scores</h3>
+                  <p className="text-gray-600 text-sm mt-2">Weighted algorithm (40% lifespan, 30% reposts, 20% employer, 10% candidate)</p>
+                  <p className="text-xs text-gray-500 mt-2">Compare boards side-by-side →</p>
+                </div>
+              </Link>
+              <Link href="/dashboard/insights">
+                <div className="bg-white border border-purple-200 rounded-lg p-6 hover:shadow-lg transition cursor-pointer">
+                  <h3 className="font-semibold text-gray-900 text-lg">Analytics</h3>
+                  <p className="text-gray-600 text-sm mt-2">Weekly insights and trend tracking</p>
+                  <p className="text-xs text-gray-500 mt-2">Explore industry trends →</p>
+                </div>
+              </Link>
             </div>
 
             {/* Efficiency Scores Section */}
