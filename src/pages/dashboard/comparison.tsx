@@ -41,7 +41,7 @@ interface ComparisonProps {
   industries: string[]
 }
 
-const ComparisonPage: NextPage<ComparisonProps> = ({ boards: initialBoards, industries: industryList }) => {
+const ComparisonPage: React.FC<ComparisonProps> = ({ boards: initialBoards, industries: industryList }) => {
   const [sortBy, setSortBy] = useState<'score' | 'lifespan' | 'reposts' | 'name' | 'quality'>(
     'score'
   )
