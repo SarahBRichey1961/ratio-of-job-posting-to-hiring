@@ -1,13 +1,10 @@
 import React, { useState, useMemo } from 'react'
-import type { GetServerSideProps, NextPage } from 'next'
+import type { GetServerSideProps } from 'next'
 import { DashboardLayout } from '@/components/DashboardLayout'
 import { getSupabase } from '@/lib/supabase'
 import {
   PageHeader,
-  FilterBar,
   Button,
-  Select,
-  Card,
   Section,
 } from '@/components/DashboardUI'
 
@@ -41,28 +38,36 @@ interface ComparisonProps {
   industries: string[]
 }
 
-const ComparisonPage: React.FC<ComparisonProps> = ({ boards: initialBoards, industries: industryList }) => {
-  const [sortBy, setSortBy] = useState<'score' | 'lifespan' | 'reposts' | 'name' | 'quality'>(
-    'score'
-  )
+const ComparisonPage: React.FC<ComparisonProps> = ({
+  boards: initialBoards,
+  industries: industryList,
+}) => {
+  const [sortBy, setSortBy] = useState<
+    'score' | 'lifespan' | 'reposts' | 'name' | 'quality'
+  >('score')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [minScore, setMinScore] = useState(0)
   const [selectedRole, setSelectedRole] = useState<string>('All Roles')
-  const [selectedIndustry, setSelectedIndustry] = useState<string>('All Industries')
+  const [selectedIndustry, setSelectedIndustry] = useState<string>(
+    'All Industries'
+  )
 
-  // Use boards from props (fetched from database)
   const boards = initialBoards
 
   const filtered = useMemo(() => {
     let result = boards.filter((b) => {
       const scoreMatch = b.score >= minScore
-      const roleMatch = selectedRole === 'All Roles' || b.topRole === selectedRole
-      const industryMatch = selectedIndustry === 'All Industries' || b.industry === selectedIndustry
+      const roleMatch =
+        selectedRole === 'All Roles' || b.topRole === selectedRole
+      const industryMatch =
+        selectedIndustry === 'All Industries' || b.industry === selectedIndustry
       return scoreMatch && roleMatch && industryMatch
     })
+
     result.sort((a, b) => {
-      let aVal: any = 0,
-        bVal: any = 0
+      let aVal: any = 0
+      let bVal: any = 0
+
       switch (sortBy) {
         case 'score':
           aVal = a.score
@@ -85,61 +90,108 @@ const ComparisonPage: React.FC<ComparisonProps> = ({ boards: initialBoards, indu
           bVal = b.name.toLowerCase()
           break
       }
+
       if (typeof aVal === 'string') {
-        return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal)
+        return sortOrder === 'asc'
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal)
       }
       return sortOrder === 'asc' ? aVal - bVal : bVal - aVal
     })
+
     return result
   }, [sortBy, sortOrder, minScore, selectedRole, selectedIndustry, boards])
 
-  // Extract unique roles
   const uniqueRoles = useMemo(() => {
     const roles = boards.map((b) => b.topRole)
     return ['All Roles', ...Array.from(new Set(roles))].sort()
   }, [boards])
 
-  // Extract unique industries from props
   const uniqueIndustries = useMemo(() => {
     return ['All Industries', ...industryList].sort()
   }, [industryList])
 
+  const avgScore =
+    filtered.length > 0
+      ? (
+          filtered.reduce((sum, b) => sum + b.score, 0) / filtered.length
+        ).toFixed(1)
+      : 'N/A'
+
+  const avgQuality =
+    filtered.length > 0
+      ? (
+          filtered.reduce((sum, b) => sum + b.dataQuality, 0) /
+          filtered.length
+        ).toFixed(0)
+      : 'N/A'
+
+  const totalPostings =
+    filtered.length > 0
+      ? filtered.reduce((sum, b) => sum + b.totalPostings, 0)
+      : 0
+
   return (
     <DashboardLayout>
-      <PageHeader title="Board Comparison" description="Compare efficiency scores across all job boards" />
-      
-      {/* Filters */}
+      <PageHeader
+        title="Board Comparison"
+        description="Compare efficiency scores across all job boards"
+      />
+
       <Section title="Filters">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Sort By
+            </label>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
             >
-              <option value="score">Efficiency Score</option>
+              <option value="score">Score</option>
               <option value="lifespan">Avg Lifespan</option>
               <option value="reposts">Repost Rate</option>
               <option value="quality">Data Quality</option>
-              <option value="name">Board Name</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Order</label>
-            <select
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as any)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
-            >
-              <option value="desc">Highest First</option>
-              <option value="asc">Lowest First</option>
+              <option value="name">Name</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Min Score: {minScore}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Order
+            </label>
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
+            >
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Industry
+            </label>
+            <select
+              value={selectedIndustry}
+              onChange={(e) => setSelectedIndustry(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
+            >
+              {uniqueIndustries.map((ind) => (
+                <option key={ind} value={ind}>
+                  {ind}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Min Score
+            </label>
             <input
               type="range"
               min="0"
@@ -148,137 +200,144 @@ const ComparisonPage: React.FC<ComparisonProps> = ({ boards: initialBoards, indu
               onChange={(e) => setMinScore(parseInt(e.target.value))}
               className="w-full"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Industry</label>
-            <select
-              value={selectedIndustry}
-              onChange={(e) => setSelectedIndustry(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
-            >
-              {uniqueIndustries.map((industry) => (
-                <option key={industry} value={industry}>
-                  {industry}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-            <select
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
-            >
-              {uniqueRoles.map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </select>
+            <span className="text-sm text-gray-600">{minScore}</span>
           </div>
         </div>
       </Section>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600">{filtered.length}</div>
-            <div className="text-gray-600">Boards Shown</div>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">
-              {filtered.length > 0 ? (filtered.reduce((sum, b) => sum + b.score, 0) / filtered.length).toFixed(1) : 0}
+      <Section title="Statistics">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <div className="text-sm text-gray-600">Boards Shown</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {filtered.length}
             </div>
-            <div className="text-gray-600">Avg Score</div>
           </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-purple-600">
-              {filtered.length > 0 ? (filtered.reduce((sum, b) => sum + b.totalPostings, 0) / 1000).toFixed(1)}K
+          <div className="bg-green-50 p-4 rounded-lg">
+            <div className="text-sm text-gray-600">Avg Score</div>
+            <div className="text-2xl font-bold text-gray-900">{avgScore}</div>
+          </div>
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <div className="text-sm text-gray-600">Total Postings</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {totalPostings.toLocaleString()}
             </div>
-            <div className="text-gray-600">Total Postings</div>
           </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-orange-600">
-              {filtered.length > 0 ? (filtered.reduce((sum, b) => sum + b.dataQuality, 0) / filtered.length).toFixed(0)}%
+          <div className="bg-yellow-50 p-4 rounded-lg">
+            <div className="text-sm text-gray-600">Avg Data Quality</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {avgQuality}%
             </div>
-            <div className="text-gray-600">Avg Quality</div>
           </div>
-        </Card>
-      </div>
+        </div>
+      </Section>
 
-      {/* Comparison Table */}
-      <Section title={`Comparison Table (${filtered.length} boards)`}>
+      <Section title="Comparison Table">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full">
             <thead>
-              <tr className="bg-gray-100">
-                <th className="px-6 py-3 text-left font-semibold text-gray-700">Board Name</th>
-                <th className="px-6 py-3 text-center font-semibold text-gray-700">Score</th>
-                <th className="px-6 py-3 text-center font-semibold text-gray-700">Grade</th>
-                <th className="px-6 py-3 text-center font-semibold text-gray-700">Industry</th>
-                <th className="px-6 py-3 text-center font-semibold text-gray-700">Avg Lifespan (days)</th>
-                <th className="px-6 py-3 text-center font-semibold text-gray-700">Repost Rate (%)</th>
-                <th className="px-6 py-3 text-center font-semibold text-gray-700">Postings</th>
-                <th className="px-6 py-3 text-center font-semibold text-gray-700">Data Quality</th>
-                <th className="px-6 py-3 text-center font-semibold text-gray-700">Trend</th>
+              <tr className="border-b border-gray-200">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Board
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Score
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Grade
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Industry
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Avg Lifespan
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Repost Rate
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Total Postings
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Data Quality
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Trend
+                </th>
               </tr>
             </thead>
             <tbody>
-              {filtered.length > 0 ? (
-                filtered.map((board) => (
-                  <tr key={board.id} className="border-b border-gray-200 hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <a href={board.affiliateUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">
-                        {board.name}
-                      </a>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="font-bold text-lg">{board.score}</span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`px-2 py-1 rounded font-bold ${
-                        board.grade === 'A+' || board.grade === 'A' ? 'bg-green-100 text-green-800' :
-                        board.grade === 'B+' || board.grade === 'B' ? 'bg-blue-100 text-blue-800' :
-                        board.grade === 'C+' || board.grade === 'C' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {board.grade}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center text-gray-700">{board.industry}</td>
-                    <td className="px-6 py-4 text-center">{board.avgLifespan}</td>
-                    <td className="px-6 py-4 text-center">{board.repostRate}%</td>
-                    <td className="px-6 py-4 text-center text-gray-700">{board.totalPostings.toLocaleString()}</td>
-                    <td className="px-6 py-4 text-center">
-                      <div className="text-gray-700">{board.dataQuality}%</div>
-                      <div className="w-12 h-2 bg-gray-200 rounded mx-auto mt-1">
-                        <div className="h-full bg-blue-600 rounded" style={{ width: `${board.dataQuality}%` }}></div>
+              {filtered.map((board) => (
+                <tr key={board.id} className="border-b border-gray-200">
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                    <a
+                      href={board.affiliateUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      {board.name}
+                    </a>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-700">
+                    {board.score}
+                  </td>
+                  <td className="px-6 py-4 text-sm">
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-semibold ${
+                        board.grade === 'A'
+                          ? 'bg-green-100 text-green-800'
+                          : board.grade === 'B'
+                            ? 'bg-blue-100 text-blue-800'
+                            : board.grade === 'C'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                      }`}
+                    >
+                      {board.grade}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-700">
+                    {board.industry}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-700">
+                    {board.avgLifespan} days
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-700">
+                    {board.repostRate}%
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-700">
+                    {board.totalPostings.toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-700">
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 h-2 bg-gray-200 rounded">
+                        <div
+                          className="h-full bg-green-500 rounded"
+                          style={{ width: `${board.dataQuality}%` }}
+                        />
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`text-sm font-semibold ${
-                        board.trend === 'up' ? 'text-green-600' :
-                        board.trend === 'down' ? 'text-red-600' :
-                        'text-gray-600'
-                      }`}>
-                        {board.trend === 'up' ? '📈' : board.trend === 'down' ? '📉' : '→'} {board.trendValue > 0 ? '+' : ''}{board.trendValue}%
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              ) : (
+                      <span>{board.dataQuality}%</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-700">
+                    {board.trend === 'up'
+                      ? '📈'
+                      : board.trend === 'down'
+                        ? '📉'
+                        : '→'}
+                    {board.trendValue > 0
+                      ? `+${board.trendValue.toFixed(1)}`
+                      : board.trendValue.toFixed(1)}
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={9}
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     No boards match the selected filters
                   </td>
                 </tr>
@@ -291,31 +350,83 @@ const ComparisonPage: React.FC<ComparisonProps> = ({ boards: initialBoards, indu
   )
 }
 
-// Convert JobBoard to ComparisonRow with default scores
-function mapBoardToComparisonRow(board: JobBoard, index: number): ComparisonRow {
+function mapBoardToComparisonRow(
+  board: JobBoard,
+  index: number
+): ComparisonRow {
   return {
     id: board.id,
     name: board.name,
-    score: 50 + Math.floor(Math.random() * 50), // Default score
+    score: 50 + Math.floor(Math.random() * 50),
     grade: 'B',
     avgLifespan: 15 + Math.floor(Math.random() * 20),
     repostRate: 5 + Math.floor(Math.random() * 20),
     totalPostings: 500 + Math.floor(Math.random() * 5000),
-    topRole: board.category === 'tech' ? 'Software Engineer' : 'General',
+    topRole:
+      board.category === 'tech' ? 'Software Engineer' : 'General',
     industry: board.industry,
-    trend: (Math.random() > 0.5 ? 'up' : 'down') as 'up' | 'down' | 'stable',
+    trend: (Math.random() > 0.5
+      ? 'up'
+      : 'down') as 'up' | 'down' | 'stable',
     trendValue: Math.random() * 5 - 2.5,
     dataQuality: 60 + Math.floor(Math.random() * 40),
     affiliateUrl: board.url,
   }
 }
 
-export const getServerSideProps: GetServerSideProps<ComparisonProps> = async () => {
-  try {
-    const client = getSupabase()
-    
-    if (!client) {
-      console.error('Supabase client not initialized')
+export const getServerSideProps: GetServerSideProps<ComparisonProps> =
+  async () => {
+    try {
+      const client = getSupabase()
+
+      if (!client) {
+        console.error('Supabase client not initialized')
+        return {
+          props: {
+            boards: [],
+            industries: [],
+          },
+        }
+      }
+
+      const { data: boardsData, error: boardsError } = await client
+        .from('job_boards')
+        .select('*')
+        .order('industry')
+        .order('name')
+
+      if (boardsError) {
+        console.error('Board fetch error:', boardsError)
+        throw boardsError
+      }
+
+      console.log(
+        `✅ Fetched ${(boardsData || []).length} boards for comparison`
+      )
+
+      const comparisonRows = (boardsData || []).map(
+        (board: JobBoard, index: number) =>
+          mapBoardToComparisonRow(board, index)
+      )
+
+      const uniqueIndustries = Array.from(
+        new Set(
+          (boardsData || [])
+            .map((b: JobBoard) => b.industry)
+            .filter(Boolean)
+        )
+      ).sort() as string[]
+
+      console.log(`✅ Found industries: ${uniqueIndustries.join(', ')}`)
+
+      return {
+        props: {
+          boards: comparisonRows,
+          industries: uniqueIndustries,
+        },
+      }
+    } catch (error) {
+      console.error('Error in getServerSideProps:', error)
       return {
         props: {
           boards: [],
@@ -323,48 +434,6 @@ export const getServerSideProps: GetServerSideProps<ComparisonProps> = async () 
         },
       }
     }
-
-    // Fetch all job boards
-    const { data: boardsData, error: boardsError } = await client
-      .from('job_boards')
-      .select('*')
-      .order('industry')
-      .order('name')
-
-    if (boardsError) {
-      console.error('Board fetch error:', boardsError)
-      throw boardsError
-    }
-
-    console.log(`✅ Fetched ${(boardsData || []).length} boards for comparison`)
-
-    // Convert boards to ComparisonRow format
-    const comparisonRows = (boardsData || []).map((board: JobBoard, index: number) => 
-      mapBoardToComparisonRow(board, index)
-    )
-
-    // Get unique industries
-    const uniqueIndustries = Array.from(
-      new Set((boardsData || []).map((b: JobBoard) => b.industry).filter(Boolean))
-    ).sort() as string[]
-
-    console.log(`✅ Found industries: ${uniqueIndustries.join(', ')}`)
-
-    return {
-      props: {
-        boards: comparisonRows,
-        industries: uniqueIndustries,
-      },
-    }
-  } catch (error) {
-    console.error('Error in getServerSideProps:', error)
-    return {
-      props: {
-        boards: [],
-        industries: [],
-      },
-    }
   }
-}
 
 export default ComparisonPage
