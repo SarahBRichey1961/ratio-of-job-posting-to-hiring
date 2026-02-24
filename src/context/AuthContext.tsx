@@ -1,9 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { User } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+import { getSupabase } from '@/lib/supabase'
 
 interface UserProfile {
   id: string
@@ -25,19 +22,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Lazy initialization of Supabase client - only created when needed, not at module load
-let supabaseClient: any = null
-
-export const getSupabase = () => {
-  if (!supabaseClient && supabaseUrl && supabaseKey) {
-    supabaseClient = createClient(supabaseUrl, supabaseKey)
-  }
-  return supabaseClient
-}
-
-// For backward compatibility with imports
-export const supabase = { getSupabase }
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -50,47 +34,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return
     }
 
-    // Check active sessions and subscribe to auth changes
-    const { data: { subscription } } = client.auth.onAuthStateChange(
-      async (_event, session) => {
-        setUser(session?.user || null)
+    // Set a timeout for auth initialization
+    const timeoutId = setTimeout(() => {
+      console.warn('Auth initialization timeout - proceeding without session')
+      setIsLoading(false)
+    }, 3000)
 
-        if (session?.user) {
-          // Fetch user profile
-          const { data, error } = await client
-            .from('user_profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single()
+    // Check active sessions and subscribe to auth changes with error handling
+    try {
+      const { data: { subscription } } = client.auth.onAuthStateChange(
+        async (_event, session) => {
+          try {
+            clearTimeout(timeoutId)
+            setUser(session?.user || null)
 
-          if (error) {
-            console.error('Error fetching profile:', error)
-            // Create default profile if it doesn't exist
-            await client
-              .from('user_profiles')
-              .insert({
-                id: session.user.id,
-                email: session.user.email,
-                role: 'viewer',
-              })
-            setProfile({
-              id: session.user.id,
-              email: session.user.email || '',
-              role: 'viewer',
-              created_at: new Date().toISOString(),
-            })
-          } else {
-            setProfile(data as UserProfile)
+            if (session?.user) {
+              // Fetch user profile
+              const { data, error } = await client
+                .from('user_profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single()
+
+              if (error) {
+                console.error('Error fetching profile:', error)
+                // Create default profile if it doesn't exist
+                await client
+                  .from('user_profiles')
+                  .insert({
+                    id: session.user.id,
+                    email: session.user.email,
+                    role: 'viewer',
+                  })
+                setProfile({
+                  id: session.user.id,
+                  email: session.user.email || '',
+                  role: 'viewer',
+                  created_at: new Date().toISOString(),
+                })
+              } else {
+                setProfile(data as UserProfile)
+              }
+            } else {
+              setProfile(null)
+            }
+            setIsLoading(false)
+          } catch (err) {
+            console.error('Error in auth state change handler:', err)
+            setIsLoading(false)
           }
-        } else {
-          setProfile(null)
         }
+      )
+
+      return () => {
+        clearTimeout(timeoutId)
+        subscription?.unsubscribe()
+      }
+    } catch (err: any) {
+      // Handle lock timeout or other auth initialization errors
+      if (err?.message?.includes('Navigator LockManager') || err?.message?.includes('timed out')) {
+        console.warn('Auth lock timeout - using fallback auth mode', err.message)
+        clearTimeout(timeoutId)
+        setIsLoading(false)
+      } else {
+        console.error('Failed to initialize auth:', err)
+        clearTimeout(timeoutId)
         setIsLoading(false)
       }
-    )
-
-    return () => {
-      subscription?.unsubscribe()
     }
   }, [])
 
