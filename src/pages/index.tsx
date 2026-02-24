@@ -1,4 +1,4 @@
-import type { GetStaticProps, NextPage } from 'next'
+import type { GetServerSideProps, NextPage } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
@@ -238,12 +238,13 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, allBoards, industries,
   )
 }
 
-export const getStaticProps: GetStaticProps<HomeProps> = async () => {
+export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
   try {
     const client = getSupabase()
     
-    // If Supabase not initialized (missing env vars during build), return empty data
+    // If Supabase not initialized, return empty data
     if (!client) {
+      console.error('Supabase client not initialized')
       return {
         props: {
           jobBoardsByCategory: {
@@ -257,7 +258,6 @@ export const getStaticProps: GetStaticProps<HomeProps> = async () => {
           roles: [],
           totalBoards: 0,
         },
-        revalidate: 60,
       }
     }
 
@@ -268,52 +268,57 @@ export const getStaticProps: GetStaticProps<HomeProps> = async () => {
       .order('industry')
       .order('name')
 
-    if (boardsError) throw boardsError
+    if (boardsError) {
+      console.error('Board fetch error:', boardsError)
+      throw boardsError
+    }
+
+    console.log(`✅ Fetched ${(boards || []).length} boards`)
+
+    // Fetch all roles
+    const { data: rolesData, error: rolesError } = await client
+      .from('job_roles')
+      .select('name')
+      .order('name')
+
+    if (rolesError) {
+      console.error('Roles fetch error:', rolesError)
+      throw rolesError
+    }
 
     // Fetch all industries
     const uniqueIndustries = Array.from(
       new Set((boards || []).map((b: JobBoard) => b.industry).filter(Boolean))
     ).sort() as string[]
 
-    // Fetch roles
-    const { data: roleData, error: rolesError } = await client
-      .from('job_roles')
-      .select('name')
-      .order('name')
-
-    if (rolesError) {
-      console.warn('Could not fetch job roles:', rolesError)
-    }
-
-    const roles = (roleData || []).map((r: any) => r.name)
+    console.log(`✅ Found industries: ${uniqueIndustries.join(', ')}`)
+    console.log(`✅ Found ${(rolesData || []).length} roles`)
 
     // Group by category
-    const grouped: Record<string, JobBoard[]> = {
+    const jobBoardsByCategory: Record<string, JobBoard[]> = {
       general: [],
       tech: [],
       remote: [],
       niche: [],
     }
 
-    boards?.forEach((board: JobBoard) => {
-      if (grouped[board.category]) {
-        grouped[board.category].push(board)
+    ;(boards || []).forEach((board: JobBoard) => {
+      if (jobBoardsByCategory[board.category]) {
+        jobBoardsByCategory[board.category].push(board)
       }
     })
 
     return {
       props: {
-        jobBoardsByCategory: grouped,
+        jobBoardsByCategory,
         allBoards: boards || [],
         industries: uniqueIndustries,
-        roles: roles,
-        totalBoards: boards?.length || 0,
+        roles: (rolesData || []).map(r => r.name),
+        totalBoards: (boards || []).length,
       },
-      revalidate: 3600, // ISR: revalidate every hour
     }
   } catch (error) {
-    console.error('Error fetching job boards:', error)
-    
+    console.error('Error in getServerSideProps:', error)
     return {
       props: {
         jobBoardsByCategory: {
@@ -327,7 +332,6 @@ export const getStaticProps: GetStaticProps<HomeProps> = async () => {
         roles: [],
         totalBoards: 0,
       },
-      revalidate: 60,
     }
   }
 }
