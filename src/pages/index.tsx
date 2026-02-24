@@ -4,6 +4,8 @@ import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
 import { getSupabase } from '@/lib/supabase'
 import { CategoryGroup } from '@/components/JobBoardsDisplay'
+import { ScoreCard } from '@/components/ScoringDisplay'
+import { EfficiencyScore } from '@/lib/scoringEngine'
 
 interface JobBoard {
   id: number
@@ -30,6 +32,8 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, allBoards, industries,
   const [selectedIndustry, setSelectedIndustry] = useState<string>('')
   const [selectedRole, setSelectedRole] = useState<string>('')
   const [filteredBoards, setFilteredBoards] = useState<JobBoard[]>(allBoards)
+  const [scores, setScores] = useState<(EfficiencyScore & { rank?: number; grade?: string })[]>([])
+  const [loadingScores, setLoadingScores] = useState(false)
   
   // Apply filters
   useEffect(() => {
@@ -47,6 +51,34 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, allBoards, industries,
     }
     
     setFilteredBoards(filtered)
+    
+    // Fetch scores for filtered boards
+    const fetchScores = async () => {
+      if (selectedIndustry && filtered.length > 0) {
+        setLoadingScores(true)
+        try {
+          const response = await fetch('/api/scores', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              boardIds: filtered.map(b => b.id),
+              industry: selectedIndustry
+            })
+          })
+          const data = await response.json()
+          setScores(data.scores || [])
+        } catch (error) {
+          console.error('Failed to fetch scores:', error)
+          setScores([])
+        } finally {
+          setLoadingScores(false)
+        }
+      } else {
+        setScores([])
+      }
+    }
+    
+    fetchScores()
   }, [selectedIndustry, selectedRole, allBoards])
 
   return (
@@ -141,6 +173,33 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, allBoards, industries,
                 <p className="text-gray-600 text-sm mt-2">Weekly insights and trend tracking</p>
               </div>
             </div>
+
+            {/* Efficiency Scores Section */}
+            {selectedIndustry && (
+              <div className="mt-12 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">📊 Efficiency Scores by Board</h2>
+                <p className="text-gray-600 mb-6">Ranking job boards in <strong>{selectedIndustry}</strong> by comprehensive efficiency metrics</p>
+                
+                {loadingScores ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">Loading scores...</p>
+                  </div>
+                ) : scores.length > 0 ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {scores.map((score) => (
+                      <div key={score.boardId} className="transform hover:scale-105 transition">
+                        <ScoreCard score={score} />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-lg p-8 text-center border border-gray-200">
+                    <p className="text-gray-500 mb-2">No scores available yet for {selectedIndustry}</p>
+                    <p className="text-sm text-gray-400">Scores will be calculated once posting data is collected and analyzed</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Job Boards by Category */}
