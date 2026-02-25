@@ -47,178 +47,57 @@ const FALLBACK_ROLES = [
   'Software Engineer',
 ]
 
-// Fallback board data for when database is unavailable
+// Fallback board data for when database is unavailable - COMPREHENSIVE
 const FALLBACK_BOARDS: ComparisonRow[] = [
-  {
-    id: 1,
-    name: 'LinkedIn',
-    url: 'https://linkedin.com/jobs',
-    industry: 'General',
-    score: 85,
-    grade: 'A',
-    avgLifespan: 14,
-    repostRate: 8.5,
-    totalPostings: 8456,
-    topRole: 'Software Engineer',
-    trend: 'up',
-    trendValue: 2.5,
-    dataQuality: 90,
-    affiliateUrl: 'https://linkedin.com/jobs',
-    roles: ['Software Engineer', 'Product Manager', 'Designer', 'Sales', 'Marketing'],
-  },
-  {
-    id: 2,
-    name: 'Indeed',
-    url: 'https://indeed.com',
-    industry: 'General',
-    score: 78,
-    grade: 'B',
-    avgLifespan: 16,
-    repostRate: 10.2,
-    totalPostings: 7200,
-    topRole: 'Developer',
-    trend: 'stable',
-    trendValue: 0.5,
-    dataQuality: 85,
-    affiliateUrl: 'https://indeed.com',
-    roles: ['Developer', 'Software Engineer', 'Designer', 'Manager'],
-  },
-  {
-    id: 3,
-    name: 'Stack Overflow',
-    url: 'https://stackoverflow.com/jobs',
-    industry: 'Technology',
-    score: 88,
-    grade: 'A',
-    avgLifespan: 12,
-    repostRate: 6.5,
-    totalPostings: 3400,
-    topRole: 'Software Engineer',
-    trend: 'up',
-    trendValue: 3.2,
-    dataQuality: 92,
-    affiliateUrl: 'https://stackoverflow.com/jobs',
-    roles: ['Software Engineer', 'Front-End Engineer', 'Full-Stack Engineer', 'Developer'],
-  },
-  {
-    id: 4,
-    name: 'FlexJobs',
-    url: 'https://flexjobs.com',
-    industry: 'Remote',
-    score: 82,
-    grade: 'A',
-    avgLifespan: 18,
-    repostRate: 7.8,
-    totalPostings: 2100,
-    topRole: 'Full-Stack Engineer',
-    trend: 'up',
-    trendValue: 2.1,
-    dataQuality: 88,
-    affiliateUrl: 'https://flexjobs.com',
-    roles: ['Full-Stack Engineer', 'Front-End Engineer', 'Developer', 'Designer'],
-  },
-  {
-    id: 5,
-    name: 'Glassdoor',
-    url: 'https://glassdoor.com/Job',
-    industry: 'General',
-    score: 75,
-    grade: 'C',
-    avgLifespan: 20,
-    repostRate: 12.3,
-    totalPostings: 5600,
-    topRole: 'Manager',
-    trend: 'down',
-    trendValue: -1.8,
-    dataQuality: 80,
-    affiliateUrl: 'https://glassdoor.com/Job',
-    roles: ['Manager', 'Operations', 'HR Manager', 'Product Manager'],
-  },
-  {
-    id: 6,
-    name: 'We Work Remotely',
-    url: 'https://weworkremotely.com',
-    industry: 'Remote',
-    score: 80,
-    grade: 'B',
-    avgLifespan: 16,
-    repostRate: 8.9,
-    totalPostings: 1500,
-    topRole: 'Designer',
-    trend: 'stable',
-    trendValue: 0.2,
-    dataQuality: 86,
-    affiliateUrl: 'https://weworkremotely.com',
-    roles: ['Designer', 'Developer', 'Marketing', 'Product Manager'],
-  },
-  {
-    id: 7,
-    name: 'GitHub Jobs',
-    url: 'https://github.com/jobs',
-    industry: 'Technology',
-    score: 84,
-    grade: 'A',
-    avgLifespan: 13,
-    repostRate: 7.2,
-    totalPostings: 2800,
-    topRole: 'Front-End Engineer',
-    trend: 'up',
-    trendValue: 2.8,
-    dataQuality: 91,
-    affiliateUrl: 'https://github.com/jobs',
-    roles: ['Front-End Engineer', 'Full-Stack Engineer', 'Software Engineer', 'Developer'],
-  },
-  {
-    id: 8,
-    name: 'CareerBuilder',
-    url: 'https://careerbuilder.com',
-    industry: 'General',
-    score: 72,
-    grade: 'C',
-    avgLifespan: 22,
-    repostRate: 13.5,
-    totalPostings: 4200,
-    topRole: 'Administrative',
-    trend: 'down',
-    trendValue: -2.1,
-    dataQuality: 78,
-    affiliateUrl: 'https://careerbuilder.com',
-    roles: ['Administrative', 'Manager', 'Sales', 'Operations'],
-  },
-  {
-    id: 9,
-    name: 'Behance Job Board',
-    url: 'https://behance.net/joblist',
-    industry: 'Creative & Media',
-    score: 79,
-    grade: 'B',
-    avgLifespan: 15,
-    repostRate: 9.4,
-    totalPostings: 1200,
-    topRole: 'Designer',
-    trend: 'stable',
-    trendValue: 0.8,
-    dataQuality: 84,
-    affiliateUrl: 'https://behance.net/joblist',
-    roles: ['Designer', 'Developer', 'Marketing'],
-  },
-  {
-    id: 10,
-    name: 'AngelList',
-    url: 'https://angel.co/jobs',
-    industry: 'Technology',
-    score: 81,
-    grade: 'B',
-    avgLifespan: 14,
-    repostRate: 8.1,
-    totalPostings: 1800,
-    topRole: 'Developer',
-    trend: 'up',
-    trendValue: 1.9,
-    dataQuality: 87,
-    affiliateUrl: 'https://angel.co/jobs',
-    roles: ['Developer', 'Software Engineer', 'Product Manager', 'Designer'],
-  },
+  // Technology (Multiple boards covering different tech roles)
+  { id: 1, name: 'LinkedIn', url: 'https://linkedin.com/jobs', industry: 'Technology', score: 85, grade: 'A', avgLifespan: 14, repostRate: 8.5, totalPostings: 8456, topRole: 'Software Engineer', trend: 'up', trendValue: 2.5, dataQuality: 90, affiliateUrl: 'https://linkedin.com/jobs', roles: ['Software Engineer', 'Front-End Engineer', 'Full-Stack Engineer', 'Developer', 'Data Scientist'] },
+  { id: 2, name: 'Stack Overflow', url: 'https://stackoverflow.com/jobs', industry: 'Technology', score: 88, grade: 'A', avgLifespan: 12, repostRate: 6.5, totalPostings: 3400, topRole: 'Software Engineer', trend: 'up', trendValue: 3.2, dataQuality: 92, affiliateUrl: 'https://stackoverflow.com/jobs', roles: ['Software Engineer', 'Front-End Engineer', 'Full-Stack Engineer', 'Developer'] },
+  { id: 3, name: 'GitHub Jobs', url: 'https://github.com/jobs', industry: 'Technology', score: 84, grade: 'A', avgLifespan: 13, repostRate: 7.2, totalPostings: 2800, topRole: 'Developer', trend: 'up', trendValue: 2.8, dataQuality: 91, affiliateUrl: 'https://github.com/jobs', roles: ['Developer', 'Software Engineer', 'Full-Stack Engineer', 'Front-End Engineer'] },
+  { id: 4, name: 'AngelList', url: 'https://angel.co/jobs', industry: 'Technology', score: 81, grade: 'B', avgLifespan: 14, repostRate: 8.1, totalPostings: 1800, topRole: 'Developer', trend: 'up', trendValue: 1.9, dataQuality: 87, affiliateUrl: 'https://angel.co/jobs', roles: ['Developer', 'Software Engineer', 'Product Manager', 'Designer', 'Data Scientist'] },
+  { id: 5, name: 'We Work Remotely', url: 'https://weworkremotely.com', industry: 'Technology', score: 80, grade: 'B', avgLifespan: 16, repostRate: 8.9, totalPostings: 1500, topRole: 'Developer', trend: 'stable', trendValue: 0.2, dataQuality: 86, affiliateUrl: 'https://weworkremotely.com', roles: ['Developer', 'Designer', 'Full-Stack Engineer', 'Front-End Engineer'] },
+  { id: 6, name: 'Dribbble Job Board', url: 'https://dribbble.com/jobs', industry: 'Technology', score: 76, grade: 'C', avgLifespan: 18, repostRate: 11.2, totalPostings: 900, topRole: 'Designer', trend: 'stable', trendValue: 0.5, dataQuality: 82, affiliateUrl: 'https://dribbble.com/jobs', roles: ['Designer', 'Front-End Engineer', 'Developer'] },
+
+  // General (Multiple platforms)
+  { id: 7, name: 'Indeed', url: 'https://indeed.com', industry: 'General', score: 78, grade: 'B', avgLifespan: 16, repostRate: 10.2, totalPostings: 7200, topRole: 'Manager', trend: 'stable', trendValue: 0.5, dataQuality: 85, affiliateUrl: 'https://indeed.com', roles: ['Developer', 'Software Engineer', 'Designer', 'Manager', 'Sales'] },
+  { id: 8, name: 'Glassdoor', url: 'https://glassdoor.com/Job', industry: 'General', score: 75, grade: 'C', avgLifespan: 20, repostRate: 12.3, totalPostings: 5600, topRole: 'Manager', trend: 'down', trendValue: -1.8, dataQuality: 80, affiliateUrl: 'https://glassdoor.com/Job', roles: ['Manager', 'Operations', 'HR Manager', 'Product Manager', 'Administrative'] },
+  { id: 9, name: 'CareerBuilder', url: 'https://careerbuilder.com', industry: 'General', score: 72, grade: 'C', avgLifespan: 22, repostRate: 13.5, totalPostings: 4200, topRole: 'Administrative', trend: 'down', trendValue: -2.1, dataQuality: 78, affiliateUrl: 'https://careerbuilder.com', roles: ['Administrative', 'Manager', 'Sales', 'Operations', 'Marketing'] },
+  { id: 10, name: 'ZipRecruiter', url: 'https://ziprecruiter.com', industry: 'General', score: 70, grade: 'D', avgLifespan: 24, repostRate: 15.0, totalPostings: 3800, topRole: 'Sales', trend: 'down', trendValue: -2.5, dataQuality: 75, affiliateUrl: 'https://ziprecruiter.com', roles: ['Sales', 'Manager', 'Marketing', 'Administrative'] },
+  { id: 11, name: 'Monster', url: 'https://monster.com', industry: 'General', score: 68, grade: 'D', avgLifespan: 26, repostRate: 16.2, totalPostings: 2900, topRole: 'Manager', trend: 'down', trendValue: -3.0, dataQuality: 72, affiliateUrl: 'https://monster.com', roles: ['Manager', 'Administrative', 'Operations', 'Sales'] },
+
+  // Remote
+  { id: 12, name: 'FlexJobs', url: 'https://flexjobs.com', industry: 'Remote', score: 82, grade: 'A', avgLifespan: 18, repostRate: 7.8, totalPostings: 2100, topRole: 'Full-Stack Engineer', trend: 'up', trendValue: 2.1, dataQuality: 88, affiliateUrl: 'https://flexjobs.com', roles: ['Full-Stack Engineer', 'Front-End Engineer', 'Developer', 'Designer', 'Product Manager'] },
+  { id: 13, name: 'Remote.co', url: 'https://remote.co/remote-jobs', industry: 'Remote', score: 80, grade: 'B', avgLifespan: 17, repostRate: 8.5, totalPostings: 1400, topRole: 'Developer', trend: 'up', trendValue: 1.8, dataQuality: 85, affiliateUrl: 'https://remote.co/remote-jobs', roles: ['Developer', 'Designer', 'Product Manager', 'Marketing', 'Sales'] },
+  { id: 14, name: 'Working Nomads', url: 'https://www.workingnomads.co/jobs', industry: 'Remote', score: 77, grade: 'C', avgLifespan: 19, repostRate: 9.3, totalPostings: 1100, topRole: 'Designer', trend: 'stable', trendValue: 0.3, dataQuality: 83, affiliateUrl: 'https://www.workingnomads.co/jobs', roles: ['Designer', 'Developer', 'Marketing', 'Sales'] },
+
+  // Creative & Media
+  { id: 15, name: 'Behance Job Board', url: 'https://behance.net/joblist', industry: 'Creative & Media', score: 79, grade: 'B', avgLifespan: 15, repostRate: 9.4, totalPostings: 1200, topRole: 'Designer', trend: 'stable', trendValue: 0.8, dataQuality: 84, affiliateUrl: 'https://behance.net/joblist', roles: ['Designer', 'Developer', 'Marketing'] },
+  { id: 16, name: 'CreativeMornings', url: 'https://creativemornings.com', industry: 'Creative & Media', score: 74, grade: 'C', avgLifespan: 20, repostRate: 11.0, totalPostings: 800, topRole: 'Designer', trend: 'stable', trendValue: 0.0, dataQuality: 80, affiliateUrl: 'https://creativemornings.com', roles: ['Designer', 'Marketing', 'Developer'] },
+
+  // Finance & Accounting
+  { id: 17, name: 'eFinancialCareers', url: 'https://efinancialcareers.com', industry: 'Finance & Accounting', score: 81, grade: 'B', avgLifespan: 13, repostRate: 7.5, totalPostings: 2200, topRole: 'Accountant', trend: 'up', trendValue: 2.0, dataQuality: 88, affiliateUrl: 'https://efinancialcareers.com', roles: ['Accountant', 'Finance Manager', 'Manager'] },
+  { id: 18, name: 'AccountingJobsToday', url: 'https://accountingjobstoday.com', industry: 'Finance & Accounting', score: 76, grade: 'C', avgLifespan: 16, repostRate: 10.2, totalPostings: 1500, topRole: 'Accountant', trend: 'stable', trendValue: 0.5, dataQuality: 82, affiliateUrl: 'https://accountingjobstoday.com', roles: ['Accountant', 'Finance Manager'] },
+
+  // Education
+  { id: 19, name: 'Chronicle Jobs', url: 'https://jobs.chronicle.org', industry: 'Education', score: 77, grade: 'C', avgLifespan: 17, repostRate: 9.8, totalPostings: 1100, topRole: 'Manager', trend: 'stable', trendValue: 0.2, dataQuality: 83, affiliateUrl: 'https://jobs.chronicle.org', roles: ['Manager', 'Administrative', 'Health Professional'] },
+  { id: 20, name: 'HigherEdJobs', url: 'https://www.higheredjobs.com', industry: 'Education', score: 75, grade: 'C', avgLifespan: 18, repostRate: 10.5, totalPostings: 1300, topRole: 'Manager', trend: 'stable', trendValue: 0.0, dataQuality: 81, affiliateUrl: 'https://www.higheredjobs.com', roles: ['Manager', 'Administrative'] },
+
+  // Legal
+  { id: 21, name: 'LawCrossing', url: 'https://lawcrossing.com', industry: 'Legal', score: 78, grade: 'B', avgLifespan: 14, repostRate: 8.9, totalPostings: 1800, topRole: 'Legal Professional', trend: 'stable', trendValue: 0.5, dataQuality: 85, affiliateUrl: 'https://lawcrossing.com', roles: ['Legal Professional', 'Manager', 'Administrative'] },
+  { id: 22, name: 'Indeed Legal', url: 'https://indeed.com/q-Legal-jobs.html', industry: 'Legal', score: 73, grade: 'C', avgLifespan: 18, repostRate: 11.2, totalPostings: 1400, topRole: 'Legal Professional', trend: 'stable', trendValue: 0.0, dataQuality: 79, affiliateUrl: 'https://indeed.com/q-Legal-jobs.html', roles: ['Legal Professional', 'Manager'] },
+
+  // Construction
+  { id: 23, name: 'ConstructionJobs.com', url: 'https://constructionjobs.com', industry: 'Construction', score: 72, grade: 'C', avgLifespan: 19, repostRate: 12.0, totalPostings: 2100, topRole: 'Manager', trend: 'stable', trendValue: 0.0, dataQuality: 78, affiliateUrl: 'https://constructionjobs.com', roles: ['Manager', 'Administrative', 'Operations'] },
+  { id: 24, name: 'BuildFax', url: 'https://buildfax.com/careers', industry: 'Construction', score: 68, grade: 'D', avgLifespan: 22, repostRate: 14.5, totalPostings: 900, topRole: 'Manager', trend: 'down', trendValue: -1.5, dataQuality: 74, affiliateUrl: 'https://buildfax.com/careers', roles: ['Manager', 'Operations'] },
+
+  // Manufacturing
+  { id: 25, name: 'Engineering.com Jobs', url: 'https://jobs.engineering.com', industry: 'Manufacturing', score: 76, grade: 'C', avgLifespan: 16, repostRate: 9.8, totalPostings: 1600, topRole: 'Developer', trend: 'stable', trendValue: 0.3, dataQuality: 81, affiliateUrl: 'https://jobs.engineering.com', roles: ['Developer', 'Manager', 'Operations', 'Data Scientist'] },
+
+  // Government  
+  { id: 26, name: 'Careers in Government', url: 'https://careersingovernment.com', industry: 'Government', score: 74, grade: 'C', avgLifespan: 21, repostRate: 11.0, totalPostings: 1200, topRole: 'Administrative', trend: 'stable', trendValue: 0.0, dataQuality: 80, affiliateUrl: 'https://careersingovernment.com', roles: ['Administrative', 'Manager', 'Operations'] },
+
+  // Retail & Hospitality
+  { id: 27, name: 'AllRetailJobs', url: 'https://allretailjobs.com', industry: 'Retail & Hospitality', score: 70, grade: 'D', avgLifespan: 23, repostRate: 13.5, totalPostings: 2800, topRole: 'Manager', trend: 'down', trendValue: -1.0, dataQuality: 76, affiliateUrl: 'https://allretailjobs.com', roles: ['Manager', 'Sales', 'Administrative', 'Operations'] },
+  { id: 28, name: 'HCareers', url: 'https://hcareers.com', industry: 'Retail & Hospitality', score: 68, grade: 'D', avgLifespan: 24, repostRate: 14.8, totalPostings: 2200, topRole: 'Manager', trend: 'down', trendValue: -2.0, dataQuality: 73, affiliateUrl: 'https://hcareers.com', roles: ['Manager', 'Sales', 'Administrative'] },
 ]
 
 interface JobBoard {
@@ -655,17 +534,21 @@ export const getServerSideProps: GetServerSideProps<ComparisonProps> =
       console.log(`✅ Found ${availableRoles.length} available roles`)
 
       // Map boards with their roles from the junction table
+      console.log(`📊 Database returned ${boardsData?.length || 0} boards`)
       let comparisonRows = (boardsData || []).map(
         (board: JobBoard, index: number) => {
           const boardRoles = boardRolesMap[board.id] || []
           return mapBoardToComparisonRow(board, boardRoles, index)
         }
       )
+      console.log(`📊 After mapping: ${comparisonRows.length} comparison rows`)
 
       // Use fallback boards if database returned empty or error
       if (!comparisonRows || comparisonRows.length === 0) {
-        console.log('⚠️ Using fallback boards because database returned empty')
+        console.log('⚠️  DATABASE QUERY FAILED - Using fallback boards (28 boards across all industries)')
         comparisonRows = FALLBACK_BOARDS
+      } else {
+        console.log(`✅ Using real database boards (${comparisonRows.length} total)`)
       }
 
       let uniqueIndustries = Array.from(
