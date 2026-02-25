@@ -295,7 +295,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                     <div className="flex flex-wrap gap-2">
                       {board.roles.length > 0 ? (
                         board.roles.map((role, idx) => (
-                          <span key={idx} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded whitespace-nowrap">
+                          <span key={idx} className="text-xs bg-blue-500 text-white px-2 py-1 rounded whitespace-nowrap">
                             {role}
                           </span>
                         ))
