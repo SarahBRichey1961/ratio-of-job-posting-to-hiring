@@ -1,7 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import puppeteer, { Browser } from 'puppeteer'
 import axios from 'axios'
-import { getSupabase } from '@/lib/supabase'
 
 /**
  * API endpoint to get jobs posted "today" (first day posting only) for a specific board
@@ -19,47 +18,6 @@ interface JobPosting {
   url?: string
   postedDate: string
   source: 'api' | 'scraper'
-}
-
-/**
- * Fetch job postings from database (test/mock data)
- */
-async function getJobsFromDatabase(
-  boardId: number,
-  boardName: string,
-  targetDate: string,
-  debugMode: boolean = false
-): Promise<JobPosting[]> {
-  try {
-    if (debugMode) console.log(`[DEBUG] Querying database for board_id=${boardId}, date=${targetDate}`)
-
-    const supabase = getSupabase()
-    const { data, error } = await supabase
-      .from('job_postings')
-      .select('job_title, company_name, job_url, posted_date')
-      .eq('board_id', boardId)
-      .eq('posted_date', targetDate)
-
-    if (error) {
-      if (debugMode) console.log(`[DEBUG] Database query error:`, error)
-      return []
-    }
-
-    const jobs: JobPosting[] = (data || []).map((row: any) => ({
-      title: row.job_title,
-      company: row.company_name,
-      url: row.job_url,
-      postedDate: row.posted_date,
-      source: 'api',
-    }))
-
-    if (debugMode) console.log(`[DEBUG] Found ${jobs.length} jobs in database`)
-    return jobs
-  } catch (error) {
-    console.error('Database query error:', error)
-    if (debugMode) console.error('[DEBUG] Database error details:', error)
-    return []
-  }
 }
 
 export default async function handler(
@@ -90,49 +48,39 @@ export default async function handler(
       })
     }
 
-    // First, try to get jobs from database (mock test data)
-    let jobs: JobPosting[] = await getJobsFromDatabase(
-      parseInt(boardId as string),
-      boardName as string,
-      targetDate,
-      debugMode
-    )
+    // Try API first, fall back to scraper
+    let jobs: JobPosting[] = []
 
-    // If no database results, try live scraping
-    if (jobs.length === 0) {
-      if (debugMode) console.log(`[DEBUG] No database entries found, attempting live scraper`)
-
-      switch (boardName) {
-        case 'Stack Overflow Jobs':
-          if (debugMode) console.log(`[DEBUG] Using Stack Overflow API`)
-          jobs = await fetchStackOverflowJobs(targetDate, debugMode)
-          break
-        case 'Indeed':
-          if (debugMode) console.log(`[DEBUG] Using Indeed scraper`)
-          jobs = await scrapeIndeedJobs(targetDate, debugMode)
-          break
-        case 'LinkedIn':
-          if (debugMode) console.log(`[DEBUG] Using LinkedIn scraper`)
-          jobs = await scrapeLinkedInJobs(targetDate, debugMode)
-          break
-        case 'GitHub Jobs':
-          jobs = await scrapeGitHubJobs(targetDate, debugMode)
-          break
-        case 'Built In':
-          jobs = await scrapeBuiltInJobs(targetDate, debugMode)
-          break
-        case 'FlexJobs':
-          jobs = await scrapeFlexJobsJobs(targetDate, debugMode)
-          break
-        case 'Dice':
-          jobs = await scrapeDiceJobs(targetDate, debugMode)
-          break
-        case 'AngelList Talent':
-          jobs = await scrapeAngelListJobs(targetDate, debugMode)
-          break
-        default:
-          jobs = await genericBoardScraper(boardName as string, targetDate, debugMode)
-      }
+    switch (boardName) {
+      case 'Stack Overflow Jobs':
+        if (debugMode) console.log(`[DEBUG] Using Stack Overflow API`)
+        jobs = await fetchStackOverflowJobs(targetDate, debugMode)
+        break
+      case 'Indeed':
+        if (debugMode) console.log(`[DEBUG] Using Indeed scraper`)
+        jobs = await scrapeIndeedJobs(targetDate, debugMode)
+        break
+      case 'LinkedIn':
+        if (debugMode) console.log(`[DEBUG] Using LinkedIn scraper`)
+        jobs = await scrapeLinkedInJobs(targetDate, debugMode)
+        break
+      case 'GitHub Jobs':
+        jobs = await scrapeGitHubJobs(targetDate, debugMode)
+        break
+      case 'Built In':
+        jobs = await scrapeBuiltInJobs(targetDate, debugMode)
+        break
+      case 'FlexJobs':
+        jobs = await scrapeFlexJobsJobs(targetDate, debugMode)
+        break
+      case 'Dice':
+        jobs = await scrapeDiceJobs(targetDate, debugMode)
+        break
+      case 'AngelList Talent':
+        jobs = await scrapeAngelListJobs(targetDate, debugMode)
+        break
+      default:
+        jobs = await genericBoardScraper(boardName as string, targetDate, debugMode)
     }
 
     const response = {
