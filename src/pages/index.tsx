@@ -4,7 +4,6 @@ import { useRouter } from 'next/router'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import { getSupabase } from '@/lib/supabase'
-import { CategoryGroup } from '@/components/JobBoardsDisplay'
 import { ScoreCard } from '@/components/ScoringDisplay'
 import { EfficiencyScore } from '@/lib/scoringEngine'
 
@@ -27,7 +26,6 @@ interface HomeProps {
 
 const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, allBoards, industries, roles, totalBoards }) => {
   const router = useRouter()
-  const categories = ['general', 'tech', 'remote', 'niche']
   
   // Sidebar state
   const [sidebarOpen, setSidebarOpen] = React.useState(false)
@@ -421,23 +419,40 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, allBoards, industries,
                 )}
               </div>
 
-              {/* Job Boards by Category */}
-              <div className="space-y-8 pb-8">
-                {categories.map((category) => {
-                  const boardsInCategory = selectedIndustry
-                    ? filteredBoards.filter(b => b.category === category)
-                    : jobBoardsByCategory[category]
-                  
-                  return (
-                    boardsInCategory && boardsInCategory.length > 0 && (
-                      <CategoryGroup
-                        key={category}
-                        categoryName={category}
-                        boards={boardsInCategory}
-                      />
-                    )
-                  )
-                })}
+              {/* All Job Boards Grid */}
+              <div className="pb-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">All {(selectedIndustry ? filteredBoards : allBoards).length} Job Boards</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {(selectedIndustry ? filteredBoards : allBoards).map((board) => (
+                    <a
+                      key={board.id}
+                      href={board.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg hover:border-blue-400 transition-all group"
+                    >
+                      <div className="flex flex-col h-full justify-between">
+                        <div>
+                          <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition mb-1 line-clamp-2">
+                            {board.name}
+                          </h3>
+                          <p className="text-xs text-gray-500 mb-2">{board.category}</p>
+                          {board.industry && (
+                            <p className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded inline-block">
+                              {board.industry}
+                            </p>
+                          )}
+                          {board.description && (
+                            <p className="text-xs text-gray-600 mt-2 line-clamp-2">{board.description}</p>
+                          )}
+                        </div>
+                        <p className="text-xs text-blue-600 font-medium mt-3 group-hover:underline">
+                          Visit →
+                        </p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
               </div>
 
               {/* Footer Info */}
