@@ -134,26 +134,17 @@ async function fetchStackOverflowJobs(
     }
 
     const jobs: JobPosting[] = []
-    const targetDateObj = new Date(targetDate)
-    const threeDaysAgo = new Date(targetDateObj)
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
-
-    if (debugMode) console.log(`[DEBUG] Searching date range: ${threeDaysAgo.toISOString().split('T')[0]} to ${targetDate}`)
 
     response.data.items?.forEach((job: any) => {
       const jobDate = new Date(job.creation_date * 1000)
-      
-      // Include jobs from targetDate and 3 days prior
-      if (jobDate >= threeDaysAgo && jobDate <= targetDateObj) {
-        const jobDateString = jobDate.toISOString().split('T')[0]
-        jobs.push({
-          title: job.title,
-          company: job.company_name,
-          url: job.link,
-          postedDate: jobDateString,
-          source: 'api',
-        })
-      }
+      const jobDateString = jobDate.toISOString().split('T')[0]
+      jobs.push({
+        title: job.title,
+        company: job.company_name,
+        url: job.link,
+        postedDate: jobDateString,
+        source: 'api',
+      })
     })
 
     if (debugMode) console.log(`[DEBUG] Stack Overflow: Found ${jobs.length} jobs in date range`)
@@ -217,27 +208,17 @@ async function fetchJoobleJobs(
     }
 
     const jobs: JobPosting[] = []
-    const targetDateObj = new Date(targetDate)
-    const threeDaysAgo = new Date(targetDateObj)
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
-
-    if (debugMode) console.log(`[DEBUG] Searching date range: ${threeDaysAgo.toISOString().split('T')[0]} to ${targetDate}`)
 
     response.data.jobs?.forEach((job: any) => {
       if (job.updated) {
         const postedDate = job.updated.split(' ')[0] // Extract YYYY-MM-DD
-        const jobDate = new Date(postedDate)
-        
-        // Include jobs from targetDate and 3 days prior
-        if (jobDate >= threeDaysAgo && jobDate <= targetDateObj) {
-          jobs.push({
-            title: job.title,
-            company: job.company,
-            url: job.link,
-            postedDate: postedDate,
-            source: 'api',
-          })
-        }
+        jobs.push({
+          title: job.title,
+          company: job.company,
+          url: job.link,
+          postedDate: postedDate,
+          source: 'api',
+        })
       }
     })
 
@@ -263,12 +244,10 @@ async function fetchGitHubSearchJobs(
 
     const jobs: JobPosting[] = []
     const targetDateObj = new Date(targetDate)
-    const threeDaysAgo = new Date(targetDateObj)
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
 
-    if (debugMode) console.log(`[DEBUG] Searching date range: ${threeDaysAgo.toISOString().split('T')[0]} to ${targetDate}`)
+    if (debugMode) console.log(`[DEBUG] Searching for jobs around date: ${targetDate}`)
 
-    // Search across 4 days (target date + 3 previous days)
+    // Search across 4 days for better coverage
     for (let i = 0; i < 4; i++) {
       const searchDate = new Date(targetDateObj)
       searchDate.setDate(searchDate.getDate() - i)
@@ -290,7 +269,7 @@ async function fetchGitHubSearchJobs(
           console.log(`[DEBUG] Items returned for ${searchDateStr}: ${response.data.items?.length || 0}`)
         }
 
-        response.data.items?.slice(0, 50).forEach((item: any) => {
+        response.data.items?.forEach((item: any) => {
           jobs.push({
             title: item.title,
             company: item.repository_url?.split('/')[4] || 'GitHub',
@@ -335,27 +314,17 @@ async function fetchRemoteOKJobs(
     }
 
     const jobs: JobPosting[] = []
-    const targetDateObj = new Date(targetDate)
-    const threeDaysAgo = new Date(targetDateObj)
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
-
-    if (debugMode) console.log(`[DEBUG] Searching date range: ${threeDaysAgo.toISOString().split('T')[0]} to ${targetDate}`)
 
     response.data?.forEach((job: any) => {
       if (job.date_posted) {
         const postedDate = new Date(job.date_posted * 1000).toISOString().split('T')[0]
-        const jobDate = new Date(postedDate)
-        
-        // Include jobs from targetDate and 3 days prior
-        if (jobDate >= threeDaysAgo && jobDate <= targetDateObj) {
-          jobs.push({
-            title: job.title,
-            company: job.company,
-            url: job.url,
-            postedDate: postedDate,
-            source: 'api',
-          })
-        }
+        jobs.push({
+          title: job.title,
+          company: job.company,
+          url: job.url,
+          postedDate: postedDate,
+          source: 'api',
+        })
       }
     })
 
