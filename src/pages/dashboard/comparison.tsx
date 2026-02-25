@@ -260,7 +260,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
             <tbody>
               {filtered.map((board) => (
                 <tr key={board.id} className="border-b border-gray-200">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                  <td className="px-6 py-4 text-sm font-medium text-white">
                     <a
                       href={board.affiliateUrl}
                       target="_blank"
@@ -270,7 +270,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                       {board.name}
                     </a>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
+                  <td className="px-6 py-4 text-sm text-gray-100">
                     {board.score}
                   </td>
                   <td className="px-6 py-4 text-sm">
@@ -288,10 +288,10 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                       {board.grade}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
+                  <td className="px-6 py-4 text-sm text-gray-100">
                     {board.industry}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700 min-w-80">
+                  <td className="px-6 py-4 text-sm text-gray-100 min-w-80">
                     <div className="flex flex-wrap gap-2">
                       {board.roles.length > 0 ? (
                         board.roles.map((role, idx) => (
@@ -300,20 +300,20 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                           </span>
                         ))
                       ) : (
-                        <span className="text-gray-500">N/A</span>
+                        <span className="text-gray-300">N/A</span>
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
+                  <td className="px-6 py-4 text-sm text-gray-100">
                     {board.avgLifespan} days
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
+                  <td className="px-6 py-4 text-sm text-gray-100">
                     {board.repostRate}%
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
+                  <td className="px-6 py-4 text-sm text-gray-100">
                     {board.totalPostings.toLocaleString()}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
+                  <td className="px-6 py-4 text-sm text-gray-100">
                     <div className="flex items-center gap-2">
                       <div className="w-24 h-2 bg-gray-200 rounded">
                         <div
@@ -321,10 +321,10 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                           style={{ width: `${board.dataQuality}%` }}
                         />
                       </div>
-                      <span>{board.dataQuality}%</span>
+                      <span className="text-gray-100">{board.dataQuality}%</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
+                  <td className="px-6 py-4 text-sm text-gray-100">
                     {board.trend === 'up'
                       ? '📈'
                       : board.trend === 'down'
