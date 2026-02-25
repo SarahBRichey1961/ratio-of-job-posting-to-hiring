@@ -7,7 +7,7 @@ import React from 'react'
 import { useRouter } from 'next/router'
 import { DashboardLayout } from '../../components/DashboardLayout'
 import PMDailyFeed from '../../components/PMDailyFeed'
-import ProtectedRoute from '../../components/ProtectedRoute'
+import { ProtectedRoute } from '../../components/ProtectedRoute'
 
 const PMAnalyticsDashboard: React.FC = () => {
   const router = useRouter()
