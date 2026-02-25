@@ -8,12 +8,9 @@ import {
   StatsSection,
 } from '@/components/DashboardUI'
 import { TrendChart, BoardScoresChart } from '@/components/Charts'
-import { IndustryBreakdown, IndustryStats } from '@/components/IndustryBreakdown'
 import {
-  getAllIndustryMetrics,
   getMarketTrends,
   getIndustriesByTrend,
-  type IndustryMetric,
 } from '@/lib/industryInsights'
 import { FALLBACK_BOARDS, calculateBoardMetrics } from '@/lib/fallbackBoardsData'
 
@@ -61,21 +58,15 @@ export default function InsightsPage() {
   const [insights, setInsights] = useState<InsightsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'metrics' | 'sources'>('metrics')
-  const [industryMetrics, setIndustryMetrics] = useState<IndustryMetric[]>([])
   const [marketTrends, setMarketTrends] = useState<any>(null)
 
   useEffect(() => {
-    // Fetch real industry metrics from database
+    // Fetch market trends from database
     const fetchData = async () => {
       try {
-        console.log('📊 Fetching industry metrics...')
-        const metrics = await getAllIndustryMetrics()
-        console.log('✅ Metrics fetched:', metrics)
-        
         const trends = await getMarketTrends()
         console.log('✅ Market trends fetched:', trends)
         
-        setIndustryMetrics(metrics)
         setMarketTrends(trends)
 
         // Calculate metrics from 70 fallback boards
@@ -371,18 +362,7 @@ export default function InsightsPage() {
         />
       </StatsSection>
 
-      {/* Industry Metrics Overview */}
-      {industryMetrics.length > 0 && (
-        <>
-          <Section title="Industry-by-Industry Breakdown">
-            <IndustryStats metrics={industryMetrics} />
-          </Section>
 
-          <Section title="Industry Performance Details">
-            <IndustryBreakdown metrics={industryMetrics} />
-          </Section>
-        </>
-      )}
 
       {/* Visualizations */}
       <Section title="Board Performance Trends">
