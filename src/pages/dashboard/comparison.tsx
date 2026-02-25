@@ -61,7 +61,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
   const filtered = useMemo(() => {
     let result = boards.filter((b) => {
       const scoreMatch = b.score >= minScore
-      const roleMatch = selectedRole === 'All Roles' || b.topRole === selectedRole
+      const roleMatch = selectedRole === 'All Roles' || (b.roleTypes && b.roleTypes.includes(selectedRole))
       const industryMatch =
         selectedIndustry === 'All Industries' || b.industry === selectedIndustry
       return scoreMatch && roleMatch && industryMatch
