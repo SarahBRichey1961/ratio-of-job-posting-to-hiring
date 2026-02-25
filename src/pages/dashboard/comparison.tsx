@@ -139,38 +139,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
       />
 
       <Section title="Filters">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Sort By
-            </label>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
-            >
-              <option value="score">Score</option>
-              <option value="lifespan">Avg Lifespan</option>
-              <option value="reposts">Repost Rate</option>
-              <option value="quality">Data Quality</option>
-              <option value="name">Name</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Order
-            </label>
-            <select
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
-            >
-              <option value="desc">Descending</option>
-              <option value="asc">Ascending</option>
-            </select>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Industry
