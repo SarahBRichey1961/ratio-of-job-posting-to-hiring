@@ -15,6 +15,7 @@ interface JobBoard {
   category: string
   industry: string
   description: string
+  role_types?: string
 }
 
 interface ComparisonRow {
@@ -31,6 +32,7 @@ interface ComparisonRow {
   trendValue: number
   dataQuality: number
   affiliateUrl: string
+  roleTypes: string
 }
 
 interface ComparisonProps {
@@ -236,6 +238,9 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                   Industry
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Available Roles
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Avg Lifespan
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -287,6 +292,11 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                     {board.industry}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-700">
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                      {board.roleTypes || 'N/A'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-700">
                     {board.avgLifespan} days
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-700">
@@ -321,7 +331,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
               {filtered.length === 0 && (
                 <tr>
                   <td
-                    colSpan={9}
+                    colSpan={10}
                     className="px-6 py-8 text-center text-gray-500"
                   >
                     No boards match the selected filters
@@ -373,6 +383,7 @@ function mapBoardToComparisonRow(
     trendValue: Math.random() * 5 - 2.5,
     dataQuality: 60 + Math.floor(Math.random() * 40),
     affiliateUrl: board.url,
+    roleTypes: board.role_types || 'General',
   }
 }
 
@@ -393,7 +404,7 @@ export const getServerSideProps: GetServerSideProps<ComparisonProps> =
 
       const { data: boardsData, error: boardsError } = await client
         .from('job_boards')
-        .select('*')
+        .select('id, name, url, category, industry, description')
         .order('industry')
         .order('name')
 
