@@ -1,11 +1,11 @@
-# GitHub Actions Workflow - Scrape Job Boards Twice Daily
+# GitHub Actions Workflow - Scrape Job Boards Twice Daily on Netlify
 name: Scrape Job Boards
 
 on:
   schedule:
-    # Run at 8 AM UTC (12 AM UTC becomes 8 AM in most business hours)
+    # Run at 8 AM UTC (adjust for your timezone)
     - cron: '0 8 * * *'
-    # Run at 6 PM UTC (second time)
+    # Run at 6 PM UTC
     - cron: '0 18 * * *'
   workflow_dispatch: # Allow manual trigger
 
@@ -13,6 +13,10 @@ jobs:
   scrape:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    
+    env:
+      NETLIFY_SITE_URL: ${{ secrets.NETLIFY_SITE_URL || 'https://ratio-job-posting-hiring.netlify.app' }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
     
     steps:
       - name: Check out code
@@ -29,11 +33,26 @@ jobs:
       - name: Build TypeScript
         run: npm run build
 
-      - name: Run job board scraper
+      - name: Run job board scraper locally
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: npx tsx scripts/scrapers/jobBoardScraper.ts
+
+      - name: Trigger Netlify endpoint (fallback/verification)
+        if: always()
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            "${{ env.NETLIFY_SITE_URL }}/api/cron/scrape-job-boards" \
+            --max-time 60 \
+            --connect-timeout 10 \
+            -w "\n%{http_code}\n"
+
+      - name: Log completion
+        if: success()
+        run: echo "✓ Job board scraper completed successfully at $(date)"
 
       - name: Notify on failure
         if: failure()
@@ -44,5 +63,6 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '❌ Job board scraper failed. Check the workflow logs.'
+              body: '❌ Job board scraper failed. Check workflow logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
             })
+

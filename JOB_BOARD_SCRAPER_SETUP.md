@@ -1,15 +1,15 @@
-# Job Board Scraper Setup Guide
+# Job Board Scraper Setup Guide (Netlify + GitHub Actions)
 
 ## Overview
 
-This system scrapes actual job posting counts from major job boards **twice daily** (8 AM and 6 PM UTC) and stores results in the database.
+This system scrapes actual job posting counts from major job boards **twice daily** (8 AM and 6 PM UTC) and stores results in the database. Uses **GitHub Actions** for reliable cron scheduling with **Netlify** for deployment.
 
 ## Architecture
 
 ```
-Cron Job (GitHub Actions / Railway)
+GitHub Actions (Cron Job)
     ↓
-/api/cron/scrape-job-boards endpoint
+/api/cron/scrape-job-boards endpoint (Netlify)
     ↓
 jobBoardScraper.ts (Puppeteer + Cheerio)
     ↓
@@ -36,6 +36,11 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
+Add to Netlify environment variables (Settings → Build & Deploy → Environment):
+- `CRON_SECRET`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
 ### 3. Create Database Table
 
 Run the migration:
@@ -48,35 +53,22 @@ supabase migration up
 # supabase/migrations/005_job_board_scrape_results.sql
 ```
 
-### 4. Choose a Cron Provider
-
-#### Option A: GitHub Actions (Recommended)
+### 4. GitHub Actions Setup (Recommended for Netlify)
 
 The workflow is already configured in `.github/workflows/scrape-job-boards.yml`
 
 **Setup:**
-1. Add secrets to your GitHub repo:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY`
+1. Add secrets to your GitHub repo (Settings → Secrets and variables → Actions):
+   - `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+   - `SUPABASE_SERVICE_ROLE_KEY` - Your Supabase service role key
+   - `CRON_SECRET` - A secure random string for API authentication
 
-2. The jobs run automatically at 8 AM and 6 PM UTC
+2. The jobs run automatically at 8 AM and 6 PM UTC every day
 
-#### Option B: Railway
-
-If using Railway for deployment:
-
-1. Update `railway.json` to include cron jobs (see config/cronJobs.ts)
-2. Set `CRON_SECRET` as a Railway environment variable
-3. Railway will execute the cron jobs
-
-#### Option C: External Cron Service (EasyCron, Cronitor, etc.)
-
-Use a service like EasyCron to POST to:
-
-```
-POST https://your-domain.com/api/cron/scrape-job-boards
-Header: Authorization: Bearer YOUR_CRON_SECRET
-```
+3. The workflow POST requests to your Netlify-deployed app:
+   ```
+   https://your-app.netlify.app/api/cron/scrape-job-boards
+   ```
 
 ### 5. Monitor Results
 
@@ -94,9 +86,15 @@ LIMIT 20;
 SELECT * FROM latest_job_counts;
 ```
 
-**API endpoint (test mode):**
+**API endpoint (test mode on localhost):**
 ```bash
 curl "http://localhost:3000/api/cron/scrape-job-boards?secret=YOUR_CRON_SECRET"
+```
+
+**Test on Netlify deployment:**
+```bash
+# Set your CRON_SECRET in Netlify env vars, then:
+curl "https://your-app.netlify.app/api/cron/scrape-job-boards?secret=YOUR_CRON_SECRET"
 ```
 
 ## Scraped Boards
@@ -117,23 +115,36 @@ Currently configured to scrape:
 
 ## Troubleshooting
 
+### GitHub Actions Workflow Not Running
+- Check `.github/workflows/scrape-job-boards.yml` is in main branch
+- Go to GitHub repo → Actions → Scrape Job Boards → See workflow status
+- If not running, click "Enable workflow"
+
 ### Scraper Fails on Specific Site
 - The site may have anti-bot protection
 - Try adjusting timeouts in `jobBoardScraper.ts`
-- Check if the CSS selector changed
+- Check if the CSS selector changed on the site
 
 ### "Unauthorized" Error
-- Verify `CRON_SECRET` matches in GitHub secrets and code
+- Verify `CRON_SECRET` is set in GitHub Actions secrets
+- Confirm the same secret is in Netlify environment variables
 - Check Authorization header format: `Bearer {secret}`
 
 ### Puppeteer Issues
-- Install Chromium separately: `npm install @types/puppeteer`
-- On Linux servers: `apt-get install chromium-browser`
+- Ensure dependencies installed: `npm install puppeteer`
+- On Netlify build, Puppeteer usually works out of box
+- Check build logs: Netlify Dashboard → Deploys → Build logs
 
 ### Database Connection Fails
-- Verify Supabase credentials
+- Verify Supabase credentials in GitHub secrets
 - Check database table was created with migration
 - Ensure service role key has insert permissions
+- Test connection: `curl -X POST ... -v` to see response
+
+### Scraper Timeout on Netlify Function
+- GitHub Actions makes HTTP requests (no function timeout)
+- Netlify Functions have 26-second timeout for free tier
+- Split scraping into smaller batches if needed
 
 ## Advanced Configuration
 
@@ -149,6 +160,11 @@ schedule:
   # - cron: '0 12 * * *' # Noon
   # - cron: '0 0 * * *'  # Midnight
 ```
+
+Times are in UTC. Adjust for your timezone:
+- UTC+0: Use times as-is
+- UTC+5 (EST): Subtract 5 hours
+- UTC+8 (PST): Subtract 8 hours
 
 ### Custom Scraping Logic
 
@@ -186,15 +202,18 @@ Comment out entries in `SCRAPE_CONFIGS` to skip them:
 2. **Terms of Service:** Some boards prohibit scraping in their ToS
 3. **Data Freshness:** Results stored in database with timestamps
 4. **Failure Handling:** Gracefully handles sites that block or fail
-5. **Cost:** Puppeteer uses resources; monitor function/container limits
+5. **Execution Time:** GitHub Actions runs are free up to 2000 minutes/month
 
-## Next Steps
+## Deployment Checklist
 
-1. Set up GitHub Actions secrets
-2. Run migration to create database table
-3. Test with: `/api/cron/scrape-job-boards?secret=YOUR_CRON_SECRET`
-4. Verify results appear in `job_board_scrape_results` table
-5. Create dashboard display component for live data
+- [ ] Puppeteer installed in `package.json`
+- [ ] Database migration created for `job_board_scrape_results` table
+- [ ] `.github/workflows/scrape-job-boards.yml` in main branch
+- [ ] Supabase credentials added to GitHub Actions secrets
+- [ ] `CRON_SECRET` set in both GitHub secrets and Netlify environment
+- [ ] `/api/cron/scrape-job-boards` endpoint deployed on Netlify
+- [ ] Test endpoint returns 200 status with data
+- [ ] Results appearing in `job_board_scrape_results` table after first run
 
 ## Dashboard Integration
 
@@ -213,3 +232,13 @@ const { data: allResults } = await supabase
 ```
 
 See `src/pages/dashboard/insights.tsx` for integration example.
+
+## Support & Debugging
+
+If scraper isn't working:
+
+1. **Check GitHub Actions logs:** Go to your repo → Actions → Scrape Job Boards → Latest run
+2. **Check Netlify function logs:** Go to Netlify Dashboard → Functions → Filter by date
+3. **Test manually:** Run `/api/cron/scrape-job-boards?secret=...` from your machine
+4. **Check database:** Query `SELECT * FROM job_board_scrape_results ORDER BY created_at DESC LIMIT 5;`
+
