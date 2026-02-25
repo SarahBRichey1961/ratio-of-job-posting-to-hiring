@@ -109,7 +109,7 @@ export default async function handler(
 
 /**
  * Stack Overflow Jobs API
- * Searches date range (target date - 3 days) for better coverage
+ * Filters jobs posted on target date only
  */
 async function fetchStackOverflowJobs(
   targetDate: string,
@@ -138,16 +138,20 @@ async function fetchStackOverflowJobs(
     response.data.items?.forEach((job: any) => {
       const jobDate = new Date(job.creation_date * 1000)
       const jobDateString = jobDate.toISOString().split('T')[0]
-      jobs.push({
-        title: job.title,
-        company: job.company_name,
-        url: job.link,
-        postedDate: jobDateString,
-        source: 'api',
-      })
+      
+      // Filter to jobs posted on target date only
+      if (jobDateString === targetDate) {
+        jobs.push({
+          title: job.title,
+          company: job.company_name,
+          url: job.link,
+          postedDate: jobDateString,
+          source: 'api',
+        })
+      }
     })
 
-    if (debugMode) console.log(`[DEBUG] Stack Overflow: Found ${jobs.length} jobs in date range`)
+    if (debugMode) console.log(`[DEBUG] Stack Overflow: Found ${jobs.length} jobs posted on ${targetDate}`)
     return jobs
   } catch (error) {
     console.error('Stack Overflow API error:', error)
@@ -179,7 +183,7 @@ async function fetchIndeedJobs(targetDate: string, debugMode: boolean = false): 
 
 /**
  * Jooble API - Free public job search API
- * Searches date range (target date - 3 days) for better coverage
+ * Filters jobs posted on target date only
  */
 async function fetchJoobleJobs(
   targetDate: string,
@@ -212,17 +216,21 @@ async function fetchJoobleJobs(
     response.data.jobs?.forEach((job: any) => {
       if (job.updated) {
         const postedDate = job.updated.split(' ')[0] // Extract YYYY-MM-DD
-        jobs.push({
-          title: job.title,
-          company: job.company,
-          url: job.link,
-          postedDate: postedDate,
-          source: 'api',
-        })
+        
+        // Filter to jobs posted on target date only
+        if (postedDate === targetDate) {
+          jobs.push({
+            title: job.title,
+            company: job.company,
+            url: job.link,
+            postedDate: postedDate,
+            source: 'api',
+          })
+        }
       }
     })
 
-    if (debugMode) console.log(`[DEBUG] Jooble: Found ${jobs.length} jobs in date range`)
+    if (debugMode) console.log(`[DEBUG] Jooble: Found ${jobs.length} jobs posted on ${targetDate}`)
     return jobs
   } catch (error) {
     console.error('Jooble API error:', error)
@@ -233,7 +241,7 @@ async function fetchJoobleJobs(
 
 /**
  * GitHub API for job search
- * Searches date range (target date - 3 days) for better coverage
+ * Filters jobs posted on target date only
  */
 async function fetchGitHubSearchJobs(
   targetDate: string,
@@ -245,45 +253,38 @@ async function fetchGitHubSearchJobs(
     const jobs: JobPosting[] = []
     const targetDateObj = new Date(targetDate)
 
-    if (debugMode) console.log(`[DEBUG] Searching for jobs around date: ${targetDate}`)
+    if (debugMode) console.log(`[DEBUG] Searching GitHub for jobs posted on: ${targetDate}`)
 
-    // Search across 4 days for better coverage
-    for (let i = 0; i < 4; i++) {
-      const searchDate = new Date(targetDateObj)
-      searchDate.setDate(searchDate.getDate() - i)
-      const searchDateStr = searchDate.toISOString().split('T')[0]
+    try {
+      const response = await axios.get('https://api.github.com/search/issues', {
+        params: {
+          q: `label:job type:issue created:${targetDate}`,
+          sort: 'created',
+          order: 'desc',
+          per_page: 100,
+        },
+        timeout: 10000,
+      })
 
-      try {
-        const response = await axios.get('https://api.github.com/search/issues', {
-          params: {
-            q: `label:job type:issue created:${searchDateStr}`,
-            sort: 'created',
-            order: 'desc',
-            per_page: 100,
-          },
-          timeout: 10000,
-        })
-
-        if (debugMode && i === 0) {
-          console.log(`[DEBUG] GitHub API response status: ${response.status}`)
-          console.log(`[DEBUG] Items returned for ${searchDateStr}: ${response.data.items?.length || 0}`)
-        }
-
-        response.data.items?.forEach((item: any) => {
-          jobs.push({
-            title: item.title,
-            company: item.repository_url?.split('/')[4] || 'GitHub',
-            url: item.html_url,
-            postedDate: searchDateStr,
-            source: 'api',
-          })
-        })
-      } catch (err) {
-        if (debugMode) console.log(`[DEBUG] GitHub search for ${searchDateStr} returned no results`)
+      if (debugMode) {
+        console.log(`[DEBUG] GitHub API response status: ${response.status}`)
+        console.log(`[DEBUG] Items returned: ${response.data.items?.length || 0}`)
       }
+
+      response.data.items?.forEach((item: any) => {
+        jobs.push({
+          title: item.title,
+          company: item.repository_url?.split('/')[4] || 'GitHub',
+          url: item.html_url,
+          postedDate: targetDate,
+          source: 'api',
+        })
+      })
+    } catch (err) {
+      if (debugMode) console.log(`[DEBUG] GitHub search failed: ${err}`)
     }
 
-    if (debugMode) console.log(`[DEBUG] GitHub: Found ${jobs.length} jobs in date range`)
+    if (debugMode) console.log(`[DEBUG] GitHub: Found ${jobs.length} jobs posted on ${targetDate}`)
     // Return unique jobs (limit to 50)
     return jobs.slice(0, 50)
   } catch (error) {
@@ -295,7 +296,7 @@ async function fetchGitHubSearchJobs(
 
 /**
  * RemoteOK API - Free API for remote jobs
- * Searches date range (target date - 3 days) for better coverage
+ * Filters jobs posted on target date only
  */
 async function fetchRemoteOKJobs(
   targetDate: string,
@@ -318,17 +319,21 @@ async function fetchRemoteOKJobs(
     response.data?.forEach((job: any) => {
       if (job.date_posted) {
         const postedDate = new Date(job.date_posted * 1000).toISOString().split('T')[0]
-        jobs.push({
-          title: job.title,
-          company: job.company,
-          url: job.url,
-          postedDate: postedDate,
-          source: 'api',
-        })
+        
+        // Filter to jobs posted on target date only
+        if (postedDate === targetDate) {
+          jobs.push({
+            title: job.title,
+            company: job.company,
+            url: job.url,
+            postedDate: postedDate,
+            source: 'api',
+          })
+        }
       }
     })
 
-    if (debugMode) console.log(`[DEBUG] RemoteOK: Found ${jobs.length} jobs in date range`)
+    if (debugMode) console.log(`[DEBUG] RemoteOK: Found ${jobs.length} jobs posted on ${targetDate}`)
     return jobs
   } catch (error) {
     console.error('RemoteOK API error:', error)
