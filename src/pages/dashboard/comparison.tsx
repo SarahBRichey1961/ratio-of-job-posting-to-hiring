@@ -32,7 +32,7 @@ interface ComparisonRow {
   trendValue: number
   dataQuality: number
   affiliateUrl: string
-  roleTypes: string
+  roles: string[]  // Array of role names from junction table
 }
 
 interface ComparisonProps {
@@ -61,14 +61,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
   const filtered = useMemo(() => {
     let result = boards.filter((b) => {
       const scoreMatch = b.score >= minScore
-      let roleMatch = selectedRole === 'All Roles'
-      
-      if (!roleMatch && selectedRole && b.roleTypes) {
-        // Split role_types by comma and trim whitespace, then do case-insensitive match
-        const boardRoles = b.roleTypes.split(',').map((r: string) => r.trim().toLowerCase())
-        roleMatch = boardRoles.some((role: string) => role.includes(selectedRole.toLowerCase()))
-      }
-      
+      const roleMatch = selectedRole === 'All Roles' || b.roles.includes(selectedRole)
       const industryMatch =
         selectedIndustry === 'All Industries' || b.industry === selectedIndustry
       return scoreMatch && roleMatch && industryMatch
@@ -300,7 +293,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-700">
                     <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                      {board.roleTypes || 'N/A'}
+                      {board.roles.length > 0 ? board.roles.join(', ') : 'N/A'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-700">
@@ -355,6 +348,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
 
 function mapBoardToComparisonRow(
   board: JobBoard,
+  roles: string[],
   index: number
 ): ComparisonRow {
   const score = 50 + Math.floor(Math.random() * 50)
@@ -373,9 +367,7 @@ function mapBoardToComparisonRow(
     grade = 'F'
   }
   
-  // Extract primary role from role_types
-  const roleTypesStr = board.role_types || 'General'
-  const roles = roleTypesStr.split(',').map((r: string) => r.trim())
+  // Use first role from array, or 'General' if no roles
   const topRole = roles.length > 0 ? roles[0] : 'General'
   
   return {
@@ -394,7 +386,7 @@ function mapBoardToComparisonRow(
     trendValue: Math.random() * 5 - 2.5,
     dataQuality: 60 + Math.floor(Math.random() * 40),
     affiliateUrl: board.url,
-    roleTypes: roleTypesStr,
+    roles: roles,
   }
 }
 
@@ -416,7 +408,7 @@ export const getServerSideProps: GetServerSideProps<ComparisonProps> =
 
       const { data: boardsData, error: boardsError } = await client
         .from('job_boards')
-        .select('id, name, url, category, industry, description, role_types')
+        .select('id, name, url, category, industry, description')
         .order('industry')
         .order('name')
 
@@ -424,6 +416,30 @@ export const getServerSideProps: GetServerSideProps<ComparisonProps> =
         console.error('Board fetch error:', boardsError)
         throw boardsError
       }
+
+      // Fetch all job_board_roles with role names
+      const { data: boardRolesData, error: boardRolesError } = await client
+        .from('job_board_roles')
+        .select('job_board_id, job_role_id, job_roles(name)')
+
+      if (boardRolesError) {
+        console.error('Board roles fetch error:', boardRolesError)
+      }
+
+      // Create a map of board_id -> [role_names]
+      const boardRolesMap: { [key: number]: string[] } = {}
+      ;(boardRolesData || []).forEach((br: any) => {
+        const boardId = br.job_board_id
+        const roleName = br.job_roles?.name
+        if (roleName) {
+          if (!boardRolesMap[boardId]) {
+            boardRolesMap[boardId] = []
+          }
+          if (!boardRolesMap[boardId].includes(roleName)) {
+            boardRolesMap[boardId].push(roleName)
+          }
+        }
+      })
 
       const { data: rolesData, error: rolesError } = await client
         .from('job_roles')
@@ -440,9 +456,12 @@ export const getServerSideProps: GetServerSideProps<ComparisonProps> =
 
       console.log(`✅ Found ${availableRoles.length} available roles`)
 
+      // Map boards with their roles from the junction table
       const comparisonRows = (boardsData || []).map(
-        (board: JobBoard, index: number) =>
-          mapBoardToComparisonRow(board, index)
+        (board: JobBoard, index: number) => {
+          const boardRoles = boardRolesMap[board.id] || []
+          return mapBoardToComparisonRow(board, boardRoles, index)
+        }
       )
 
       const uniqueIndustries = Array.from(
