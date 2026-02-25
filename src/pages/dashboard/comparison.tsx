@@ -237,7 +237,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Industry
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-80">
                   Available Roles
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -291,10 +291,18 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                   <td className="px-6 py-4 text-sm text-gray-700">
                     {board.industry}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                      {board.roles.length > 0 ? board.roles.join(', ') : 'N/A'}
-                    </span>
+                  <td className="px-6 py-4 text-sm text-gray-700 min-w-80">
+                    <div className="flex flex-wrap gap-2">
+                      {board.roles.length > 0 ? (
+                        board.roles.map((role, idx) => (
+                          <span key={idx} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded whitespace-nowrap">
+                            {role}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-500">N/A</span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-700">
                     {board.avgLifespan} days
