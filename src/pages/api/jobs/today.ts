@@ -1,15 +1,15 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import puppeteer, { Browser } from 'puppeteer'
 import axios from 'axios'
 
 /**
- * API endpoint to get jobs posted "today" (first day posting only) for a specific board
- * Uses board-specific APIs and scrapers for accurate job extraction
+ * API endpoint to get jobs posted "today" for a specific board
+ * Uses free public job APIs (no authentication required)
  * 
  * Query params:
  * - boardId: number (required) - ID of the job board
  * - boardName: string (required) - Name of the job board
  * - date: string (optional) - Date to query in YYYY-MM-DD format, defaults to today
+ * - debug: boolean (optional) - Enable debug logging
  */
 
 interface JobPosting {
@@ -48,39 +48,40 @@ export default async function handler(
       })
     }
 
-    // Try API first, fall back to scraper
     let jobs: JobPosting[] = []
 
-    switch (boardName) {
+    // Route to appropriate API based on board
+    const boardNameStr = boardName as string
+    switch (boardNameStr) {
       case 'Stack Overflow Jobs':
         if (debugMode) console.log(`[DEBUG] Using Stack Overflow API`)
         jobs = await fetchStackOverflowJobs(targetDate, debugMode)
         break
+      
       case 'Indeed':
-        if (debugMode) console.log(`[DEBUG] Using Indeed scraper`)
-        jobs = await scrapeIndeedJobs(targetDate, debugMode)
+      case 'General':
+      case 'Remote':
+        if (debugMode) console.log(`[DEBUG] Using Jooble API for ${boardNameStr}`)
+        jobs = await fetchJoobleJobs(targetDate, debugMode)
         break
+      
       case 'LinkedIn':
-        if (debugMode) console.log(`[DEBUG] Using LinkedIn scraper`)
-        jobs = await scrapeLinkedInJobs(targetDate, debugMode)
-        break
       case 'GitHub Jobs':
-        jobs = await scrapeGitHubJobs(targetDate, debugMode)
-        break
       case 'Built In':
-        jobs = await scrapeBuiltInJobs(targetDate, debugMode)
-        break
-      case 'FlexJobs':
-        jobs = await scrapeFlexJobsJobs(targetDate, debugMode)
-        break
       case 'Dice':
-        jobs = await scrapeDiceJobs(targetDate, debugMode)
-        break
       case 'AngelList Talent':
-        jobs = await scrapeAngelListJobs(targetDate, debugMode)
+        if (debugMode) console.log(`[DEBUG] Using GitHub Search API for ${boardNameStr}`)
+        jobs = await fetchGitHubSearchJobs(targetDate, debugMode)
         break
+      
+      case 'FlexJobs':
+        if (debugMode) console.log(`[DEBUG] Using RemoteOK API for ${boardNameStr}`)
+        jobs = await fetchRemoteOKJobs(targetDate, debugMode)
+        break
+      
       default:
-        jobs = await genericBoardScraper(boardName as string, targetDate, debugMode)
+        if (debugMode) console.log(`[DEBUG] Using Jooble API for unknown board: ${boardNameStr}`)
+        jobs = await fetchJoobleJobs(targetDate, debugMode)
     }
 
     const response = {
@@ -179,517 +180,161 @@ async function fetchIndeedJobs(targetDate: string, debugMode: boolean = false): 
     // Indeed Employer API (requires authentication)
     const apiKey = process.env.INDEED_API_KEY
     if (!apiKey) {
-      if (debugMode) console.log('[DEBUG] Indeed API key not configured, using scraper')
-      return scrapeIndeedJobs(targetDate, debugMode)
+      if (debugMode) console.log('[DEBUG] Indeed API key not configured, using fallback')
+      return fetchJoobleJobs(targetDate, debugMode)
     }
 
     // This is a placeholder - actual Indeed API implementation depends on your subscription tier
-    // For now, fall back to scraper
-    return scrapeIndeedJobs(targetDate, debugMode)
+    // For now, fall back to Jooble
+    return fetchJoobleJobs(targetDate, debugMode)
   } catch (error) {
     console.error('Indeed API error:', error)
-    return scrapeIndeedJobs(targetDate, debugMode)
+    return fetchJoobleJobs(targetDate, debugMode)
   }
 }
 
 /**
- * Scrape LinkedIn Jobs
+ * Jooble API - Free public job search API
+ * No authentication required
  */
-async function scrapeLinkedInJobs(
+async function fetchJoobleJobs(
   targetDate: string,
   debugMode: boolean = false
 ): Promise<JobPosting[]> {
-  let browser: Browser | null = null
   try {
-    if (debugMode) console.log(`[DEBUG] Starting LinkedIn scraper`)
+    if (debugMode) console.log(`[DEBUG] Fetching Jooble API for date: ${targetDate}`)
 
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    })
-
-    const page = await browser.newPage()
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    const response = await axios.post(
+      'https://api.jooble.org/api/v2/search',
+      {
+        keywords: 'engineer',
+        pageSize: 100,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 10000,
+      }
     )
 
-    if (debugMode) console.log(`[DEBUG] Navigating to LinkedIn jobs`)
-    await page.goto('https://linkedin.com/jobs/search/?sortBy=recent', {
-      waitUntil: 'networkidle2',
-      timeout: 30000,
+    if (debugMode) {
+      console.log(`[DEBUG] Jooble API response status: ${response.status}`)
+      console.log(`[DEBUG] Jobs returned: ${response.data.jobs?.length || 0}`)
+    }
+
+    const jobs: JobPosting[] = []
+
+    response.data.jobs?.forEach((job: any) => {
+      if (job.updated) {
+        const postedDate = job.updated.split(' ')[0] // Extract YYYY-MM-DD
+        if (postedDate === targetDate) {
+          jobs.push({
+            title: job.title,
+            company: job.company,
+            url: job.link,
+            postedDate: targetDate,
+            source: 'api',
+          })
+        }
+      }
     })
 
-    if (debugMode) console.log(`[DEBUG] Extracting LinkedIn jobs`)
-    const jobs = await page.evaluate((queryDate: string) => {
-      const jobsList: JobPosting[] = []
-      const jobCards = document.querySelectorAll(
-        '[data-job-id], .base-card, .jobs-search__results-list li'
-      )
-
-      let foundToday = 0
-      jobCards.forEach((card) => {
-        const titleEl = card.querySelector(
-          '.base-search-card__title, .job-card-title, h3'
-        )
-        const companyEl = card.querySelector(
-          '.base-search-card__subtitle, .job-card-container__company-name'
-        )
-        const dateEl = card.querySelector('time')
-
-        if (titleEl && dateEl?.textContent?.includes('day')) {
-          jobsList.push({
-            title: titleEl.textContent?.trim() || 'Unknown',
-            company: companyEl?.textContent?.trim() || 'Unknown',
-            url: (card as HTMLElement).closest('a')?.href || undefined,
-            postedDate: queryDate,
-            source: 'scraper',
-          })
-          foundToday++
-        }
-      })
-
-      return jobsList
-    }, targetDate)
-
-    if (debugMode) console.log(`[DEBUG] Extracted ${jobs.length} jobs from LinkedIn`)
+    if (debugMode) console.log(`[DEBUG] Jooble: Found ${jobs.length} matching jobs`)
     return jobs
   } catch (error) {
-    console.error('LinkedIn scrape error:', error)
-    if (debugMode) console.error('[DEBUG] LinkedIn scrape error details:', error)
+    console.error('Jooble API error:', error)
+    if (debugMode) console.error('[DEBUG] Jooble error details:', error)
     return []
-  } finally {
-    if (browser) await browser.close()
   }
 }
 
 /**
- * Scrape Indeed Jobs
+ * GitHub API for job search
+ * Using GitHub API to search issues/discussions with job listings
  */
-async function scrapeIndeedJobs(targetDate: string, debugMode: boolean = false): Promise<JobPosting[]> {
-  let browser: Browser | null = null
-  try {
-    if (debugMode) console.log(`[DEBUG] Starting Indeed scraper`)
-
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    })
-
-    const page = await browser.newPage()
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-    )
-
-    if (debugMode) console.log(`[DEBUG] Navigating to Indeed jobs`)
-    await page.goto('https://indeed.com/jobs?q=&sort=date', {
-      waitUntil: 'networkidle2',
-      timeout: 30000,
-    })
-
-    if (debugMode) console.log(`[DEBUG] Extracting Indeed jobs`)
-    const jobs = await page.evaluate((queryDate: string) => {
-      const jobsList: JobPosting[] = []
-      const jobCards = document.querySelectorAll('.job_seen_beacon, .resultContent')
-
-      let checked = 0
-      jobCards.forEach((card) => {
-        const titleEl = card.querySelector(
-          '.jobTitle span, h2 a, .jcs-JobTitle'
-        )
-        const companyEl = card.querySelector(
-          '[data-company-name], .company_location span'
-        )
-        const dateEl = card.querySelector('.date')
-
-        checked++
-
-        // Check if job was posted today
-        if (dateEl?.textContent?.includes('24 hours') || dateEl?.textContent?.includes('Today')) {
-          jobsList.push({
-            title: titleEl?.textContent?.trim() || 'Unknown',
-            company: companyEl?.textContent?.trim() || 'Unknown',
-            url: titleEl?.closest('a')?.href || undefined,
-            postedDate: queryDate,
-            source: 'scraper',
-          })
-        }
-      })
-
-      return jobsList
-    }, targetDate)
-
-    if (debugMode) console.log(`[DEBUG] Extracted ${jobs.length} jobs from Indeed`)
-    return jobs
-  } catch (error) {
-    console.error('Indeed scrape error:', error)
-    if (debugMode) console.error('[DEBUG] Indeed scrape error details:', error)
-    return []
-  } finally {
-    if (browser) await browser.close()
-  }
-}
-
-/**
- * Scrape GitHub Jobs
- */
-async function scrapeGitHubJobs(targetDate: string, debugMode: boolean = false): Promise<JobPosting[]> {
-  let browser: Browser | null = null
-  try {
-    if (debugMode) console.log(`[DEBUG] Starting GitHub Jobs scraper`)
-
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    })
-
-    const page = await browser.newPage()
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-    )
-
-    if (debugMode) console.log(`[DEBUG] Navigating to GitHub Jobs`)
-    await page.goto('https://jobs.github.com?search=&location=', {
-      waitUntil: 'networkidle2',
-      timeout: 30000,
-    })
-
-    if (debugMode) console.log(`[DEBUG] Extracting GitHub Jobs`)
-    const jobs = await page.evaluate((queryDate: string) => {
-      const jobsList: JobPosting[] = []
-      const jobCards = document.querySelectorAll('.job-post-btn-group, .job-listing-preview')
-
-      jobCards.forEach((card) => {
-        const titleEl = card.querySelector('h2, .listing-title')
-        const companyEl = card.querySelector('h3, .company-name')
-        const dateEl = card.querySelector('.when, time')
-
-        if (titleEl) {
-          jobsList.push({
-            title: titleEl.textContent?.trim() || 'Unknown',
-            company: companyEl?.textContent?.trim() || 'Unknown',
-            url: (card as HTMLElement).closest('a')?.href || undefined,
-            postedDate: queryDate,
-            source: 'scraper',
-          })
-        }
-      })
-
-      return jobsList
-    }, targetDate)
-
-    if (debugMode) console.log(`[DEBUG] Extracted ${jobs.length} jobs from GitHub Jobs`)
-    return jobs
-  } catch (error) {
-    console.error('GitHub scrape error:', error)
-    if (debugMode) console.error('[DEBUG] GitHub scrape error details:', error)
-    return []
-  } finally {
-    if (browser) await browser.close()
-  }
-}
-
-/**
- * Scrape Built In
- */
-async function scrapeBuiltInJobs(targetDate: string, debugMode: boolean = false): Promise<JobPosting[]> {
-  let browser: Browser | null = null
-  try {
-    if (debugMode) console.log(`[DEBUG] Starting Built In scraper`)
-
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    })
-
-    const page = await browser.newPage()
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-    )
-
-    if (debugMode) console.log(`[DEBUG] Navigating to Built In jobs`)
-    await page.goto('https://builtin.com/jobs', {
-      waitUntil: 'networkidle2',
-      timeout: 30000,
-    })
-
-    if (debugMode) console.log(`[DEBUG] Extracting Built In jobs`)
-    const jobs = await page.evaluate((queryDate: string) => {
-      const jobsList: JobPosting[] = []
-      const jobCards = document.querySelectorAll('[data-testid="job-card"], .job-card')
-
-      jobCards.forEach((card) => {
-        const titleEl = card.querySelector('h2, .job-title')
-        const companyEl = card.querySelector('.company-name, [data-testid="company-name"]')
-
-        if (titleEl) {
-          jobsList.push({
-            title: titleEl.textContent?.trim() || 'Unknown',
-            company: companyEl?.textContent?.trim() || 'Unknown',
-            url: (card as HTMLElement).closest('a')?.href || undefined,
-            postedDate: queryDate,
-            source: 'scraper',
-          })
-        }
-      })
-
-      return jobsList
-    }, targetDate)
-
-    if (debugMode) console.log(`[DEBUG] Extracted ${jobs.length} jobs from Built In`)
-    return jobs
-  } catch (error) {
-    console.error('Built In scrape error:', error)
-    if (debugMode) console.error('[DEBUG] Built In scrape error details:', error)
-    return []
-  } finally {
-    if (browser) await browser.close()
-  }
-}
-
-/**
- * Scrape FlexJobs
- */
-async function scrapeFlexJobsJobs(targetDate: string, debugMode: boolean = false): Promise<JobPosting[]> {
-  let browser: Browser | null = null
-  try {
-    if (debugMode) console.log(`[DEBUG] Starting FlexJobs scraper`)
-
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    })
-
-    const page = await browser.newPage()
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-    )
-
-    if (debugMode) console.log(`[DEBUG] Navigating to FlexJobs`)
-    await page.goto('https://flexjobs.com/search', {
-      waitUntil: 'networkidle2',
-      timeout: 30000,
-    })
-
-    if (debugMode) console.log(`[DEBUG] Extracting FlexJobs`)
-    const jobs = await page.evaluate((queryDate: string) => {
-      const jobsList: JobPosting[] = []
-      const jobCards = document.querySelectorAll('[data-job-id], .job-listing')
-
-      jobCards.forEach((card) => {
-        const titleEl = card.querySelector('.job-title, h2, a')
-        const companyEl = card.querySelector('.company-name')
-        const dateEl = card.querySelector('[data-posted], .posted-date')
-
-        if (titleEl && dateEl?.textContent?.includes('today')) {
-          jobsList.push({
-            title: titleEl.textContent?.trim() || 'Unknown',
-            company: companyEl?.textContent?.trim() || 'Unknown',
-            url: titleEl.closest('a')?.href || undefined,
-            postedDate: queryDate,
-            source: 'scraper',
-          })
-        }
-      })
-
-      return jobsList
-    }, targetDate)
-
-    if (debugMode) console.log(`[DEBUG] Extracted ${jobs.length} jobs from FlexJobs`)
-    return jobs
-  } catch (error) {
-    console.error('FlexJobs scrape error:', error)
-    if (debugMode) console.error('[DEBUG] FlexJobs scrape error details:', error)
-    return []
-  } finally {
-    if (browser) await browser.close()
-  }
-}
-
-/**
- * Scrape Dice
- */
-async function scrapeDiceJobs(targetDate: string, debugMode: boolean = false): Promise<JobPosting[]> {
-  let browser: Browser | null = null
-  try {
-    if (debugMode) console.log(`[DEBUG] Starting Dice scraper`)
-
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    })
-
-    const page = await browser.newPage()
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-    )
-
-    if (debugMode) console.log(`[DEBUG] Navigating to Dice jobs`)
-    await page.goto('https://dice.com/jobs?q=&ecl=true', {
-      waitUntil: 'networkidle2',
-      timeout: 30000,
-    })
-
-    if (debugMode) console.log(`[DEBUG] Extracting Dice jobs`)
-    const jobs = await page.evaluate((queryDate: string) => {
-      const jobsList: JobPosting[] = []
-      const jobCards = document.querySelectorAll(
-        '[data-testid="search-card"], .search-card'
-      )
-
-      jobCards.forEach((card) => {
-        const titleEl = card.querySelector('.card-title, h2, a')
-        const companyEl = card.querySelector('.company-name')
-
-        if (titleEl) {
-          jobsList.push({
-            title: titleEl.textContent?.trim() || 'Unknown',
-            company: companyEl?.textContent?.trim() || 'Unknown',
-            url: titleEl.closest('a')?.href || undefined,
-            postedDate: queryDate,
-            source: 'scraper',
-          })
-        }
-      })
-
-      return jobsList
-    }, targetDate)
-
-    if (debugMode) console.log(`[DEBUG] Extracted ${jobs.length} jobs from Dice`)
-    return jobs
-  } catch (error) {
-    console.error('Dice scrape error:', error)
-    if (debugMode) console.error('[DEBUG] Dice scrape error details:', error)
-    return []
-  } finally {
-    if (browser) await browser.close()
-  }
-}
-
-/**
- * Scrape AngelList Jobs
- */
-async function scrapeAngelListJobs(targetDate: string, debugMode: boolean = false): Promise<JobPosting[]> {
-  let browser: Browser | null = null
-  try {
-    if (debugMode) console.log(`[DEBUG] Starting AngelList scraper`)
-
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    })
-
-    const page = await browser.newPage()
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-    )
-
-    if (debugMode) console.log(`[DEBUG] Navigating to AngelList jobs`)
-    await page.goto('https://angel.co/jobs', {
-      waitUntil: 'networkidle2',
-      timeout: 30000,
-    })
-
-    if (debugMode) console.log(`[DEBUG] Extracting AngelList jobs`)
-    const jobs = await page.evaluate((queryDate: string) => {
-      const jobsList: JobPosting[] = []
-      const jobCards = document.querySelectorAll('[data-test="job-card"], .job-card')
-
-      jobCards.forEach((card) => {
-        const titleEl = card.querySelector('h2, .job-title, a')
-        const companyEl = card.querySelector('.company-name, [data-test="company"]')
-
-        if (titleEl) {
-          jobsList.push({
-            title: titleEl.textContent?.trim() || 'Unknown',
-            company: companyEl?.textContent?.trim() || 'Unknown',
-            url: titleEl.closest('a')?.href || undefined,
-            postedDate: queryDate,
-            source: 'scraper',
-          })
-        }
-      })
-
-      return jobsList
-    }, targetDate)
-
-    if (debugMode) console.log(`[DEBUG] Extracted ${jobs.length} jobs from AngelList`)
-    return jobs
-  } catch (error) {
-    console.error('AngelList scrape error:', error)
-    if (debugMode) console.error('[DEBUG] AngelList scrape error details:', error)
-    return []
-  } finally {
-    if (browser) await browser.close()
-  }
-}
-
-/**
- * Generic board scraper for unknown boards
- */
-async function genericBoardScraper(
-  boardName: string,
+async function fetchGitHubSearchJobs(
   targetDate: string,
   debugMode: boolean = false
 ): Promise<JobPosting[]> {
-  let browser: Browser | null = null
   try {
-    if (debugMode) console.log(`[DEBUG] Starting generic scraper for board: ${boardName}`)
+    if (debugMode) console.log(`[DEBUG] Fetching GitHub Search API for date: ${targetDate}`)
 
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    const response = await axios.get('https://api.github.com/search/issues', {
+      params: {
+        q: `label:job type:issue created:${targetDate}`,
+        sort: 'created',
+        order: 'desc',
+        per_page: 100,
+      },
+      timeout: 10000,
     })
 
-    const page = await browser.newPage()
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-    )
+    if (debugMode) {
+      console.log(`[DEBUG] GitHub API response status: ${response.status}`)
+      console.log(`[DEBUG] Items returned: ${response.data.items?.length || 0}`)
+    }
 
-    // Generic job board URL pattern
-    const searchUrl = `https://www.${boardName.toLowerCase().replace(/\s+/g, '')}.com/jobs`
+    const jobs: JobPosting[] = response.data.items?.slice(0, 50).map((item: any) => ({
+      title: item.title,
+      company: item.repository_url?.split('/')[4] || 'GitHub',
+      url: item.html_url,
+      postedDate: targetDate,
+      source: 'api',
+    })) || []
 
-    if (debugMode) console.log(`[DEBUG] Navigating to ${searchUrl}`)
-    await page.goto(searchUrl, {
-      waitUntil: 'networkidle2',
-      timeout: 30000,
-    }).catch(() => {
-      if (debugMode) console.log(`[DEBUG] Failed to navigate to ${searchUrl}, continuing with current page`)
-      return null
-    })
-
-    if (debugMode) console.log(`[DEBUG] Extracting jobs from generic board`)
-    const jobs = await page.evaluate(() => {
-      const jobsList: JobPosting[] = []
-      const jobCards = document.querySelectorAll(
-        '[class*="job"], [class*="posting"], article, .listing'
-      )
-
-      jobCards.forEach((card) => {
-        const titleEl = card.querySelector(
-          'h2, h3, [class*="title"], a[href*="job"]'
-        )
-
-        if (titleEl) {
-          jobsList.push({
-            title: titleEl.textContent?.trim() || 'Unknown',
-            company: 'Unknown',
-            postedDate: new Date().toISOString().split('T')[0],
-            source: 'scraper',
-          })
-        }
-      })
-
-      return jobsList
-    })
-
-    if (debugMode) console.log(`[DEBUG] Extracted ${jobs.length} jobs from generic board`)
+    if (debugMode) console.log(`[DEBUG] GitHub: Found ${jobs.length} matching jobs`)
     return jobs
   } catch (error) {
-    console.error(`Generic scrape error for ${boardName}:`, error)
-    if (debugMode) console.error(`[DEBUG] Generic scrape error details for ${boardName}:`, error)
+    console.error('GitHub API error:', error)
+    if (debugMode) console.error('[DEBUG] GitHub API error details:', error)
     return []
-  } finally {
-    if (browser) await browser.close()
+  }
+}
+
+/**
+ * RemoteOK API - Free API for remote jobs
+ * No authentication required
+ */
+async function fetchRemoteOKJobs(
+  targetDate: string,
+  debugMode: boolean = false
+): Promise<JobPosting[]> {
+  try {
+    if (debugMode) console.log(`[DEBUG] Fetching RemoteOK API for date: ${targetDate}`)
+
+    const response = await axios.get('https://remoteok.io/api', {
+      timeout: 10000,
+    })
+
+    if (debugMode) {
+      console.log(`[DEBUG] RemoteOK API response status: ${response.status}`)
+      console.log(`[DEBUG] Jobs returned: ${response.data?.length || 0}`)
+    }
+
+    const jobs: JobPosting[] = []
+
+    response.data?.forEach((job: any) => {
+      if (job.date_posted) {
+        const postedDate = new Date(job.date_posted * 1000).toISOString().split('T')[0]
+        if (postedDate === targetDate) {
+          jobs.push({
+            title: job.title,
+            company: job.company,
+            url: job.url,
+            postedDate: targetDate,
+            source: 'api',
+          })
+        }
+      }
+    })
+
+    if (debugMode) console.log(`[DEBUG] RemoteOK: Found ${jobs.length} matching jobs`)
+    return jobs
+  } catch (error) {
+    console.error('RemoteOK API error:', error)
+    if (debugMode) console.error('[DEBUG] RemoteOK error details:', error)
+    return []
   }
 }
 
