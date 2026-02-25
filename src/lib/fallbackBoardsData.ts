@@ -109,6 +109,9 @@ export const FALLBACK_BOARDS: BoardData[] = [
   { id: 68, name: 'HCareers', url: 'https://hcareers.com', industry: 'Retail & Hospitality', score: 68, grade: 'D', avgLifespan: 24, repostRate: 14.8, totalPostings: 2200, topRole: 'Manager', trend: 'down', trendValue: -2.0, dataQuality: 73, affiliateUrl: 'https://hcareers.com', roles: ['Manager', 'Sales', 'Administrative'] },
   { id: 69, name: 'Poached Jobs', url: 'https://poachedjobs.com', industry: 'Retail & Hospitality', score: 67, grade: 'D', avgLifespan: 25, repostRate: 15.1, totalPostings: 1800, topRole: 'Manager', trend: 'down', trendValue: -1.5, dataQuality: 72, affiliateUrl: 'https://poachedjobs.com', roles: ['Manager', 'Sales', 'Administrative'] },
   { id: 70, name: 'Culinary Agents', url: 'https://culinaryagents.com', industry: 'Retail & Hospitality', score: 66, grade: 'D', avgLifespan: 26, repostRate: 15.8, totalPostings: 1500, topRole: 'Operations', trend: 'down', trendValue: -1.8, dataQuality: 70, affiliateUrl: 'https://culinaryagents.com', roles: ['Operations', 'Manager', 'Sales'] },
+
+  // FlexJobs also in Technology (has tech roles)
+  { id: 71, name: 'FlexJobs', url: 'https://flexjobs.com', industry: 'Technology', score: 82, grade: 'A', avgLifespan: 18, repostRate: 7.8, totalPostings: 2100, topRole: 'Full-Stack Engineer', trend: 'up', trendValue: 2.1, dataQuality: 88, affiliateUrl: 'https://flexjobs.com', roles: ['Full-Stack Engineer', 'Front-End Engineer', 'Developer', 'Designer', 'Product Manager'] },
 ]
 
 /**
