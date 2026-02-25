@@ -8,6 +8,44 @@ import {
   Section,
 } from '@/components/DashboardUI'
 
+// Fallback data for industries
+const FALLBACK_INDUSTRIES = [
+  'Construction',
+  'Creative & Media',
+  'Education',
+  'Finance & Accounting',
+  'General',
+  'Government',
+  'Legal',
+  'Manufacturing',
+  'Remote',
+  'Retail & Hospitality',
+]
+
+// Fallback data for roles
+const FALLBACK_ROLES = [
+  'Accountant',
+  'Administrative',
+  'Business Analyst',
+  'Data Scientist',
+  'Designer',
+  'Developer',
+  'Finance Manager',
+  'Front-End Engineer',
+  'Full-Stack Engineer',
+  'Game Developer',
+  'Health Professional',
+  'Help Desk',
+  'HR Manager',
+  'Legal Professional',
+  'Manager',
+  'Marketing',
+  'Operations',
+  'Product Manager',
+  'Sales',
+  'Software Engineer',
+]
+
 interface JobBoard {
   id: number
   name: string
@@ -377,8 +415,8 @@ export const getServerSideProps: GetServerSideProps<ComparisonProps> =
         return {
           props: {
             boards: [],
-            industries: [],
-            availableRoles: [],
+            industries: FALLBACK_INDUSTRIES,
+            availableRoles: FALLBACK_ROLES,
           },
         }
       }
@@ -391,7 +429,7 @@ export const getServerSideProps: GetServerSideProps<ComparisonProps> =
 
       if (boardsError) {
         console.error('Board fetch error:', boardsError)
-        throw boardsError
+        // Still try to get roles even if boards failed
       }
 
       // Fetch all job_board_roles with role names
@@ -427,9 +465,15 @@ export const getServerSideProps: GetServerSideProps<ComparisonProps> =
         console.error('Roles fetch error:', rolesError)
       }
 
-      const availableRoles = (rolesData || [])
+      let availableRoles = (rolesData || [])
         .map((r: any) => r.name)
         .filter(Boolean) as string[]
+
+      // Use fallback roles if database is empty or error
+      if (!availableRoles || availableRoles.length === 0) {
+        console.log('⚠️ Using fallback roles because database returned empty')
+        availableRoles = FALLBACK_ROLES
+      }
 
       console.log(`✅ Found ${availableRoles.length} available roles`)
 
@@ -441,13 +485,19 @@ export const getServerSideProps: GetServerSideProps<ComparisonProps> =
         }
       )
 
-      const uniqueIndustries = Array.from(
+      let uniqueIndustries = Array.from(
         new Set(
           (boardsData || [])
             .map((b: JobBoard) => b.industry)
             .filter(Boolean)
         )
       ).sort() as string[]
+
+      // Use fallback industries if database is empty
+      if (!uniqueIndustries || uniqueIndustries.length === 0) {
+        console.log('⚠️ Using fallback industries because database returned empty')
+        uniqueIndustries = FALLBACK_INDUSTRIES
+      }
 
       console.log(`✅ Found industries: ${uniqueIndustries.join(', ')}`)
 
@@ -460,11 +510,12 @@ export const getServerSideProps: GetServerSideProps<ComparisonProps> =
       }
     } catch (error) {
       console.error('Error in getServerSideProps:', error)
+      // Return fallback data on error instead of empty arrays
       return {
         props: {
           boards: [],
-          industries: [],
-          availableRoles: [],
+          industries: FALLBACK_INDUSTRIES,
+          availableRoles: FALLBACK_ROLES,
         },
       }
     }
