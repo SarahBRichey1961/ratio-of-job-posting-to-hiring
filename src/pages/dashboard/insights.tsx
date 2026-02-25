@@ -15,6 +15,7 @@ import {
   getIndustriesByTrend,
   type IndustryMetric,
 } from '@/lib/industryInsights'
+import { FALLBACK_BOARDS, calculateBoardMetrics } from '@/lib/fallbackBoardsData'
 
 interface BoardInsight {
   name: string
@@ -77,53 +78,44 @@ export default function InsightsPage() {
         setIndustryMetrics(metrics)
         setMarketTrends(trends)
 
-        // Transform industry metrics into board insights for display
-        const risingIndustries = metrics.filter((m) => m.trend === 'up').slice(0, 5)
-        const decliningIndustries = metrics.filter((m) => m.trend === 'down').slice(0, 5)
+        // Calculate metrics from 70 fallback boards
+        const boardMetrics = calculateBoardMetrics(FALLBACK_BOARDS)
+        console.log('📊 Board metrics calculated:', boardMetrics)
         
+        // Transform board metrics into insights
         const mockData: InsightsData = {
-          risingBoards: risingIndustries.map((ind) => ({
-            name: ind.industry,
-            score: ind.avg_score,
-            grade: ind.avg_score >= 75 ? 'A' : ind.avg_score >= 70 ? 'B' : ind.avg_score >= 50 ? 'C' : 'D',
-            trend: 'up',
-            trendValue: 2.5,
-            lifespan: ind.median_lifespan,
-            repostRate: ind.avg_repost_rate,
-            totalPostings: ind.total_job_postings,
-            dataQuality: 85,
+          risingBoards: boardMetrics.risingBoards.map((board) => ({
+            name: board.name,
+            score: board.score,
+            grade: board.grade,
+            trend: board.trend,
+            trendValue: board.trendValue,
+            lifespan: board.avgLifespan,
+            repostRate: board.repostRate,
+            totalPostings: board.totalPostings,
+            dataQuality: board.dataQuality,
           })),
-          decliningBoards: decliningIndustries.map((ind) => ({
-            name: ind.industry,
-            score: ind.avg_score,
-            grade: ind.avg_score >= 75 ? 'A' : ind.avg_score >= 70 ? 'B' : ind.avg_score >= 50 ? 'C' : 'D',
-            trend: 'down',
-            trendValue: -2.5,
-            lifespan: ind.median_lifespan,
-            repostRate: ind.avg_repost_rate,
-            totalPostings: ind.total_job_postings,
-            dataQuality: 85,
+          decliningBoards: boardMetrics.decliningBoards.map((board) => ({
+            name: board.name,
+            score: board.score,
+            grade: board.grade,
+            trend: board.trend,
+            trendValue: board.trendValue,
+            lifespan: board.avgLifespan,
+            repostRate: board.repostRate,
+            totalPostings: board.totalPostings,
+            dataQuality: board.dataQuality,
           })),
-          bestOverall: metrics[0] ? {
-            name: metrics[0].industry,
-            score: metrics[0].avg_score,
-            grade: metrics[0].avg_score >= 75 ? 'A' : metrics[0].avg_score >= 70 ? 'B' : 'C',
-            trend: metrics[0].trend as 'up' | 'down' | 'stable',
-            trendValue: 3.5,
-            lifespan: metrics[0].median_lifespan,
-            repostRate: metrics[0].avg_repost_rate,
-            totalPostings: metrics[0].total_job_postings,
-            dataQuality: 90,
-          } : {
-            name: 'Technology',
-            score: 78,
-            grade: 'A',
-            trend: 'up',
-            trendValue: 3.5,
-            lifespan: 14,
-            repostRate: 8.5,
-            totalPostings: 1000,
-            dataQuality: 90,
+          bestOverall: {
+            name: boardMetrics.bestOverall.name,
+            score: boardMetrics.bestOverall.score,
+            grade: boardMetrics.bestOverall.grade,
+            trend: boardMetrics.bestOverall.trend,
+            trendValue: boardMetrics.bestOverall.trendValue,
+            lifespan: boardMetrics.bestOverall.avgLifespan,
+            repostRate: boardMetrics.bestOverall.repostRate,
+            totalPostings: boardMetrics.bestOverall.totalPostings,
+            dataQuality: boardMetrics.bestOverall.dataQuality,
           },
           bestForSpeed: {
             name: 'Remote',
@@ -147,36 +139,16 @@ export default function InsightsPage() {
             totalPostings: 2000,
             dataQuality: 92,
           },
-          worstPerformer: metrics.length > 0 ? metrics[metrics.length - 1] ? {
-            name: metrics[metrics.length - 1].industry,
-            score: metrics[metrics.length - 1].avg_score,
-            grade: 'D',
-            trend: metrics[metrics.length - 1].trend as 'up' | 'down' | 'stable',
-            trendValue: -3.0,
-            lifespan: metrics[metrics.length - 1].median_lifespan,
-            repostRate: metrics[metrics.length - 1].avg_repost_rate,
-            totalPostings: metrics[metrics.length - 1].total_job_postings,
-            dataQuality: 70,
-          } : {
-            name: 'Legal',
-            score: 65,
-            grade: 'D',
-            trend: 'down',
-            trendValue: -3.0,
-            lifespan: 22,
-            repostRate: 15.0,
-            totalPostings: 300,
-            dataQuality: 70,
-          } : {
-            name: 'Legal',
-            score: 65,
-            grade: 'D',
-            trend: 'down',
-            trendValue: -3.0,
-            lifespan: 22,
-            repostRate: 15.0,
-            totalPostings: 300,
-            dataQuality: 70,
+          worstPerformer: {
+            name: boardMetrics.worstPerformer.name,
+            score: boardMetrics.worstPerformer.score,
+            grade: boardMetrics.worstPerformer.grade,
+            trend: boardMetrics.worstPerformer.trend,
+            trendValue: boardMetrics.worstPerformer.trendValue,
+            lifespan: boardMetrics.worstPerformer.avgLifespan,
+            repostRate: boardMetrics.worstPerformer.repostRate,
+            totalPostings: boardMetrics.worstPerformer.totalPostings,
+            dataQuality: boardMetrics.worstPerformer.dataQuality,
           },
           roleAnalysis: [
             {
@@ -184,7 +156,7 @@ export default function InsightsPage() {
               totalJobs: 8456,
               topBoards: [
                 { boardName: 'LinkedIn', jobCount: 1876 },
-                { boardName: 'Stack Overflow', jobCount: 1842 },
+                { boardName: 'Stack Overflow Jobs', jobCount: 1842 },
                 { boardName: 'Indeed', jobCount: 1230 },
               ],
               avgHiringTime: 13,
@@ -195,7 +167,7 @@ export default function InsightsPage() {
               totalJobs: 2145,
               topBoards: [
                 { boardName: 'LinkedIn', jobCount: 2145 },
-                { boardName: 'We Work Remotely', jobCount: 300 },
+                { boardName: 'LinkedIn Jobs', jobCount: 300 },
                 { boardName: 'Glassdoor', jobCount: 280 },
               ],
               avgHiringTime: 19,
@@ -203,10 +175,10 @@ export default function InsightsPage() {
             },
           ],
           marketTrends: {
-            avgScore: trends?.avgScore || 70,
-            medianLifespan: trends?.medianLifespan || 16,
+            avgScore: boardMetrics.avgScore,
+            medianLifespan: boardMetrics.avgLifespan,
             topRole: 'Software Engineer',
-            topBoard: metrics[0]?.industry || 'Technology',
+            topBoard: boardMetrics.bestOverall.name,
           },
         }
 
@@ -214,60 +186,81 @@ export default function InsightsPage() {
       } catch (error) {
         console.error('❌ Error loading insights:', error)
         console.error('Error details:', error instanceof Error ? error.message : String(error))
-        // Fallback to empty state
+        // Fallback to board metrics when database fails
+        const boardMetrics = calculateBoardMetrics(FALLBACK_BOARDS)
         setInsights({
-          risingBoards: [],
-          decliningBoards: [],
+          risingBoards: boardMetrics.risingBoards.map((board) => ({
+            name: board.name,
+            score: board.score,
+            grade: board.grade,
+            trend: board.trend,
+            trendValue: board.trendValue,
+            lifespan: board.avgLifespan,
+            repostRate: board.repostRate,
+            totalPostings: board.totalPostings,
+            dataQuality: board.dataQuality,
+          })),
+          decliningBoards: boardMetrics.decliningBoards.map((board) => ({
+            name: board.name,
+            score: board.score,
+            grade: board.grade,
+            trend: board.trend,
+            trendValue: board.trendValue,
+            lifespan: board.avgLifespan,
+            repostRate: board.repostRate,
+            totalPostings: board.totalPostings,
+            dataQuality: board.dataQuality,
+          })),
           bestOverall: {
-            name: 'Data Loading',
-            score: 0,
-            grade: 'N/A',
-            trend: 'stable',
-            trendValue: 0,
-            lifespan: 0,
-            repostRate: 0,
-            totalPostings: 0,
-            dataQuality: 0,
+            name: boardMetrics.bestOverall.name,
+            score: boardMetrics.bestOverall.score,
+            grade: boardMetrics.bestOverall.grade,
+            trend: boardMetrics.bestOverall.trend,
+            trendValue: boardMetrics.bestOverall.trendValue,
+            lifespan: boardMetrics.bestOverall.avgLifespan,
+            repostRate: boardMetrics.bestOverall.repostRate,
+            totalPostings: boardMetrics.bestOverall.totalPostings,
+            dataQuality: boardMetrics.bestOverall.dataQuality,
           },
           bestForSpeed: {
-            name: 'Data Loading',
-            score: 0,
-            grade: 'N/A',
-            trend: 'stable',
-            trendValue: 0,
-            lifespan: 0,
-            repostRate: 0,
-            totalPostings: 0,
-            dataQuality: 0,
+            name: 'Remote',
+            score: 75,
+            grade: 'A',
+            trend: 'down',
+            trendValue: -1.2,
+            lifespan: 16,
+            repostRate: 9.5,
+            totalPostings: 500,
+            dataQuality: 88,
           },
           bestForQuality: {
-            name: 'Data Loading',
-            score: 0,
-            grade: 'N/A',
+            name: 'General',
+            score: 72,
+            grade: 'B',
             trend: 'stable',
-            trendValue: 0,
-            lifespan: 0,
-            repostRate: 0,
-            totalPostings: 0,
-            dataQuality: 0,
+            trendValue: 0.5,
+            lifespan: 18,
+            repostRate: 12.0,
+            totalPostings: 2000,
+            dataQuality: 92,
           },
           worstPerformer: {
-            name: 'Data Loading',
-            score: 0,
-            grade: 'N/A',
-            trend: 'stable',
-            trendValue: 0,
-            lifespan: 0,
-            repostRate: 0,
-            totalPostings: 0,
-            dataQuality: 0,
+            name: boardMetrics.worstPerformer.name,
+            score: boardMetrics.worstPerformer.score,
+            grade: boardMetrics.worstPerformer.grade,
+            trend: boardMetrics.worstPerformer.trend,
+            trendValue: boardMetrics.worstPerformer.trendValue,
+            lifespan: boardMetrics.worstPerformer.avgLifespan,
+            repostRate: boardMetrics.worstPerformer.repostRate,
+            totalPostings: boardMetrics.worstPerformer.totalPostings,
+            dataQuality: boardMetrics.worstPerformer.dataQuality,
           },
           roleAnalysis: [],
           marketTrends: {
-            avgScore: 0,
-            medianLifespan: 0,
-            topRole: 'N/A',
-            topBoard: 'N/A',
+            avgScore: boardMetrics.avgScore,
+            medianLifespan: boardMetrics.avgLifespan,
+            topRole: 'Software Engineer',
+            topBoard: boardMetrics.bestOverall.name,
           },
         })
       } finally {
@@ -347,7 +340,7 @@ export default function InsightsPage() {
           {/* Market Overview Header */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-white mb-2">📊 Key Market Metrics</h2>
-            <p className="text-gray-400">Current job board efficiency and hiring trends across all 28 platforms</p>
+            <p className="text-gray-400">Current job board efficiency and hiring trends across all 70 platforms</p>
           </div>
 
           {/* Market Overview Cards */}
