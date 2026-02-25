@@ -99,13 +99,6 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
     'All Industries'
   )
 
-  // Calculate yesterday's date in YYYY-MM-DD format
-  const getYesterdayDate = () => {
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    return yesterday.toISOString().split('T')[0]
-  }
-
   const boards = initialBoards
 
   const filtered = useMemo(() => {
@@ -292,24 +285,14 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
               {filtered.map((board) => (
                 <tr key={board.id} className="border-b border-gray-200">
                   <td className="px-6 py-4 text-sm font-medium text-white">
-                    <div className="flex flex-col gap-2">
-                      <a
-                        href={board.affiliateUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-cyan-400 hover:text-cyan-300 underline font-semibold"
-                      >
-                        {board.name}
-                      </a>
-                      <a
-                        href={`/api/jobs/today?boardId=${board.id}&boardName=${encodeURIComponent(board.name)}&date=${getYesterdayDate()}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-amber-400 hover:text-amber-300 underline"
-                      >
-                        📅 View yesterday's jobs
-                      </a>
-                    </div>
+                    <a
+                      href={board.affiliateUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-cyan-400 hover:text-cyan-300 underline font-semibold"
+                    >
+                      {board.name}
+                    </a>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-100">
                     {board.score}
