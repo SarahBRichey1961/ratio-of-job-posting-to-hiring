@@ -23,10 +23,10 @@
   status = 200
 
 [context.production]
-  environment = { NODE_ENV = "production" }
+  environment = { NODE_ENV = "production", RAPIDAPI_KEY = "5cffc5e404msh58a8a4599a5333bp1cbd16jsn958333964e1c" }
 
 [context.deploy-preview]
-  environment = { NODE_ENV = "production" }
+  environment = { NODE_ENV = "production", RAPIDAPI_KEY = "5cffc5e404msh58a8a4599a5333bp1cbd16jsn958333964e1c" }
 
 [context.branch-deploy]
-  environment = { NODE_ENV = "production" }
+  environment = { NODE_ENV = "production", RAPIDAPI_KEY = "5cffc5e404msh58a8a4599a5333bp1cbd16jsn958333964e1c" }
