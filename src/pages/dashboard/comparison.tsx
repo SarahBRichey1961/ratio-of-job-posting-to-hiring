@@ -245,7 +245,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                       href={board.affiliateUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800"
+                      className="text-cyan-400 hover:text-cyan-300 underline font-semibold"
                     >
                       {board.name}
                     </a>
