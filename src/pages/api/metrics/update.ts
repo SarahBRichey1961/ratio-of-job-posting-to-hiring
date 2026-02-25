@@ -49,15 +49,25 @@ export default async function handler(
     }
 
     // Trigger the update
-    // In production, this would call the actual update logic
-    // For now, we'll just confirm the trigger
+    const result = await updateIndustryMetrics()
+    
+    if (!result.success) {
+      logger.warn('Industry metrics update had issues', result.error)
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update metrics',
+        timestamp: new Date().toISOString(),
+        error: result.error,
+      })
+    }
+
     logger.info('Industry metrics update completed successfully')
 
     return res.status(200).json({
       success: true,
       message: 'Industry metrics updated successfully',
       timestamp: new Date().toISOString(),
-      industriesUpdated: 13,
+      industriesUpdated: result.industriesUpdated,
     })
 
   } catch (error) {
