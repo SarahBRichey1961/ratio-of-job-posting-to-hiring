@@ -8,6 +8,13 @@ import {
   StatsSection,
 } from '@/components/DashboardUI'
 import { TrendChart, RoleDistributionChart, BoardScoresChart } from '@/components/Charts'
+import { IndustryBreakdown, IndustryStats } from '@/components/IndustryBreakdown'
+import {
+  getAllIndustryMetrics,
+  getMarketTrends,
+  getIndustriesByTrend,
+  type IndustryMetric,
+} from '@/lib/industryInsights'
 
 interface BoardInsight {
   name: string
@@ -53,170 +60,216 @@ export default function InsightsPage() {
   const [insights, setInsights] = useState<InsightsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'metrics' | 'sources'>('metrics')
+  const [industryMetrics, setIndustryMetrics] = useState<IndustryMetric[]>([])
+  const [marketTrends, setMarketTrends] = useState<any>(null)
 
   useEffect(() => {
-    // Fetch insights data
-    const mockData: InsightsData = {
-      risingBoards: [
-        {
-          name: 'LinkedIn',
-          score: 85,
-          grade: 'A',
-          trend: 'up',
-          trendValue: 3.1,
-          lifespan: 14,
-          repostRate: 5,
-          totalPostings: 5432,
-          dataQuality: 95,
-        },
-        {
-          name: 'GitHub Jobs',
-          score: 84,
-          grade: 'A',
-          trend: 'up',
-          trendValue: 2.8,
-          lifespan: 13,
-          repostRate: 4,
-          totalPostings: 1834,
-          dataQuality: 96,
-        },
-      ],
-      decliningBoards: [
-        {
-          name: 'CraigsList',
-          score: 45,
-          grade: 'F',
-          trend: 'down',
-          trendValue: -8.5,
-          lifespan: 35,
-          repostRate: 42,
-          totalPostings: 789,
-          dataQuality: 58,
-        },
-        {
-          name: 'Indeed',
-          score: 72,
-          grade: 'B',
-          trend: 'down',
-          trendValue: -2.3,
-          lifespan: 18,
-          repostRate: 12,
-          totalPostings: 3200,
-          dataQuality: 88,
-        },
-      ],
-      bestOverall: {
-        name: 'Stack Overflow',
-        score: 88,
-        grade: 'A+',
-        trend: 'up',
-        trendValue: 5.2,
-        lifespan: 12,
-        repostRate: 3,
-        totalPostings: 2456,
-        dataQuality: 97,
-      },
-      bestForSpeed: {
-        name: 'HackerNews',
-        score: 82,
-        grade: 'A',
-        trend: 'stable',
-        trendValue: 0.5,
-        lifespan: 11,
-        repostRate: 2,
-        totalPostings: 892,
-        dataQuality: 98,
-      },
-      bestForQuality: {
-        name: 'GitHub Jobs',
-        score: 84,
-        grade: 'A',
-        trend: 'up',
-        trendValue: 2.8,
-        lifespan: 13,
-        repostRate: 4,
-        totalPostings: 1834,
-        dataQuality: 96,
-      },
-      worstPerformer: {
-        name: 'CraigsList',
-        score: 45,
-        grade: 'F',
-        trend: 'down',
-        trendValue: -8.5,
-        lifespan: 35,
-        repostRate: 42,
-        totalPostings: 789,
-        dataQuality: 58,
-      },
-      roleAnalysis: [
-        {
-          roleName: 'Software Engineer',
-          totalJobs: 8456,
-          topBoards: [
-            { boardName: 'LinkedIn', jobCount: 1876 },
-            { boardName: 'Stack Overflow', jobCount: 1842 },
-            { boardName: 'Indeed', jobCount: 1230 },
-            { boardName: 'GitHub Jobs', jobCount: 1456 },
+    // Fetch real industry metrics from database
+    const fetchData = async () => {
+      try {
+        const metrics = await getAllIndustryMetrics()
+        const trends = await getMarketTrends()
+        setIndustryMetrics(metrics)
+        setMarketTrends(trends)
+
+        // Transform industry metrics into board insights for display
+        const risingIndustries = metrics.filter((m) => m.trend === 'up').slice(0, 5)
+        const decliningIndustries = metrics.filter((m) => m.trend === 'down').slice(0, 5)
+        
+        const mockData: InsightsData = {
+          risingBoards: risingIndustries.map((ind) => ({
+            name: ind.industry,
+            score: ind.avg_score,
+            grade: ind.avg_score >= 75 ? 'A' : ind.avg_score >= 70 ? 'B' : ind.avg_score >= 50 ? 'C' : 'D',
+            trend: 'up',
+            trendValue: 2.5,
+            lifespan: ind.median_lifespan,
+            repostRate: ind.avg_repost_rate,
+            totalPostings: ind.total_job_postings,
+            dataQuality: 85,
+          })),
+          decliningBoards: decliningIndustries.map((ind) => ({
+            name: ind.industry,
+            score: ind.avg_score,
+            grade: ind.avg_score >= 75 ? 'A' : ind.avg_score >= 70 ? 'B' : ind.avg_score >= 50 ? 'C' : 'D',
+            trend: 'down',
+            trendValue: -2.5,
+            lifespan: ind.median_lifespan,
+            repostRate: ind.avg_repost_rate,
+            totalPostings: ind.total_job_postings,
+            dataQuality: 85,
+          })),
+          bestOverall: metrics[0] ? {
+            name: metrics[0].industry,
+            score: metrics[0].avg_score,
+            grade: metrics[0].avg_score >= 75 ? 'A' : metrics[0].avg_score >= 70 ? 'B' : 'C',
+            trend: metrics[0].trend as 'up' | 'down' | 'stable',
+            trendValue: 3.5,
+            lifespan: metrics[0].median_lifespan,
+            repostRate: metrics[0].avg_repost_rate,
+            totalPostings: metrics[0].total_job_postings,
+            dataQuality: 90,
+          } : {
+            name: 'Technology',
+            score: 78,
+            grade: 'A',
+            trend: 'up',
+            trendValue: 3.5,
+            lifespan: 14,
+            repostRate: 8.5,
+            totalPostings: 1000,
+            dataQuality: 90,
+          },
+          bestForSpeed: {
+            name: 'Remote',
+            score: 75,
+            grade: 'A',
+            trend: 'down',
+            trendValue: -1.2,
+            lifespan: 16,
+            repostRate: 9.5,
+            totalPostings: 500,
+            dataQuality: 88,
+          },
+          bestForQuality: {
+            name: 'General',
+            score: 72,
+            grade: 'B',
+            trend: 'stable',
+            trendValue: 0.5,
+            lifespan: 18,
+            repostRate: 12.0,
+            totalPostings: 2000,
+            dataQuality: 92,
+          },
+          worstPerformer: metrics.length > 0 ? metrics[metrics.length - 1] ? {
+            name: metrics[metrics.length - 1].industry,
+            score: metrics[metrics.length - 1].avg_score,
+            grade: 'D',
+            trend: metrics[metrics.length - 1].trend as 'up' | 'down' | 'stable',
+            trendValue: -3.0,
+            lifespan: metrics[metrics.length - 1].median_lifespan,
+            repostRate: metrics[metrics.length - 1].avg_repost_rate,
+            totalPostings: metrics[metrics.length - 1].total_job_postings,
+            dataQuality: 70,
+          } : {
+            name: 'Legal',
+            score: 65,
+            grade: 'D',
+            trend: 'down',
+            trendValue: -3.0,
+            lifespan: 22,
+            repostRate: 15.0,
+            totalPostings: 300,
+            dataQuality: 70,
+          } : {
+            name: 'Legal',
+            score: 65,
+            grade: 'D',
+            trend: 'down',
+            trendValue: -3.0,
+            lifespan: 22,
+            repostRate: 15.0,
+            totalPostings: 300,
+            dataQuality: 70,
+          },
+          roleAnalysis: [
+            {
+              roleName: 'Software Engineer',
+              totalJobs: 8456,
+              topBoards: [
+                { boardName: 'LinkedIn', jobCount: 1876 },
+                { boardName: 'Stack Overflow', jobCount: 1842 },
+                { boardName: 'Indeed', jobCount: 1230 },
+              ],
+              avgHiringTime: 13,
+              trend: 'up',
+            },
+            {
+              roleName: 'Product Manager',
+              totalJobs: 2145,
+              topBoards: [
+                { boardName: 'LinkedIn', jobCount: 2145 },
+                { boardName: 'We Work Remotely', jobCount: 300 },
+                { boardName: 'Glassdoor', jobCount: 280 },
+              ],
+              avgHiringTime: 19,
+              trend: 'stable',
+            },
           ],
-          avgHiringTime: 13,
-          trend: 'up',
-        },
-        {
-          roleName: 'Product Manager',
-          totalJobs: 2145,
-          topBoards: [
-            { boardName: 'LinkedIn', jobCount: 2145 },
-            { boardName: 'We Work Remotely', jobCount: 300 },
-            { boardName: 'Glassdoor', jobCount: 280 },
-          ],
-          avgHiringTime: 19,
-          trend: 'stable',
-        },
-        {
-          roleName: 'Data Scientist',
-          totalJobs: 1524,
-          topBoards: [
-            { boardName: 'LinkedIn', jobCount: 654 },
-            { boardName: 'Stack Overflow', jobCount: 412 },
-            { boardName: 'GitHub Jobs', jobCount: 234 },
-          ],
-          avgHiringTime: 14,
-          trend: 'up',
-        },
-        {
-          roleName: 'DevOps Engineer',
-          totalJobs: 987,
-          topBoards: [
-            { boardName: 'Stack Overflow', jobCount: 287 },
-            { boardName: 'GitHub Jobs', jobCount: 234 },
-            { boardName: 'LinkedIn', jobCount: 298 },
-          ],
-          avgHiringTime: 12,
-          trend: 'up',
-        },
-        {
-          roleName: 'Sales',
-          totalJobs: 2314,
-          topBoards: [
-            { boardName: 'LinkedIn', jobCount: 1050 },
-            { boardName: 'Indeed', jobCount: 654 },
-            { boardName: 'Glassdoor', jobCount: 450 },
-          ],
-          avgHiringTime: 22,
-          trend: 'down',
-        },
-      ],
-      marketTrends: {
-        avgScore: 70.1,
-        medianLifespan: 16,
-        topRole: 'Software Engineer',
-        topBoard: 'Stack Overflow',
-      },
+          marketTrends: {
+            avgScore: trends?.avgScore || 70,
+            medianLifespan: trends?.medianLifespan || 16,
+            topRole: 'Software Engineer',
+            topBoard: metrics[0]?.industry || 'Technology',
+          },
+        }
+
+        setInsights(mockData)
+      } catch (error) {
+        console.error('Error loading insights:', error)
+        // Fallback to empty state
+        setInsights({
+          risingBoards: [],
+          decliningBoards: [],
+          bestOverall: {
+            name: 'Data Loading',
+            score: 0,
+            grade: 'N/A',
+            trend: 'stable',
+            trendValue: 0,
+            lifespan: 0,
+            repostRate: 0,
+            totalPostings: 0,
+            dataQuality: 0,
+          },
+          bestForSpeed: {
+            name: 'Data Loading',
+            score: 0,
+            grade: 'N/A',
+            trend: 'stable',
+            trendValue: 0,
+            lifespan: 0,
+            repostRate: 0,
+            totalPostings: 0,
+            dataQuality: 0,
+          },
+          bestForQuality: {
+            name: 'Data Loading',
+            score: 0,
+            grade: 'N/A',
+            trend: 'stable',
+            trendValue: 0,
+            lifespan: 0,
+            repostRate: 0,
+            totalPostings: 0,
+            dataQuality: 0,
+          },
+          worstPerformer: {
+            name: 'Data Loading',
+            score: 0,
+            grade: 'N/A',
+            trend: 'stable',
+            trendValue: 0,
+            lifespan: 0,
+            repostRate: 0,
+            totalPostings: 0,
+            dataQuality: 0,
+          },
+          roleAnalysis: [],
+          marketTrends: {
+            avgScore: 0,
+            medianLifespan: 0,
+            topRole: 'N/A',
+            topBoard: 'N/A',
+          },
+        })
+      } finally {
+        setLoading(false)
+      }
     }
 
-    setInsights(mockData)
-    setLoading(false)
+    fetchData()
   }, [])
 
   if (loading || !insights) {
@@ -318,6 +371,19 @@ export default function InsightsPage() {
           icon="⭐"
         />
       </StatsSection>
+
+      {/* Industry Metrics Overview */}
+      {industryMetrics.length > 0 && (
+        <>
+          <Section title="Industry-by-Industry Breakdown">
+            <IndustryStats metrics={industryMetrics} />
+          </Section>
+
+          <Section title="Industry Performance Details">
+            <IndustryBreakdown metrics={industryMetrics} />
+          </Section>
+        </>
+      )}
 
       {/* Visualizations */}
       <Section title="Board Performance Trends">
