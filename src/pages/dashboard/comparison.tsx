@@ -50,7 +50,6 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
     'score' | 'lifespan' | 'reposts' | 'name' | 'quality'
   >('score')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-  const [minScore, setMinScore] = useState(0)
   const [selectedRole, setSelectedRole] = useState<string>('All Roles')
   const [selectedIndustry, setSelectedIndustry] = useState<string>(
     'All Industries'
@@ -60,11 +59,10 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
 
   const filtered = useMemo(() => {
     let result = boards.filter((b) => {
-      const scoreMatch = b.score >= minScore
       const roleMatch = selectedRole === 'All Roles' || b.roles.includes(selectedRole)
       const industryMatch =
         selectedIndustry === 'All Industries' || b.industry === selectedIndustry
-      return scoreMatch && roleMatch && industryMatch
+      return roleMatch && industryMatch
     })
 
     result.sort((a, b) => {
@@ -103,7 +101,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
     })
 
     return result
-  }, [sortBy, sortOrder, minScore, selectedRole, selectedIndustry, boards])
+  }, [sortBy, sortOrder, selectedRole, selectedIndustry, boards])
 
   const uniqueRoles = useMemo(() => {
     return ['All Roles', ...availableRoles].sort()
@@ -174,21 +172,6 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                 </option>
               ))}
             </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Min Score
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={minScore}
-              onChange={(e) => setMinScore(parseInt(e.target.value))}
-              className="w-full"
-            />
-            <span className="text-sm text-gray-600">{minScore}</span>
           </div>
         </div>
       </Section>
