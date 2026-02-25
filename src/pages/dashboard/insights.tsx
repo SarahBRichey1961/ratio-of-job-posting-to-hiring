@@ -655,21 +655,6 @@ export default function InsightsPage() {
           </Card>
         </div>
       </Section>
-
-      {/* Comparison Link */}
-      <Section title="Compare Job Boards">
-        <Card>
-          <p className="text-gray-400 mb-4">
-            Compare all metrics side-by-side with real-time sorting and filtering.
-          </p>
-          <a
-            href="/dashboard/comparison"
-            className="inline-block px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-          >
-            View Comparison Table →
-          </a>
-        </Card>
-      </Section>
         </>
       ) : (
         <>
