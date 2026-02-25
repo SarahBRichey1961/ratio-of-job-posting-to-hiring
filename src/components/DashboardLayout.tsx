@@ -32,12 +32,12 @@ const navItems: NavItem[] = [
   //   icon: '📝',
   //   description: 'Submit feedback & surveys',
   // },
-  {
-    label: 'QA Status',
-    href: '/dashboard/qa',
-    icon: '✅',
-    description: 'System health check',
-  },
+  // {
+  //   label: 'QA Status',
+  //   href: '/dashboard/qa',
+  //   icon: '✅',
+  //   description: 'System health check',
+  // },
 ]
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
