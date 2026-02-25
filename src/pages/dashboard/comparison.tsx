@@ -61,9 +61,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
   const filtered = useMemo(() => {
     let result = boards.filter((b) => {
       const scoreMatch = b.score >= minScore
-      // For now, disable role filtering since topRole is hardcoded
-      // We'll re-enable once database is properly seeded with role-board relationships
-      const roleMatch = true // selectedRole === 'All Roles' || b.topRole === selectedRole
+      const roleMatch = selectedRole === 'All Roles' || b.topRole === selectedRole
       const industryMatch =
         selectedIndustry === 'All Industries' || b.industry === selectedIndustry
       return scoreMatch && roleMatch && industryMatch
@@ -368,6 +366,11 @@ function mapBoardToComparisonRow(
     grade = 'F'
   }
   
+  // Extract primary role from role_types
+  const roleTypesStr = board.role_types || 'General'
+  const roles = roleTypesStr.split(',').map((r: string) => r.trim())
+  const topRole = roles.length > 0 ? roles[0] : 'General'
+  
   return {
     id: board.id,
     name: board.name,
@@ -376,8 +379,7 @@ function mapBoardToComparisonRow(
     avgLifespan: 15 + Math.floor(Math.random() * 20),
     repostRate: 5 + Math.floor(Math.random() * 20),
     totalPostings: 500 + Math.floor(Math.random() * 5000),
-    topRole:
-      board.category === 'tech' ? 'Software Engineer' : 'General',
+    topRole: topRole,
     industry: board.industry,
     trend: (Math.random() > 0.5
       ? 'up'
@@ -385,7 +387,7 @@ function mapBoardToComparisonRow(
     trendValue: Math.random() * 5 - 2.5,
     dataQuality: 60 + Math.floor(Math.random() * 40),
     affiliateUrl: board.url,
-    roleTypes: board.role_types || 'General',
+    roleTypes: roleTypesStr,
   }
 }
 
@@ -400,13 +402,14 @@ export const getServerSideProps: GetServerSideProps<ComparisonProps> =
           props: {
             boards: [],
             industries: [],
+            availableRoles: [],
           },
         }
       }
 
       const { data: boardsData, error: boardsError } = await client
         .from('job_boards')
-        .select('id, name, url, category, industry, description')
+        .select('id, name, url, category, industry, description, role_types')
         .order('industry')
         .order('name')
 
@@ -458,6 +461,7 @@ export const getServerSideProps: GetServerSideProps<ComparisonProps> =
         props: {
           boards: [],
           industries: [],
+          availableRoles: [],
         },
       }
     }
