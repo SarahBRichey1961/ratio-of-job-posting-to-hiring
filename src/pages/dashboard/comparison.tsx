@@ -20,6 +20,7 @@ const FALLBACK_INDUSTRIES = [
   'Manufacturing',
   'Remote',
   'Retail & Hospitality',
+  'Technology',
 ]
 
 // Fallback data for roles
@@ -44,6 +45,180 @@ const FALLBACK_ROLES = [
   'Product Manager',
   'Sales',
   'Software Engineer',
+]
+
+// Fallback board data for when database is unavailable
+const FALLBACK_BOARDS: ComparisonRow[] = [
+  {
+    id: 1,
+    name: 'LinkedIn',
+    url: 'https://linkedin.com/jobs',
+    industry: 'General',
+    score: 85,
+    grade: 'A',
+    avgLifespan: 14,
+    repostRate: 8.5,
+    totalPostings: 8456,
+    topRole: 'Software Engineer',
+    trend: 'up',
+    trendValue: 2.5,
+    dataQuality: 90,
+    affiliateUrl: 'https://linkedin.com/jobs',
+    roles: ['Software Engineer', 'Product Manager', 'Designer', 'Sales', 'Marketing'],
+  },
+  {
+    id: 2,
+    name: 'Indeed',
+    url: 'https://indeed.com',
+    industry: 'General',
+    score: 78,
+    grade: 'B',
+    avgLifespan: 16,
+    repostRate: 10.2,
+    totalPostings: 7200,
+    topRole: 'Developer',
+    trend: 'stable',
+    trendValue: 0.5,
+    dataQuality: 85,
+    affiliateUrl: 'https://indeed.com',
+    roles: ['Developer', 'Software Engineer', 'Designer', 'Manager'],
+  },
+  {
+    id: 3,
+    name: 'Stack Overflow',
+    url: 'https://stackoverflow.com/jobs',
+    industry: 'Technology',
+    score: 88,
+    grade: 'A',
+    avgLifespan: 12,
+    repostRate: 6.5,
+    totalPostings: 3400,
+    topRole: 'Software Engineer',
+    trend: 'up',
+    trendValue: 3.2,
+    dataQuality: 92,
+    affiliateUrl: 'https://stackoverflow.com/jobs',
+    roles: ['Software Engineer', 'Front-End Engineer', 'Full-Stack Engineer', 'Developer'],
+  },
+  {
+    id: 4,
+    name: 'FlexJobs',
+    url: 'https://flexjobs.com',
+    industry: 'Remote',
+    score: 82,
+    grade: 'A',
+    avgLifespan: 18,
+    repostRate: 7.8,
+    totalPostings: 2100,
+    topRole: 'Full-Stack Engineer',
+    trend: 'up',
+    trendValue: 2.1,
+    dataQuality: 88,
+    affiliateUrl: 'https://flexjobs.com',
+    roles: ['Full-Stack Engineer', 'Front-End Engineer', 'Developer', 'Designer'],
+  },
+  {
+    id: 5,
+    name: 'Glassdoor',
+    url: 'https://glassdoor.com/Job',
+    industry: 'General',
+    score: 75,
+    grade: 'C',
+    avgLifespan: 20,
+    repostRate: 12.3,
+    totalPostings: 5600,
+    topRole: 'Manager',
+    trend: 'down',
+    trendValue: -1.8,
+    dataQuality: 80,
+    affiliateUrl: 'https://glassdoor.com/Job',
+    roles: ['Manager', 'Operations', 'HR Manager', 'Product Manager'],
+  },
+  {
+    id: 6,
+    name: 'We Work Remotely',
+    url: 'https://weworkremotely.com',
+    industry: 'Remote',
+    score: 80,
+    grade: 'B',
+    avgLifespan: 16,
+    repostRate: 8.9,
+    totalPostings: 1500,
+    topRole: 'Designer',
+    trend: 'stable',
+    trendValue: 0.2,
+    dataQuality: 86,
+    affiliateUrl: 'https://weworkremotely.com',
+    roles: ['Designer', 'Developer', 'Marketing', 'Product Manager'],
+  },
+  {
+    id: 7,
+    name: 'GitHub Jobs',
+    url: 'https://github.com/jobs',
+    industry: 'Technology',
+    score: 84,
+    grade: 'A',
+    avgLifespan: 13,
+    repostRate: 7.2,
+    totalPostings: 2800,
+    topRole: 'Front-End Engineer',
+    trend: 'up',
+    trendValue: 2.8,
+    dataQuality: 91,
+    affiliateUrl: 'https://github.com/jobs',
+    roles: ['Front-End Engineer', 'Full-Stack Engineer', 'Software Engineer', 'Developer'],
+  },
+  {
+    id: 8,
+    name: 'CareerBuilder',
+    url: 'https://careerbuilder.com',
+    industry: 'General',
+    score: 72,
+    grade: 'C',
+    avgLifespan: 22,
+    repostRate: 13.5,
+    totalPostings: 4200,
+    topRole: 'Administrative',
+    trend: 'down',
+    trendValue: -2.1,
+    dataQuality: 78,
+    affiliateUrl: 'https://careerbuilder.com',
+    roles: ['Administrative', 'Manager', 'Sales', 'Operations'],
+  },
+  {
+    id: 9,
+    name: 'Behance Job Board',
+    url: 'https://behance.net/joblist',
+    industry: 'Creative & Media',
+    score: 79,
+    grade: 'B',
+    avgLifespan: 15,
+    repostRate: 9.4,
+    totalPostings: 1200,
+    topRole: 'Designer',
+    trend: 'stable',
+    trendValue: 0.8,
+    dataQuality: 84,
+    affiliateUrl: 'https://behance.net/joblist',
+    roles: ['Designer', 'Developer', 'Marketing'],
+  },
+  {
+    id: 10,
+    name: 'AngelList',
+    url: 'https://angel.co/jobs',
+    industry: 'Technology',
+    score: 81,
+    grade: 'B',
+    avgLifespan: 14,
+    repostRate: 8.1,
+    totalPostings: 1800,
+    topRole: 'Developer',
+    trend: 'up',
+    trendValue: 1.9,
+    dataQuality: 87,
+    affiliateUrl: 'https://angel.co/jobs',
+    roles: ['Developer', 'Software Engineer', 'Product Manager', 'Designer'],
+  },
 ]
 
 interface JobBoard {
@@ -414,7 +589,7 @@ export const getServerSideProps: GetServerSideProps<ComparisonProps> =
         console.error('Supabase client not initialized')
         return {
           props: {
-            boards: [],
+            boards: FALLBACK_BOARDS,
             industries: FALLBACK_INDUSTRIES,
             availableRoles: FALLBACK_ROLES,
           },
@@ -478,12 +653,18 @@ export const getServerSideProps: GetServerSideProps<ComparisonProps> =
       console.log(`✅ Found ${availableRoles.length} available roles`)
 
       // Map boards with their roles from the junction table
-      const comparisonRows = (boardsData || []).map(
+      let comparisonRows = (boardsData || []).map(
         (board: JobBoard, index: number) => {
           const boardRoles = boardRolesMap[board.id] || []
           return mapBoardToComparisonRow(board, boardRoles, index)
         }
       )
+
+      // Use fallback boards if database returned empty or error
+      if (!comparisonRows || comparisonRows.length === 0) {
+        console.log('⚠️ Using fallback boards because database returned empty')
+        comparisonRows = FALLBACK_BOARDS
+      }
 
       let uniqueIndustries = Array.from(
         new Set(
@@ -513,7 +694,7 @@ export const getServerSideProps: GetServerSideProps<ComparisonProps> =
       // Return fallback data on error instead of empty arrays
       return {
         props: {
-          boards: [],
+          boards: FALLBACK_BOARDS,
           industries: FALLBACK_INDUSTRIES,
           availableRoles: FALLBACK_ROLES,
         },
