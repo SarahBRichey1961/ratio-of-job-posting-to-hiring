@@ -139,7 +139,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
       />
 
       <Section title="Filters">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Industry
@@ -152,6 +152,23 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
               {uniqueIndustries.map((ind) => (
                 <option key={ind} value={ind}>
                   {ind}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Job Role
+            </label>
+            <select
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
+            >
+              {uniqueRoles.map((role) => (
+                <option key={role} value={role}>
+                  {role}
                 </option>
               ))}
             </select>
