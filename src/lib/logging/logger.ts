@@ -1,5 +1,12 @@
-import fs from 'fs'
-import path from 'path'
+// Guard fs and path imports for Node.js only (not browser)
+let fs: typeof import('fs') | null = null
+let path: typeof import('path') | null = null
+
+if (typeof window === 'undefined') {
+  // Server-side only
+  fs = require('fs')
+  path = require('path')
+}
 
 export enum LogLevel {
   DEBUG = 'DEBUG',
@@ -23,14 +30,20 @@ export class Logger {
   constructor(logDir: string = 'logs', minLevel: LogLevel = LogLevel.INFO) {
     this.minLevel = minLevel
 
-    // Ensure log directory exists
-    if (!fs.existsSync(logDir)) {
-      fs.mkdirSync(logDir, { recursive: true })
-    }
+    // Only create log directory on server
+    if (fs && path && typeof window === 'undefined') {
+      // Ensure log directory exists
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true })
+      }
 
-    // Create log file with timestamp
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0]
-    this.logFile = path.join(logDir, `scraper-${timestamp}.log`)
+      // Create log file with timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0]
+      this.logFile = path.join(logDir, `scraper-${timestamp}.log`)
+    } else {
+      // Fallback for browser environment
+      this.logFile = `scraper-${new Date().toISOString().split('T')[0]}.log`
+    }
   }
 
   private shouldLog(level: LogLevel): boolean {
@@ -50,6 +63,11 @@ export class Logger {
   }
 
   private writeToFile(message: string): void {
+    // Only write to file on server side
+    if (!fs || typeof window !== 'undefined') {
+      return
+    }
+
     // In production/Railway, skip file logging (ephemeral file system)
     // Logs are captured via console output by hosting platforms
     if (process.env.NODE_ENV === 'production') {
