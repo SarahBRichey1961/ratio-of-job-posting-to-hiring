@@ -61,8 +61,9 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
   const filtered = useMemo(() => {
     let result = boards.filter((b) => {
       const scoreMatch = b.score >= minScore
-      const roleMatch =
-        selectedRole === 'All Roles' || b.topRole === selectedRole
+      // For now, disable role filtering since topRole is hardcoded
+      // We'll re-enable once database is properly seeded with role-board relationships
+      const roleMatch = true // selectedRole === 'All Roles' || b.topRole === selectedRole
       const industryMatch =
         selectedIndustry === 'All Industries' || b.industry === selectedIndustry
       return scoreMatch && roleMatch && industryMatch
