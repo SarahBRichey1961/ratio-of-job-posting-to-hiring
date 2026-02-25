@@ -323,11 +323,27 @@ function mapBoardToComparisonRow(
   board: JobBoard,
   index: number
 ): ComparisonRow {
+  const score = 50 + Math.floor(Math.random() * 50)
+  
+  // Calculate grade based on score
+  let grade: string
+  if (score >= 90) {
+    grade = 'A'
+  } else if (score >= 80) {
+    grade = 'B'
+  } else if (score >= 70) {
+    grade = 'C'
+  } else if (score >= 60) {
+    grade = 'D'
+  } else {
+    grade = 'F'
+  }
+  
   return {
     id: board.id,
     name: board.name,
-    score: 50 + Math.floor(Math.random() * 50),
-    grade: 'B',
+    score: score,
+    grade: grade,
     avgLifespan: 15 + Math.floor(Math.random() * 20),
     repostRate: 5 + Math.floor(Math.random() * 20),
     totalPostings: 500 + Math.floor(Math.random() * 5000),
