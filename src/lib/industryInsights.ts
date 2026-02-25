@@ -185,8 +185,8 @@ export async function updateIndustryMetrics(): Promise<{ success: boolean; indus
 
     // Update metrics for each industry
     let updateCount = 0
-    for (const [industry, industryBoards] of Object.entries(industryGroups)) {
-      const boardCount = (industryBoards as any[]).length
+    for (const [industry, industryBoards] of Object.entries(industryGroups) as Array<[string, any[]]>) {
+      const boardCount = industryBoards.length
 
       // Calculate average score based on industry
       const avgScore = 
@@ -212,8 +212,7 @@ export async function updateIndustryMetrics(): Promise<{ success: boolean; indus
         boardCount < 5 ? 'down' : 'stable'
 
       // Get top board name
-      const typedBoards = industryBoards as any[]
-      const topBoard = typedBoards.length > 0 ? typedBoards[0].name : null
+      const topBoard = industryBoards.length > 0 ? industryBoards[0].name : null
 
       // Upsert industry metrics
       const { error: upsertError } = await supabase
