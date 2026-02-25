@@ -111,7 +111,7 @@ Currently configured to scrape:
 - Glassdoor (ID: 17)
 - FlexJobs (ID: 28)
 
-**Add more boards** by editing `scripts/scrapers/jobBoardScraper.ts` and adding to `SCRAPE_CONFIGS` array.
+**Add more boards** by editing `src/scripts/scrapers/jobBoardScraper.ts` and adding to `SCRAPE_CONFIGS` array.
 
 ## Troubleshooting
 
@@ -168,7 +168,7 @@ Times are in UTC. Adjust for your timezone:
 
 ### Custom Scraping Logic
 
-Add board-specific extractors in `SCRAPE_CONFIGS`:
+Add board-specific extractors in `SCRAPE_CONFIGS` in `src/scripts/scrapers/jobBoardScraper.ts`:
 
 ```typescript
 {
@@ -184,7 +184,7 @@ Add board-specific extractors in `SCRAPE_CONFIGS`:
 
 ### Disable Specific Boards
 
-Comment out entries in `SCRAPE_CONFIGS` to skip them:
+Comment out entries in `SCRAPE_CONFIGS` in `src/scripts/scrapers/jobBoardScraper.ts` to skip them:
 
 ```typescript
 // {
