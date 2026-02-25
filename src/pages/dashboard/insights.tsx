@@ -67,8 +67,13 @@ export default function InsightsPage() {
     // Fetch real industry metrics from database
     const fetchData = async () => {
       try {
+        console.log('📊 Fetching industry metrics...')
         const metrics = await getAllIndustryMetrics()
+        console.log('✅ Metrics fetched:', metrics)
+        
         const trends = await getMarketTrends()
+        console.log('✅ Market trends fetched:', trends)
+        
         setIndustryMetrics(metrics)
         setMarketTrends(trends)
 
@@ -207,7 +212,8 @@ export default function InsightsPage() {
 
         setInsights(mockData)
       } catch (error) {
-        console.error('Error loading insights:', error)
+        console.error('❌ Error loading insights:', error)
+        console.error('Error details:', error instanceof Error ? error.message : String(error))
         // Fallback to empty state
         setInsights({
           risingBoards: [],

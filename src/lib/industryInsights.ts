@@ -23,19 +23,25 @@ export interface IndustryMetric {
  */
 export async function getAllIndustryMetrics(): Promise<IndustryMetric[]> {
   try {
+    console.log('[industryInsights] Fetching all industry metrics...')
     const { data, error } = await supabase
       .from('industry_metrics')
       .select('*')
       .order('avg_score', { ascending: false })
 
+    console.log('[industryInsights] Supabase response:', { data, error })
+
     if (error) {
       logger.error('Failed to fetch industry metrics', error)
+      console.error('[industryInsights] RLS or fetch error:', error)
       return []
     }
 
+    console.log(`[industryInsights] Got ${data?.length} metrics`)
     return data || []
   } catch (error) {
     logger.error('Error loading industry metrics', error as Error)
+    console.error('[industryInsights] Catch error:', error)
     return []
   }
 }
