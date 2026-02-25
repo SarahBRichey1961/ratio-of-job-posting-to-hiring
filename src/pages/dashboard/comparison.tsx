@@ -99,6 +99,13 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
     'All Industries'
   )
 
+  // Calculate yesterday's date in YYYY-MM-DD format
+  const getYesterdayDate = () => {
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    return yesterday.toISOString().split('T')[0]
+  }
+
   const boards = initialBoards
 
   const filtered = useMemo(() => {
@@ -295,12 +302,12 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                         {board.name}
                       </a>
                       <a
-                        href={`/api/jobs/today?boardId=${board.id}&boardName=${encodeURIComponent(board.name)}`}
+                        href={`/api/jobs/today?boardId=${board.id}&boardName=${encodeURIComponent(board.name)}&date=${getYesterdayDate()}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs text-amber-400 hover:text-amber-300 underline"
                       >
-                        📅 View today's jobs
+                        📅 View yesterday's jobs
                       </a>
                     </div>
                   </td>
