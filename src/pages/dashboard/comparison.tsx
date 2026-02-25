@@ -234,6 +234,7 @@ interface JobBoard {
 interface ComparisonRow {
   id: number
   name: string
+  url: string
   score: number
   grade: string
   avgLifespan: number
@@ -563,6 +564,7 @@ function mapBoardToComparisonRow(
   return {
     id: board.id,
     name: board.name,
+    url: board.url,
     score: score,
     grade: grade,
     avgLifespan: 15 + Math.floor(Math.random() * 20),
