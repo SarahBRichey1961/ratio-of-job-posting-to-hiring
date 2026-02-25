@@ -475,100 +475,12 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, allBoards, industries,
 }
 
 export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
-  try {
-    const client = getSupabase()
-    
-    // If Supabase not initialized, return empty data
-    if (!client) {
-      console.error('Supabase client not initialized')
-      return {
-        props: {
-          jobBoardsByCategory: {
-            general: [],
-            tech: [],
-            remote: [],
-            niche: [],
-          },
-          allBoards: [],
-          industries: [],
-          roles: [],
-          totalBoards: 0,
-        },
-      }
-    }
-
-    // Fetch all job boards
-    const { data: boards, error: boardsError } = await client
-      .from('job_boards')
-      .select('*')
-      .order('industry')
-      .order('name')
-
-    if (boardsError) {
-      console.error('Board fetch error:', boardsError)
-      throw boardsError
-    }
-
-    console.log(`✅ Fetched ${(boards || []).length} boards`)
-
-    // Fetch all roles
-    const { data: rolesData, error: rolesError } = await client
-      .from('job_roles')
-      .select('name')
-      .order('name')
-
-    if (rolesError) {
-      console.error('Roles fetch error:', rolesError)
-      throw rolesError
-    }
-
-    // Fetch all industries
-    const uniqueIndustries = Array.from(
-      new Set((boards || []).map((b: JobBoard) => b.industry).filter(Boolean))
-    ).sort() as string[]
-
-    console.log(`✅ Found industries: ${uniqueIndustries.join(', ')}`)
-    console.log(`✅ Found ${(rolesData || []).length} roles`)
-
-    // Group by category
-    const jobBoardsByCategory: Record<string, JobBoard[]> = {
-      general: [],
-      tech: [],
-      remote: [],
-      niche: [],
-    }
-
-    ;(boards || []).forEach((board: JobBoard) => {
-      if (jobBoardsByCategory[board.category]) {
-        jobBoardsByCategory[board.category].push(board)
-      }
-    })
-
-    return {
-      props: {
-        jobBoardsByCategory,
-        allBoards: boards || [],
-        industries: uniqueIndustries,
-        roles: (rolesData || []).map(r => r.name),
-        totalBoards: (boards || []).length,
-      },
-    }
-  } catch (error) {
-    console.error('Error in getServerSideProps:', error)
-    return {
-      props: {
-        jobBoardsByCategory: {
-          general: [],
-          tech: [],
-          remote: [],
-          niche: [],
-        },
-        allBoards: [],
-        industries: [],
-        roles: [],
-        totalBoards: 0,
-      },
-    }
+  // Redirect to comparison page
+  return {
+    redirect: {
+      destination: '/dashboard/comparison',
+      permanent: false,
+    },
   }
 }
 
