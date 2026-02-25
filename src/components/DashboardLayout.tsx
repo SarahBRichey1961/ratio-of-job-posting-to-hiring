@@ -26,6 +26,12 @@ const navItems: NavItem[] = [
     icon: '💡',
     description: 'Trends & market analysis',
   },
+  {
+    label: 'AI Hub',
+    href: '/hub',
+    icon: '🚀',
+    description: 'Learn, build & collaborate',
+  },
   // {
   //   label: 'Surveys',
   //   href: '/dashboard/surveys',
