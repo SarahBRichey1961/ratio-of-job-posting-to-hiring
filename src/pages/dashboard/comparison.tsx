@@ -38,11 +38,13 @@ interface ComparisonRow {
 interface ComparisonProps {
   boards: ComparisonRow[]
   industries: string[]
+  availableRoles: string[]
 }
 
 const ComparisonPage: React.FC<ComparisonProps> = ({
   boards: initialBoards,
   industries: industryList,
+  availableRoles,
 }) => {
   const [sortBy, setSortBy] = useState<
     'score' | 'lifespan' | 'reposts' | 'name' | 'quality'
@@ -105,9 +107,8 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
   }, [sortBy, sortOrder, minScore, selectedRole, selectedIndustry, boards])
 
   const uniqueRoles = useMemo(() => {
-    const roles = boards.map((b) => b.topRole)
-    return ['All Roles', ...Array.from(new Set(roles))].sort()
-  }, [boards])
+    return ['All Roles', ...availableRoles].sort()
+  }, [availableRoles])
 
   const uniqueIndustries = useMemo(() => {
     return ['All Industries', ...industryList].sort()
@@ -413,9 +414,20 @@ export const getServerSideProps: GetServerSideProps<ComparisonProps> =
         throw boardsError
       }
 
-      console.log(
-        `✅ Fetched ${(boardsData || []).length} boards for comparison`
-      )
+      const { data: rolesData, error: rolesError } = await client
+        .from('job_roles')
+        .select('name')
+        .order('name')
+
+      if (rolesError) {
+        console.error('Roles fetch error:', rolesError)
+      }
+
+      const availableRoles = (rolesData || [])
+        .map((r: any) => r.name)
+        .filter(Boolean) as string[]
+
+      console.log(`✅ Found ${availableRoles.length} available roles`)
 
       const comparisonRows = (boardsData || []).map(
         (board: JobBoard, index: number) =>
@@ -436,6 +448,7 @@ export const getServerSideProps: GetServerSideProps<ComparisonProps> =
         props: {
           boards: comparisonRows,
           industries: uniqueIndustries,
+          availableRoles,
         },
       }
     } catch (error) {
