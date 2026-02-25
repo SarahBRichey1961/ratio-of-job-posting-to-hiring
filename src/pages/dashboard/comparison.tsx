@@ -61,7 +61,14 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
   const filtered = useMemo(() => {
     let result = boards.filter((b) => {
       const scoreMatch = b.score >= minScore
-      const roleMatch = selectedRole === 'All Roles' || (b.roleTypes && b.roleTypes.includes(selectedRole))
+      let roleMatch = selectedRole === 'All Roles'
+      
+      if (!roleMatch && selectedRole && b.roleTypes) {
+        // Split role_types by comma and trim whitespace, then do case-insensitive match
+        const boardRoles = b.roleTypes.split(',').map((r: string) => r.trim().toLowerCase())
+        roleMatch = boardRoles.some((role: string) => role.includes(selectedRole.toLowerCase()))
+      }
+      
       const industryMatch =
         selectedIndustry === 'All Industries' || b.industry === selectedIndustry
       return scoreMatch && roleMatch && industryMatch
