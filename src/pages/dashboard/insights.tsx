@@ -7,7 +7,7 @@ import {
   MetricCard,
   StatsSection,
 } from '@/components/DashboardUI'
-import { TrendChart, RoleDistributionChart, BoardScoresChart } from '@/components/Charts'
+import { TrendChart, BoardScoresChart } from '@/components/Charts'
 import { IndustryBreakdown, IndustryStats } from '@/components/IndustryBreakdown'
 import {
   getAllIndustryMetrics,
@@ -401,7 +401,8 @@ export default function InsightsPage() {
         </Card>
       </Section>
 
-      <Section title="Role Distribution Across Job Market">
+      {/* Role Distribution Chart - Hidden */}
+      {/* <Section title="Role Distribution Across Job Market">
         <Card>
           <RoleDistributionChart
             data={insights.roleAnalysis.map((r) => ({
@@ -412,7 +413,7 @@ export default function InsightsPage() {
             height={300}
           />
         </Card>
-      </Section>
+      </Section> */}
 
       {/* Rising and Declining Boards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
