@@ -15,12 +15,6 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    label: 'Home',
-    href: '/dashboard',
-    icon: '📊',
-    description: 'Overview & key metrics',
-  },
-  {
     label: 'Comparison',
     href: '/dashboard/comparison',
     icon: '⚖️',
