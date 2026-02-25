@@ -21,12 +21,6 @@ const navItems: NavItem[] = [
     description: 'Compare job boards',
   },
   {
-    label: 'Board Profile',
-    href: '/dashboard/profile',
-    icon: '📋',
-    description: 'Detailed board analysis',
-  },
-  {
     label: 'Insights',
     href: '/dashboard/insights',
     icon: '💡',
