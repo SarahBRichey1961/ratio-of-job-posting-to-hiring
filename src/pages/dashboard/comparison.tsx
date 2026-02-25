@@ -99,9 +99,6 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
     'All Industries'
   )
 
-  // Boards that can be scraped without authentication
-  const scrapeable_boards = [1] // Stack Overflow Jobs (ID 1)
-
   const boards = initialBoards
 
   const filtered = useMemo(() => {
@@ -297,16 +294,14 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                       >
                         {board.name}
                       </a>
-                      {scrapeable_boards.includes(board.id) && (
-                        <a
-                          href={`/api/jobs/today?boardId=${board.id}&boardName=${encodeURIComponent(board.name)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-amber-400 hover:text-amber-300 underline"
-                        >
-                          📅 View today's jobs
-                        </a>
-                      )}
+                      <a
+                        href={`/api/jobs/today?boardId=${board.id}&boardName=${encodeURIComponent(board.name)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-amber-400 hover:text-amber-300 underline"
+                      >
+                        📅 View today's jobs
+                      </a>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-100">
