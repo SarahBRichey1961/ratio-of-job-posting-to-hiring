@@ -250,9 +250,6 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                   Total Postings
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                  Data Quality
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
                   Trend
                 </th>
               </tr>
@@ -312,17 +309,6 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-100">
                     {board.totalPostings.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-100">
-                    <div className="flex items-center gap-2">
-                      <div className="w-24 h-2 bg-gray-200 rounded">
-                        <div
-                          className="h-full bg-green-500 rounded"
-                          style={{ width: `${board.dataQuality}%` }}
-                        />
-                      </div>
-                      <span className="text-gray-100">{board.dataQuality}%</span>
-                    </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-100">
                     {board.trend === 'up'
