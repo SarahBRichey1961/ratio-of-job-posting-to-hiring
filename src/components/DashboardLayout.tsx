@@ -27,7 +27,7 @@ const navItems: NavItem[] = [
     description: 'Trends & market analysis',
   },
   {
-    label: 'AI Hub',
+    label: 'Take The Reins',
     href: '/hub',
     icon: '🚀',
     description: 'Learn, build & collaborate',

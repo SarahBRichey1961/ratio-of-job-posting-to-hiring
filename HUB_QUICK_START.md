@@ -28,7 +28,7 @@ Find your main navigation (likely in `src/components/Navigation.tsx` or similar)
 
 ```tsx
 <Link href="/hub">
-  <a>AI Hub</a>
+  <a>Take The Reins</a>
 </Link>
 ```
 
