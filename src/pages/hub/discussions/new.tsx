@@ -1,12 +1,14 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import axios from 'axios'
+import { getSupabase } from '@/lib/supabase'
 
 const NewDiscussion = () => {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [userId, setUserId] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -19,6 +21,20 @@ const NewDiscussion = () => {
   })
 
   const [newTag, setNewTag] = useState('')
+
+  // Get user ID from Supabase on mount
+  useEffect(() => {
+    const getUser = async () => {
+      const supabase = getSupabase()
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user?.id) {
+        setUserId(session.user.id)
+      } else {
+        router.push('/hub/login')
+      }
+    }
+    getUser()
+  }, [router])
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -46,14 +62,36 @@ const NewDiscussion = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    
+    if (!userId) {
+      setError('User ID not available. Please refresh the page.')
+      return
+    }
+
     setLoading(true)
     setError('')
 
     try {
+      const supabase = getSupabase()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        setError('Authentication token not available. Please log in again.')
+        return
+      }
+
       const response = await axios.post('/api/hub/discussions', {
-        ...formData,
-        creator_id: 'user-id-here', // Replace with actual user ID
+        title: formData.title,
+        description: formData.description,
+        type: formData.type,
+        category: formData.category,
+        tags: formData.tags,
+        ai_related: formData.ai_related,
         project_id: formData.project_id || null,
+      }, {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       })
 
       router.push(`/hub/discussions/${response.data.id}`)

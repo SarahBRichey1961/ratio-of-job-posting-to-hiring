@@ -1,12 +1,14 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import axios from 'axios'
+import { getSupabase } from '@/lib/supabase'
 
 const NewOpportunity = () => {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [userId, setUserId] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -19,6 +21,20 @@ const NewOpportunity = () => {
   })
 
   const [newSkill, setNewSkill] = useState('')
+
+  // Get user ID from Supabase on mount
+  useEffect(() => {
+    const getUser = async () => {
+      const supabase = getSupabase()
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user?.id) {
+        setUserId(session.user.id)
+      } else {
+        router.push('/hub/login')
+      }
+    }
+    getUser()
+  }, [router])
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -46,13 +62,36 @@ const NewOpportunity = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    
+    if (!userId) {
+      setError('User ID not available. Please refresh the page.')
+      return
+    }
+
     setLoading(true)
     setError('')
 
     try {
+      const supabase = getSupabase()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        setError('Authentication token not available. Please log in again.')
+        return
+      }
+
       const response = await axios.post('/api/hub/opportunities', {
-        ...formData,
-        posted_by: 'user-id-here', // Replace with actual user ID
+        title: formData.title,
+        description: formData.description,
+        company_name: formData.company_name,
+        opportunity_type: formData.opportunity_type,
+        skills_required: formData.skills_required,
+        is_ai_focused: formData.is_ai_focused,
+        expires_at: formData.expires_at || null,
+      }, {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       })
 
       router.push(`/hub/opportunities/${response.data.id}`)

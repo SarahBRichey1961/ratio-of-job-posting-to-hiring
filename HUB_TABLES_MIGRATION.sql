@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS hub_members (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Hub Projects (AI solution building projects)
+-- Hub Projects (AI solution building projects) - THIS HAS learning_goals AND technologies_used
 CREATE TABLE IF NOT EXISTS hub_projects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title VARCHAR(255) NOT NULL,
@@ -126,18 +126,18 @@ CREATE TABLE IF NOT EXISTS hub_opportunity_applications (
 );
 
 -- Create indexes for better query performance
-CREATE INDEX idx_hub_members_username ON hub_members(username);
-CREATE INDEX idx_hub_projects_creator_id ON hub_projects(creator_id);
-CREATE INDEX idx_hub_projects_status ON hub_projects(status);
-CREATE INDEX idx_hub_project_members_project_id ON hub_project_members(project_id);
-CREATE INDEX idx_hub_project_members_member_id ON hub_project_members(member_id);
-CREATE INDEX idx_hub_discussions_creator_id ON hub_discussions(creator_id);
-CREATE INDEX idx_hub_discussions_project_id ON hub_discussions(project_id);
-CREATE INDEX idx_hub_discussions_type ON hub_discussions(type);
-CREATE INDEX idx_hub_discussion_comments_discussion_id ON hub_discussion_comments(discussion_id);
-CREATE INDEX idx_hub_learning_resources_category ON hub_learning_resources(category);
-CREATE INDEX idx_hub_opportunities_status ON hub_opportunities(status);
-CREATE INDEX idx_hub_opportunity_applications_applicant_id ON hub_opportunity_applications(applicant_id);
+CREATE INDEX IF NOT EXISTS idx_hub_members_username ON hub_members(username);
+CREATE INDEX IF NOT EXISTS idx_hub_projects_creator_id ON hub_projects(creator_id);
+CREATE INDEX IF NOT EXISTS idx_hub_projects_status ON hub_projects(status);
+CREATE INDEX IF NOT EXISTS idx_hub_project_members_project_id ON hub_project_members(project_id);
+CREATE INDEX IF NOT EXISTS idx_hub_project_members_member_id ON hub_project_members(member_id);
+CREATE INDEX IF NOT EXISTS idx_hub_discussions_creator_id ON hub_discussions(creator_id);
+CREATE INDEX IF NOT EXISTS idx_hub_discussions_project_id ON hub_discussions(project_id);
+CREATE INDEX IF NOT EXISTS idx_hub_discussions_type ON hub_discussions(type);
+CREATE INDEX IF NOT EXISTS idx_hub_discussion_comments_discussion_id ON hub_discussion_comments(discussion_id);
+CREATE INDEX IF NOT EXISTS idx_hub_learning_resources_category ON hub_learning_resources(category);
+CREATE INDEX IF NOT EXISTS idx_hub_opportunities_status ON hub_opportunities(status);
+CREATE INDEX IF NOT EXISTS idx_hub_opportunity_applications_applicant_id ON hub_opportunity_applications(applicant_id);
 
 -- Enable Row Level Security
 ALTER TABLE hub_members ENABLE ROW LEVEL SECURITY;
@@ -151,42 +151,63 @@ ALTER TABLE hub_opportunities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hub_opportunity_applications ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for hub_members
+DROP POLICY IF EXISTS "Users can view all hub members" ON hub_members;
+DROP POLICY IF EXISTS "Users can update their own profile" ON hub_members;
 CREATE POLICY "Users can view all hub members" ON hub_members FOR SELECT USING (true);
 CREATE POLICY "Users can update their own profile" ON hub_members FOR UPDATE USING (auth.uid() = id);
 
 -- RLS Policies for hub_projects
+DROP POLICY IF EXISTS "Anyone can view public projects" ON hub_projects;
+DROP POLICY IF EXISTS "Users can create projects" ON hub_projects;
+DROP POLICY IF EXISTS "Project members can update their own projects" ON hub_projects;
 CREATE POLICY "Anyone can view public projects" ON hub_projects FOR SELECT USING (true);
 CREATE POLICY "Users can create projects" ON hub_projects FOR INSERT WITH CHECK (auth.uid() = creator_id);
 CREATE POLICY "Project members can update their own projects" ON hub_projects FOR UPDATE USING (auth.uid() = creator_id OR EXISTS (SELECT 1 FROM hub_project_members WHERE project_id = hub_projects.id AND member_id = auth.uid()));
 
 -- RLS Policies for hub_project_members
+DROP POLICY IF EXISTS "Anyone can view project members" ON hub_project_members;
+DROP POLICY IF EXISTS "Project owners can add members" ON hub_project_members;
 CREATE POLICY "Anyone can view project members" ON hub_project_members FOR SELECT USING (true);
 CREATE POLICY "Project owners can add members" ON hub_project_members FOR INSERT WITH CHECK (
   EXISTS (SELECT 1 FROM hub_projects WHERE id = project_id AND creator_id = auth.uid())
 );
 
 -- RLS Policies for hub_discussions
+DROP POLICY IF EXISTS "Anyone can view discussions" ON hub_discussions;
+DROP POLICY IF EXISTS "Users can create discussions" ON hub_discussions;
+DROP POLICY IF EXISTS "Users can update their own discussions" ON hub_discussions;
 CREATE POLICY "Anyone can view discussions" ON hub_discussions FOR SELECT USING (true);
 CREATE POLICY "Users can create discussions" ON hub_discussions FOR INSERT WITH CHECK (auth.uid() = creator_id);
 CREATE POLICY "Users can update their own discussions" ON hub_discussions FOR UPDATE USING (auth.uid() = creator_id);
 
 -- RLS Policies for hub_discussion_comments
+DROP POLICY IF EXISTS "Anyone can view comments" ON hub_discussion_comments;
+DROP POLICY IF EXISTS "Users can insert comments" ON hub_discussion_comments;
+DROP POLICY IF EXISTS "Users can update their own comments" ON hub_discussion_comments;
 CREATE POLICY "Anyone can view comments" ON hub_discussion_comments FOR SELECT USING (true);
 CREATE POLICY "Users can insert comments" ON hub_discussion_comments FOR INSERT WITH CHECK (auth.uid() = author_id);
 CREATE POLICY "Users can update their own comments" ON hub_discussion_comments FOR UPDATE USING (auth.uid() = author_id);
 
 -- RLS Policies for hub_learning_resources
+DROP POLICY IF EXISTS "Anyone can view learning resources" ON hub_learning_resources;
+DROP POLICY IF EXISTS "Users can create learning resources" ON hub_learning_resources;
 CREATE POLICY "Anyone can view learning resources" ON hub_learning_resources FOR SELECT USING (true);
 CREATE POLICY "Users can create learning resources" ON hub_learning_resources FOR INSERT WITH CHECK (auth.uid() = created_by);
 
 -- RLS Policies for hub_user_achievements
+DROP POLICY IF EXISTS "Users can view their own achievements" ON hub_user_achievements;
+DROP POLICY IF EXISTS "System can create achievements" ON hub_user_achievements;
 CREATE POLICY "Users can view their own achievements" ON hub_user_achievements FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "System can create achievements" ON hub_user_achievements FOR INSERT WITH CHECK (user_id IS NOT NULL);
 
 -- RLS Policies for hub_opportunities
+DROP POLICY IF EXISTS "Anyone can view opportunities" ON hub_opportunities;
+DROP POLICY IF EXISTS "Users can create opportunities" ON hub_opportunities;
 CREATE POLICY "Anyone can view opportunities" ON hub_opportunities FOR SELECT USING (true);
 CREATE POLICY "Users can create opportunities" ON hub_opportunities FOR INSERT WITH CHECK (auth.uid() = posted_by);
 
 -- RLS Policies for hub_opportunity_applications
+DROP POLICY IF EXISTS "Users can view their own applications" ON hub_opportunity_applications;
+DROP POLICY IF EXISTS "Users can apply to opportunities" ON hub_opportunity_applications;
 CREATE POLICY "Users can view their own applications" ON hub_opportunity_applications FOR SELECT USING (auth.uid() = applicant_id OR (SELECT posted_by FROM hub_opportunities WHERE id = opportunity_id) = auth.uid());
 CREATE POLICY "Users can apply to opportunities" ON hub_opportunity_applications FOR INSERT WITH CHECK (auth.uid() = applicant_id);

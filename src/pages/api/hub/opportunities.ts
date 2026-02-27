@@ -9,34 +9,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const {
         opportunity_type,
-        status = 'open',
-        is_ai_focused = true,
+        status,
+        is_ai_focused,
         search,
         skills,
-        limit = 20,
-        offset = 0,
+        limit,
+        offset,
       } = req.query
+      
+      // Convert to numbers with defaults
+      const limitNum = Math.min(Number(limit) || 20, 100) // Max 100
+      const offsetNum = Number(offset) || 0
+      const statusStr = (status as string) || 'open'
+      const isAiFocused = (is_ai_focused as string) === 'false' ? false : true
 
       let query = supabase
         .from('hub_opportunities')
-        .select(`
-          *,
-          posted_by:posted_by(username, avatar_url),
-          applications:hub_opportunity_applications(count)
-        `)
+        .select('*')
 
       // Only show non-expired opportunities
       query = query.or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
 
-      if (status) {
-        query = query.eq('status', status)
+      if (statusStr) {
+        query = query.eq('status', statusStr)
       }
 
       if (opportunity_type) {
         query = query.eq('opportunity_type', opportunity_type)
       }
 
-      if (is_ai_focused === 'true') {
+      if (isAiFocused) {
         query = query.eq('is_ai_focused', true)
       }
 
@@ -46,11 +48,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const { data, error, count } = await query
         .order('created_at', { ascending: false })
-        .range(Number(offset), Number(offset) + Number(limit) - 1)
+        .range(offsetNum, offsetNum + limitNum - 1)
 
       if (error) throw error
 
-      res.status(200).json({ data, count, limit, offset })
+      res.status(200).json({ data, count, limit: limitNum, offset: offsetNum })
     } catch (error) {
       res.status(400).json({ error: (error as Error).message })
     }
@@ -59,18 +61,50 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // POST: Create opportunity
   else if (req.method === 'POST') {
     try {
+      // Get auth token from request headers
+      const authHeader = req.headers.authorization
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Missing authorization header' })
+      }
+
+      const token = authHeader.substring(7)
+
+      // Create authenticated Supabase client with the user's token
+      const { createClient } = require('@supabase/supabase-js')
+      const authenticatedSupabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        {
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
+          },
+        }
+      )
+
+      // Get authenticated user
+      const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
+      if (userError || !user) {
+        return res.status(401).json({ error: 'Unauthorized' })
+      }
+
       const {
         title,
         description,
         company_name,
         opportunity_type,
         skills_required,
-        posted_by,
         expires_at,
         is_ai_focused,
       } = req.body
 
-      const { data, error } = await supabase
+      const { data, error } = await authenticatedSupabase
         .from('hub_opportunities')
         .insert({
           title,
@@ -78,7 +112,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           company_name,
           opportunity_type,
           skills_required: skills_required || [],
-          posted_by,
+          posted_by: user.id,
           expires_at: expires_at || null,
           is_ai_focused: is_ai_focused !== false,
           status: 'open',

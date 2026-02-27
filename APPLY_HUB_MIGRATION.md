@@ -1,3 +1,29 @@
+# 🚀 Apply Hub Tables Migration
+
+## THE PROBLEM
+The Hub feature tables don't exist in your Supabase database yet. The migration file exists in the project, but it was never executed in Supabase.
+
+This is why learning_goals and technologies_used aren't saving - **the columns don't exist in the database**.
+
+## THE SOLUTION
+Run the SQL below in your Supabase SQL Editor.
+
+### Step-by-Step Instructions:
+
+1. **Go to**: https://supabase.com/dashboard
+2. **Select your project**: "ratio-of-job-posting-to-hiring"
+3. **Click**: "SQL Editor" in the left sidebar
+4. **Click**: "+ New Query" button
+5. **Copy and paste the SQL below**
+6. **Click**: "Run" button (green button on the right)
+7. **Wait** for completion (should take 10-20 seconds)
+8. **You should see**: "Success" message
+
+---
+
+## SQL TO RUN
+
+```sql
 -- Create Hub Tables for AI Learning Community
 
 -- Hub Users (extends auth.users)
@@ -12,7 +38,7 @@ CREATE TABLE IF NOT EXISTS hub_members (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Hub Projects (AI solution building projects)
+-- Hub Projects (AI solution building projects) - THIS HAS learning_goals AND technologies_used
 CREATE TABLE IF NOT EXISTS hub_projects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title VARCHAR(255) NOT NULL,
@@ -190,3 +216,44 @@ CREATE POLICY "Users can create opportunities" ON hub_opportunities FOR INSERT W
 -- RLS Policies for hub_opportunity_applications
 CREATE POLICY "Users can view their own applications" ON hub_opportunity_applications FOR SELECT USING (auth.uid() = applicant_id OR (SELECT posted_by FROM hub_opportunities WHERE id = opportunity_id) = auth.uid());
 CREATE POLICY "Users can apply to opportunities" ON hub_opportunity_applications FOR INSERT WITH CHECK (auth.uid() = applicant_id);
+```
+
+---
+
+## AFTER RUNNING THE SQL
+
+Once you see the ✅ success message:
+
+1. **Go back to your project**: http://localhost:3000/hub/projects/new
+2. **Create a new project** with:
+   - Title: "Test Project"
+   - Description: "Testing learning goals and technologies"
+   - Add Learning Goals: "Learn Python", "Understand AI"
+   - Add Technologies: "Python", "TensorFlow"
+3. **Save the project**
+4. **Go back to project detail page** - Learning goals and technologies should now display ✅
+5. **Click Edit** - The data should be there to re-edit ✅
+
+---
+
+## What Was The Problem?
+
+The `create_hub_tables.sql` file existed but was **never executed** in your Supabase database. This means:
+- The `hub_projects` table existed but was created WITHOUT the `learning_goals` and `technologies_used` columns
+- When the API tried to insert these columns, they were silently ignored
+- The data was never saved
+
+Now that you've run the full migration, both columns will exist with the correct data types (TEXT[] arrays) and will properly store and retrieve your learning goals and technologies.
+
+---
+
+## Still Having Issues?
+
+Make sure:
+1. ✅ You ran the SQL in the correct Supabase project
+2. ✅ You pressed "Run" and waited for completion
+3. ✅ You see a "Success" message (no errors)
+4. ✅ You haven't already created projects (they'll need to be recreated with the new schema)
+5. ✅ You're testing with a fresh project creation
+
+If still having issues, check the browser console (F12) for any error messages and share those with me.
