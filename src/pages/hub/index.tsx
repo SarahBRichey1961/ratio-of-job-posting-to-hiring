@@ -11,7 +11,6 @@ interface HubProject {
   difficulty_level: string
   category: string
   status: string
-  creator: { username: string; avatar_url: string }
   created_at: string
 }
 
@@ -21,7 +20,6 @@ interface HubDiscussion {
   type: string
   category: string
   status: string
-  creator: { username: string; avatar_url: string }
   created_at: string
 }
 
@@ -152,10 +150,8 @@ const HubHome = () => {
                 <p className="text-gray-600 mb-4">
                   Lead a team to build an AI solution to a real problem
                 </p>
-                <Link href="/hub/projects/new">
-                  <a className="inline-block bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+                <Link href="/hub/projects/new" className="inline-block bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
                     Create Project
-                  </a>
                 </Link>
               </div>
 
@@ -164,10 +160,8 @@ const HubHome = () => {
                 <p className="text-gray-600 mb-4">
                   Find a project to join and start contributing
                 </p>
-                <Link href="/hub/projects">
-                  <a className="inline-block bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+                <Link href="/hub/projects" className="inline-block bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
                     View Projects
-                  </a>
                 </Link>
               </div>
 
@@ -176,10 +170,8 @@ const HubHome = () => {
                 <p className="text-gray-600 mb-4">
                   Get help from the community on any topic
                 </p>
-                <Link href="/hub/discussions?type=question">
-                  <a className="inline-block bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+                <Link href="/hub/discussions?type=question" className="inline-block bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
                     Ask Now
-                  </a>
                 </Link>
               </div>
             </div>
@@ -190,10 +182,8 @@ const HubHome = () => {
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Active Projects</h2>
-              <Link href="/hub/projects/new">
-                <a className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-                  New Project
-                </a>
+              <Link href="/hub/projects/new" className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+                New Project
               </Link>
             </div>
             {projects.length === 0 ? (
@@ -203,8 +193,7 @@ const HubHome = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {projects.map((project) => (
-                  <Link key={project.id} href={`/hub/projects/${project.id}`}>
-                    <a className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition block">
+                  <Link key={project.id} href={`/hub/projects/${project.id}`} className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition block">
                       <h3 className="text-xl font-bold text-gray-900 mb-2">{project.title}</h3>
                       <p className="text-gray-600 mb-4 line-clamp-2">{project.description}</p>
                       <div className="flex justify-between items-center">
@@ -216,9 +205,8 @@ const HubHome = () => {
                             {project.status}
                           </span>
                         </div>
-                        <span className="text-sm text-gray-500">{project.creator.username}</span>
+
                       </div>
-                    </a>
                   </Link>
                 ))}
               </div>
@@ -230,10 +218,8 @@ const HubHome = () => {
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Community Discussions</h2>
-              <Link href="/hub/discussions/new">
-                <a className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-                  Start Discussion
-                </a>
+              <Link href="/hub/discussions/new" className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+                Start Discussion
               </Link>
             </div>
             {discussions.length === 0 ? (
@@ -243,8 +229,7 @@ const HubHome = () => {
             ) : (
               <div className="space-y-4">
                 {discussions.map((discussion) => (
-                  <Link key={discussion.id} href={`/hub/discussions/${discussion.id}`}>
-                    <a className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition block">
+                  <Link key={discussion.id} href={`/hub/discussions/${discussion.id}`} className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition block">
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="text-lg font-bold text-gray-900">{discussion.title}</h3>
                         <span className="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
@@ -252,10 +237,9 @@ const HubHome = () => {
                         </span>
                       </div>
                       <div className="flex justify-between items-center text-sm text-gray-500">
-                        <span>{discussion.creator.username}</span>
+
                         <span>{new Date(discussion.created_at).toLocaleDateString()}</span>
                       </div>
-                    </a>
                   </Link>
                 ))}
               </div>
@@ -267,10 +251,8 @@ const HubHome = () => {
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Opportunities</h2>
-              <Link href="/hub/opportunities/new">
-                <a className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-                  Post Opportunity
-                </a>
+              <Link href="/hub/opportunities/new" className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+                Post Opportunity
               </Link>
             </div>
             {opportunities.length === 0 ? (
@@ -282,8 +264,7 @@ const HubHome = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {opportunities.map((opp) => (
-                  <Link key={opp.id} href={`/hub/opportunities/${opp.id}`}>
-                    <a className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition block">
+                  <Link key={opp.id} href={`/hub/opportunities/${opp.id}`} className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition block">
                       <h3 className="text-lg font-bold text-gray-900 mb-2">{opp.title}</h3>
                       <p className="text-gray-600 mb-4">{opp.company_name}</p>
                       <div className="flex justify-between items-center">
@@ -294,7 +275,6 @@ const HubHome = () => {
                           {new Date(opp.created_at).toLocaleDateString()}
                         </span>
                       </div>
-                    </a>
                   </Link>
                 ))}
               </div>

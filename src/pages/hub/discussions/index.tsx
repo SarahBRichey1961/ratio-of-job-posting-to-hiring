@@ -9,9 +9,8 @@ interface Discussion {
   type: string
   category: string
   status: string
-  creator: { username: string; avatar_url: string }
+  creator_id: string
   created_at: string
-  comments?: { count: number }[]
 }
 
 const DiscussionsPage = () => {
@@ -93,10 +92,8 @@ const DiscussionsPage = () => {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold text-gray-900">Community Discussions</h1>
-            <Link href="/hub/discussions/new">
-              <a className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
-                Start Discussion
-              </a>
+            <Link href="/hub/discussions/new" className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+              Start Discussion
             </Link>
           </div>
         </div>
@@ -178,28 +175,22 @@ const DiscussionsPage = () => {
           <>
             <div className="space-y-4">
               {discussions.map((discussion) => (
-                <Link key={discussion.id} href={`/hub/discussions/${discussion.id}`}>
-                  <a
-                    className={`block p-6 rounded-lg shadow hover:shadow-lg transition border ${getStatusColor(discussion.status)}`}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-lg font-bold text-gray-900">{discussion.title}</h3>
-                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getTypeColor(discussion.type)}`}>
-                        {discussion.type}
-                      </span>
-                    </div>
+                <Link key={discussion.id} href={`/hub/discussions/${discussion.id}`} className={`block p-6 rounded-lg shadow hover:shadow-lg transition border ${getStatusColor(discussion.status)}`}>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-bold text-gray-900">{discussion.title}</h3>
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getTypeColor(discussion.type)}`}>
+                      {discussion.type}
+                    </span>
+                  </div>
 
-                    <div className="flex justify-between items-center text-sm text-gray-500">
-                      <div className="flex items-center gap-4">
-                        <span>By {discussion.creator.username}</span>
-                        <span>{new Date(discussion.created_at).toLocaleDateString()}</span>
-                        <span>{discussion.comments?.[0]?.count || 0} replies</span>
-                      </div>
-                      <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                        {discussion.status}
-                      </span>
+                  <div className="flex justify-between items-center text-sm text-gray-500">
+                    <div className="flex items-center gap-4">
+                      <span>{new Date(discussion.created_at).toLocaleDateString()}</span>
                     </div>
-                  </a>
+                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                      {discussion.status}
+                    </span>
+                  </div>
                 </Link>
               ))}
             </div>

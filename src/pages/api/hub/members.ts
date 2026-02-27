@@ -7,9 +7,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // GET: Fetch all hub members or search
   if (req.method === 'GET') {
     try {
-      const { search, skills, limit = 20, offset = 0 } = req.query
+      const { search, skills, id, limit = 20, offset = 0 } = req.query
 
       let query = supabase.from('hub_members').select('*')
+
+      if (id) {
+        query = query.eq('id', id)
+      }
 
       if (search) {
         query = query.ilike('username', `%${search}%`)

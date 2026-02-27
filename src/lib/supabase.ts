@@ -26,31 +26,12 @@ let supabaseClient: any = null
 export const getSupabase = () => {
   if (!supabaseClient && supabaseUrl && supabaseAnonKey) {
     try {
-      // Create client with custom storage to avoid Navigator LockManager issues
-      // Use localStorage in browser, fallback to memory storage
-      let storage: any = undefined
-
-      if (typeof window !== 'undefined') {
-        try {
-          // Test if localStorage is available and writable
-          const testKey = '__test__'
-          window.localStorage.setItem(testKey, testKey)
-          window.localStorage.removeItem(testKey)
-          // localStorage is available, let Supabase use it
-          storage = undefined
-        } catch (e) {
-          // localStorage not available, use memory storage
-          console.warn('localStorage not available, using memory storage:', e)
-          storage = new MemoryStorage()
-        }
-      }
-
+      // Simple minimal config to avoid lock manager issues
       supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
-          persistSession: typeof window !== 'undefined', // Only persist in browser
-          autoRefreshToken: true,
-          detectSessionInUrl: true,
-          storage: storage, // Use custom storage if needed
+          persistSession: false, // Disable session persistence to avoid lock manager
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
         },
       })
     } catch (error) {

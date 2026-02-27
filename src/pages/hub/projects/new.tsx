@@ -1,12 +1,14 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import axios from 'axios'
+import { getSupabase } from '@/lib/supabase'
 
 const NewProject = () => {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [userId, setUserId] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -23,6 +25,20 @@ const NewProject = () => {
   const [newGoal, setNewGoal] = useState('')
   const [newTech, setNewTech] = useState('')
 
+  // Get user ID from Supabase on mount
+  useEffect(() => {
+    const getUser = async () => {
+      const supabase = getSupabase()
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user?.id) {
+        setUserId(session.user.id)
+      } else {
+        router.push('/hub/login')
+      }
+    }
+    getUser()
+  }, [router])
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({
@@ -33,11 +49,18 @@ const NewProject = () => {
 
   const addLearningGoal = () => {
     if (newGoal.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        learning_goals: [...prev.learning_goals, newGoal.trim()],
-      }))
+      console.log('addLearningGoal called with:', newGoal)
+      setFormData((prev) => {
+        const updated = {
+          ...prev,
+          learning_goals: [...prev.learning_goals, newGoal.trim()],
+        }
+        console.log('Updated formData after adding goal:', updated.learning_goals)
+        return updated
+      })
       setNewGoal('')
+    } else {
+      console.log('addLearningGoal: newGoal is empty')
     }
   }
 
@@ -49,12 +72,25 @@ const NewProject = () => {
   }
 
   const addTechnology = () => {
+    console.log('addTechnology called')
+    console.log('Current newTech value:', newTech)
+    console.log('newTech.trim():', newTech.trim())
+    console.log('Condition check - newTech.trim() is truthy?', Boolean(newTech.trim()))
+    
     if (newTech.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        technologies_used: [...prev.technologies_used, newTech.trim()],
-      }))
+      console.log('✅ Adding technology:', newTech)
+      setFormData((prev) => {
+        const updated = {
+          ...prev,
+          technologies_used: [...prev.technologies_used, newTech.trim()],
+        }
+        console.log('Updated formData.technologies_used:', updated.technologies_used)
+        return updated
+      })
       setNewTech('')
+      console.log('Cleared newTech input')
+    } else {
+      console.log('❌ newTech is empty, not adding')
     }
   }
 
@@ -67,18 +103,57 @@ const NewProject = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    
+    if (!userId) {
+      setError('User ID not available. Please refresh the page.')
+      return
+    }
+
+    console.log('=== FORM SUBMISSION ===')
+    console.log('Complete formData:', JSON.stringify(formData, null, 2))
+    console.log('---')
+    console.log('learning_goals:', formData.learning_goals)
+    console.log('learning_goals type:', typeof formData.learning_goals)
+    console.log('learning_goals isArray:', Array.isArray(formData.learning_goals))
+    console.log('learning_goals length:', formData.learning_goals.length)
+    console.log('---')
+    console.log('technologies_used:', formData.technologies_used)
+    console.log('technologies_used type:', typeof formData.technologies_used)
+    console.log('technologies_used isArray:', Array.isArray(formData.technologies_used))
+    console.log('technologies_used length:', formData.technologies_used.length)
+    console.log('---')
+
     setLoading(true)
     setError('')
 
     try {
-      // Get current user ID from auth (you'll need to implement this with your auth system)
-      const response = await axios.post('/api/hub/projects', {
-        ...formData,
-        creator_id: 'user-id-here', // Replace with actual user ID from auth
+      const supabase = getSupabase()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        setError('Authentication token not available. Please log in again.')
+        return
+      }
+
+      console.log('SENDING TO API - formData payload:')
+      console.log(JSON.stringify(formData, null, 2))
+      
+      const response = await axios.post('/api/hub/projects', formData, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
       })
+
+      console.log('API RESPONSE received:')
+      console.log(JSON.stringify(response.data, null, 2))
+      console.log('---')
+      console.log('Response learning_goals:', response.data.learning_goals)
+      console.log('Response technologies_used:', response.data.technologies_used)
 
       router.push(`/hub/projects/${response.data.id}`)
     } catch (err) {
+      console.error('DEBUG: Error submitting form:', err)
       setError((err as any).response?.data?.error || 'Failed to create project')
     } finally {
       setLoading(false)

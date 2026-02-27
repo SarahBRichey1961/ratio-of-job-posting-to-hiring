@@ -10,7 +10,6 @@ interface HubProject {
   difficulty_level: string
   category: string
   status: string
-  creator: { username: string; avatar_url: string }
   created_at: string
 }
 
@@ -32,6 +31,7 @@ const ProjectsPage = () => {
 
   const fetchProjects = async () => {
     try {
+      console.log('Fetching projects with filters:', filters)
       setLoading(true)
       const params = new URLSearchParams()
       params.append('limit', LIMIT.toString())
@@ -42,10 +42,16 @@ const ProjectsPage = () => {
       if (filters.difficulty) params.append('difficulty', filters.difficulty)
       if (filters.search) params.append('search', filters.search)
 
+      console.log('Calling API: /api/hub/projects?' + params.toString())
       const response = await axios.get(`/api/hub/projects?${params}`)
+      console.log('API Response:', response.data)
+      console.log('Projects array:', response.data.data || [])
+      console.log('Projects count:', (response.data.data || []).length)
+      
       setProjects(response.data.data || [])
     } catch (error) {
       console.error('Error fetching projects:', error)
+      setProjects([])
     } finally {
       setLoading(false)
     }
@@ -61,10 +67,8 @@ const ProjectsPage = () => {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold text-gray-900">Community Projects</h1>
-            <Link href="/hub/projects/new">
-              <a className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
-                Start Project
-              </a>
+            <Link href="/hub/projects/new" className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+              Start Project
             </Link>
           </div>
         </div>
@@ -143,26 +147,21 @@ const ProjectsPage = () => {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {projects.map((project) => (
-                <Link key={project.id} href={`/hub/projects/${project.id}`}>
-                  <a className="bg-white rounded-lg shadow hover:shadow-lg transition p-6 block h-full">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
-                      {project.title}
-                    </h3>
-                    <p className="text-gray-600 mb-4 line-clamp-3">{project.description}</p>
-                    <div className="space-y-3">
-                      <div className="flex gap-2 flex-wrap">
-                        <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
-                          {project.difficulty_level}
-                        </span>
-                        <span className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
-                          {project.status}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        By {project.creator.username}
-                      </div>
+                <Link key={project.id} href={`/hub/projects/${project.id}`} className="bg-white rounded-lg shadow hover:shadow-lg transition p-6 block h-full">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
+                    {project.title}
+                  </h3>
+                  <p className="text-gray-600 mb-4 line-clamp-3">{project.description}</p>
+                  <div className="space-y-3">
+                    <div className="flex gap-2 flex-wrap">
+                      <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
+                        {project.difficulty_level}
+                      </span>
+                      <span className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
+                        {project.status}
+                      </span>
                     </div>
-                  </a>
+                  </div>
                 </Link>
               ))}
             </div>

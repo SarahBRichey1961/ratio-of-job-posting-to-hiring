@@ -80,10 +80,8 @@ const OpportunitiesPage = () => {
                 Find jobs, freelance projects, internships, and mentorship opportunities
               </p>
             </div>
-            <Link href="/hub/opportunities/new">
-              <a className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
-                Post Opportunity
-              </a>
+            <Link href="/hub/opportunities/new" className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+              Post Opportunity
             </Link>
           </div>
         </div>
@@ -138,40 +136,38 @@ const OpportunitiesPage = () => {
           <>
             <div className="space-y-4">
               {opportunities.map((opp) => (
-                <Link key={opp.id} href={`/hub/opportunities/${opp.id}`}>
-                  <a className="bg-white rounded-lg shadow hover:shadow-lg transition p-6 block">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-gray-900">{opp.title}</h3>
-                        <p className="text-gray-600">{opp.company_name}</p>
-                      </div>
-                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getTypeColor(opp.opportunity_type)}`}>
-                        {opp.opportunity_type}
+                <Link key={opp.id} href={`/hub/opportunities/${opp.id}`} className="bg-white rounded-lg shadow hover:shadow-lg transition p-6 block">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-gray-900">{opp.title}</h3>
+                      <p className="text-gray-600">{opp.company_name}</p>
+                    </div>
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getTypeColor(opp.opportunity_type)}`}>
+                      {opp.opportunity_type}
+                    </span>
+                  </div>
+
+                  <p className="text-gray-700 mb-4 line-clamp-2">{opp.description}</p>
+
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {opp.skills_required.slice(0, 3).map((skill) => (
+                      <span key={skill} className="inline-block bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs">
+                        {skill}
                       </span>
-                    </div>
+                    ))}
+                    {opp.skills_required.length > 3 && (
+                      <span className="inline-block bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs">
+                        +{opp.skills_required.length - 3} more
+                      </span>
+                    )}
+                  </div>
 
-                    <p className="text-gray-700 mb-4 line-clamp-2">{opp.description}</p>
-
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {opp.skills_required.slice(0, 3).map((skill) => (
-                        <span key={skill} className="inline-block bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs">
-                          {skill}
-                        </span>
-                      ))}
-                      {opp.skills_required.length > 3 && (
-                        <span className="inline-block bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs">
-                          +{opp.skills_required.length - 3} more
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="text-sm text-gray-500">
-                      Posted {new Date(opp.created_at).toLocaleDateString()}
-                      {opp.expires_at && (
-                        <span> • Expires {new Date(opp.expires_at).toLocaleDateString()}</span>
-                      )}
-                    </div>
-                  </a>
+                  <div className="text-sm text-gray-500">
+                    Posted {new Date(opp.created_at).toLocaleDateString()}
+                    {opp.expires_at && (
+                      <span> • Expires {new Date(opp.expires_at).toLocaleDateString()}</span>
+                    )}
+                  </div>
                 </Link>
               ))}
             </div>
