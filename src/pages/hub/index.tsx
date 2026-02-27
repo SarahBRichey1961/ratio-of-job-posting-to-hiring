@@ -121,18 +121,7 @@ export default function TakeTheReins() {
           </div>
         </div>
 
-        {/* Bottom CTA */}
-        <div className="text-center mt-16 pt-12 border-t border-slate-700">
-          <p className="text-slate-400 mb-6">
-            Ready to take control of your pathway?
-          </p>
-          <button
-            onClick={() => router.push('/signup')}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-10 py-4 rounded-lg text-lg transition inline-block"
-          >
-            Join TakeTheReins Today
-          </button>
-        </div>
+
       </section>
 
       {/* Footer */}
