@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import axios from 'axios'
 
 interface HubProject {
@@ -14,6 +15,7 @@ interface HubProject {
 }
 
 const ProjectsPage = () => {
+  const router = useRouter()
   const [projects, setProjects] = useState<HubProject[]>([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
@@ -66,7 +68,15 @@ const ProjectsPage = () => {
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-gray-900">Community Projects</h1>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => router.push('/hub')}
+                className="text-gray-600 hover:text-gray-900 font-semibold flex items-center gap-2"
+              >
+                <span>←</span> Back
+              </button>
+              <h1 className="text-3xl font-bold text-gray-900">Community Projects</h1>
+            </div>
             <Link href="/hub/projects/new" className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
               Start Project
             </Link>
