@@ -1,8 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
 // Simple in-memory storage adapter to avoid Navigator LockManager issues
 class MemoryStorage {
   private store: Map<string, string> = new Map()
@@ -24,22 +21,44 @@ class MemoryStorage {
 let supabaseClient: any = null
 
 export const getSupabase = () => {
-  if (!supabaseClient && supabaseUrl && supabaseAnonKey) {
-    try {
-      // Simple minimal config to avoid lock manager issues
-      supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: {
-          persistSession: false, // Disable session persistence to avoid lock manager
-          autoRefreshToken: false,
-          detectSessionInUrl: false,
-        },
-      })
-    } catch (error) {
-      console.error('Failed to initialize Supabase:', error)
-      return null
-    }
+  if (supabaseClient) {
+    return supabaseClient
   }
-  return supabaseClient || null
+
+  // Read environment variables at runtime (not at module load time)
+  const supabaseUrl = typeof window !== 'undefined' 
+    ? process.env.NEXT_PUBLIC_SUPABASE_URL 
+    : process.env.NEXT_PUBLIC_SUPABASE_URL
+
+  const supabaseAnonKey = typeof window !== 'undefined'
+    ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl) {
+    console.error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable')
+    return null
+  }
+
+  if (!supabaseAnonKey) {
+    console.error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable')
+    return null
+  }
+
+  try {
+    // Simple minimal config to avoid lock manager issues
+    supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false, // Disable session persistence to avoid lock manager
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    })
+    console.debug('Supabase client initialized successfully')
+    return supabaseClient
+  } catch (error) {
+    console.error('Failed to initialize Supabase:', error)
+    return null
+  }
 }
 
 // Safe mock object that returns proper responses even when Supabase is not initialized
