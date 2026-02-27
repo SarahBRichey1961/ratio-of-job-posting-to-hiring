@@ -108,7 +108,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true)
     try {
       const client = getSupabase()
-      if (!client) throw new Error('Supabase not initialized')
+      if (!client) {
+        console.error('Supabase client not initialized. Check environment variables NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY')
+        throw new Error('Authentication service is not available. Please try again or contact support.')
+      }
       
       const { data, error } = await client.auth.signUp({
         email,
@@ -127,6 +130,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             role: 'viewer',
           })
       }
+    } catch (error: any) {
+      console.error('Sign-up error:', error)
+      throw error
     } finally {
       setIsLoading(false)
     }
@@ -136,7 +142,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true)
     try {
       const client = getSupabase()
-      if (!client) throw new Error('Supabase not initialized')
+      if (!client) {
+        console.error('Supabase client not initialized. Check environment variables NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY')
+        throw new Error('Authentication service is not available. Please try again or contact support.')
+      }
       
       const { error } = await client.auth.signInWithPassword({
         email,
@@ -144,6 +153,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
 
       if (error) throw error
+    } catch (error: any) {
+      console.error('Sign-in error:', error)
+      throw error
     } finally {
       setIsLoading(false)
     }
@@ -153,12 +165,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true)
     try {
       const client = getSupabase()
-      if (!client) throw new Error('Supabase not initialized')
+      if (!client) {
+        console.error('Supabase client not initialized. Check environment variables NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY')
+        throw new Error('Authentication service is not available. Please try again or contact support.')
+      }
       
       const { error } = await client.auth.signOut()
       if (error) throw error
       setUser(null)
       setProfile(null)
+    } catch (error: any) {
+      console.error('Sign-out error:', error)
+      throw error
     } finally {
       setIsLoading(false)
     }
