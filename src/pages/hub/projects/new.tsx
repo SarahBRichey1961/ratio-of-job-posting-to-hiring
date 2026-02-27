@@ -185,6 +185,14 @@ const NewProject = () => {
 
       <header className="bg-white shadow">
         <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="flex items-center gap-4 mb-2">
+            <button
+              onClick={() => router.push('/hub/projects')}
+              className="text-gray-600 hover:text-gray-900 font-semibold flex items-center gap-2"
+            >
+              <span>←</span> Back
+            </button>
+          </div>
           <h1 className="text-3xl font-bold text-gray-900">Create New Project</h1>
           <p className="text-gray-600 mt-2">Start a project to build an AI solution with the community</p>
         </div>
