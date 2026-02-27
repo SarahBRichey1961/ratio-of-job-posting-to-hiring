@@ -87,17 +87,11 @@ export default function TakeTheReins() {
           </div>
         </div>
 
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-          <button
-            onClick={() => router.push('/signup')}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-8 py-4 rounded-lg transition"
-          >
-            Start Your Journey
-          </button>
+        {/* CTA Button */}
+        <div className="flex justify-center mb-16">
           <Link
             href="/hub/projects"
-            className="border border-slate-500 hover:border-slate-400 text-white font-semibold px-8 py-4 rounded-lg transition text-center"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-8 py-4 rounded-lg transition"
           >
             Explore Community
           </Link>
