@@ -25,11 +25,21 @@ const NewDiscussion = () => {
   // Get user ID from Supabase on mount
   useEffect(() => {
     const getUser = async () => {
-      const supabase = getSupabase()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user?.id) {
-        setUserId(session.user.id)
-      } else {
+      try {
+        const supabase = getSupabase()
+        if (!supabase) {
+          console.error('Supabase client not initialized')
+          router.push('/hub/login')
+          return
+        }
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user?.id) {
+          setUserId(session.user.id)
+        } else {
+          router.push('/hub/login')
+        }
+      } catch (err) {
+        console.error('Error getting user:', err)
         router.push('/hub/login')
       }
     }
@@ -73,10 +83,17 @@ const NewDiscussion = () => {
 
     try {
       const supabase = getSupabase()
+      if (!supabase) {
+        setError('Connection error. Please try again.')
+        setLoading(false)
+        return
+      }
+      
       const { data: { session } } = await supabase.auth.getSession()
       
       if (!session?.access_token) {
         setError('Authentication token not available. Please log in again.')
+        setLoading(false)
         return
       }
 
@@ -96,6 +113,7 @@ const NewDiscussion = () => {
 
       router.push(`/hub/discussions/${response.data.id}`)
     } catch (err) {
+      console.error('Error creating discussion:', err)
       setError((err as any).response?.data?.error || 'Failed to create discussion')
     } finally {
       setLoading(false)
