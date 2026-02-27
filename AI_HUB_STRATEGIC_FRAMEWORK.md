@@ -597,7 +597,7 @@ That's it. That's the platform.
 ## SECTION 10: SUCCESS STORY EXAMPLE (3-Year)
 
 **Person A: Job Seeker**
-- Month 1: Unemployed software engineer joins, gets AI Hub profile
+- Month 1: Unemployed software engineer joins, gets Take The Reins profile
 - Month 1: Matched with mentor (senior AI engineer at startup)
 - Month 2: Takes 10 applications, gets 1 interview
 - Month 2-3: Mentor prepares them for interviews, does mock sessions
@@ -662,7 +662,7 @@ That's it. That's the platform.
 
 ## Conclusion
 
-The AI Hub's North Star is **Job Placement within 6 months**. Success requires simultaneous execution on three pillars: (1) **matching** people to opportunities, (2) **mentoring** them to succeed, and (3) **partnering** with employers. This creates network effects where each pillar strengthens the others.
+The Take The Reins's North Star is **Job Placement within 6 months**. Success requires simultaneous execution on three pillars: (1) **matching** people to opportunities, (2) **mentoring** them to succeed, and (3) **partnering** with employers. This creates network effects where each pillar strengthens the others.
 
 **Year 1 focus**: Validate the model with grant funding while building community.  
 **Year 2 focus**: Scale with employer revenue + grants.  

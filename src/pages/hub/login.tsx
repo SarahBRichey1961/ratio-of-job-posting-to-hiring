@@ -64,7 +64,7 @@ const HubLogin = () => {
       </Head>
 
       <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">AI Hub</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Take The Reins</h1>
         <p className="text-gray-600 mb-6">Learn, build, and collaborate on AI solutions</p>
 
         <form onSubmit={handleAuth} className="space-y-4">
