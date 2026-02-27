@@ -1,289 +1,146 @@
-import React, { useState, useEffect } from 'react'
-import Link from 'next/link'
+import React from 'react'
 import Head from 'next/head'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
-import axios from 'axios'
 
-interface HubProject {
-  id: string
-  title: string
-  description: string
-  difficulty_level: string
-  category: string
-  status: string
-  created_at: string
-}
-
-interface HubDiscussion {
-  id: string
-  title: string
-  type: string
-  category: string
-  status: string
-  created_at: string
-}
-
-interface Opportunity {
-  id: string
-  title: string
-  opportunity_type: string
-  company_name: string
-  created_at: string
-}
-
-const HubHome = () => {
+export default function TakeTheReins() {
   const router = useRouter()
-  const [projects, setProjects] = useState<HubProject[]>([])
-  const [discussions, setDiscussions] = useState<HubDiscussion[]>([])
-  const [opportunities, setOpportunities] = useState<Opportunity[]>([])
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('overview')
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [projectsRes, discussionsRes, opportunitiesRes] = await Promise.all([
-          axios.get('/api/hub/projects?limit=6'),
-          axios.get('/api/hub/discussions?limit=6'),
-          axios.get('/api/hub/opportunities?limit=6'),
-        ])
-
-        setProjects(projectsRes.data.data || [])
-        setDiscussions(discussionsRes.data.data || [])
-        setOpportunities(opportunitiesRes.data.data || [])
-      } catch (error) {
-        console.error('Error fetching hub data:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <Head>
-        <title>Learning Hub - AI Community</title>
-        <meta name="description" content="Learn AI, build solutions, connect with others" />
+        <title>Take The Reins - Your Pathway Forward</title>
+        <meta name="description" content="Take control of your career pathway. Create a framework, collaborate on your approach, build your manifesto." />
       </Head>
 
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">AI Learning Hub</h1>
-          <p className="text-lg text-gray-600">
-            Join our community to learn AI, build solutions together, and find opportunities
+      {/* Navigation */}
+      <nav className="bg-slate-800/50 backdrop-blur border-b border-slate-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-white">Take The Reins</h1>
+          <div className="flex gap-4">
+            <Link href="/login" className="text-slate-300 hover:text-white transition">
+              Sign In
+            </Link>
+            <Link href="/signup" className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition">
+              Get Started
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+        <div className="text-center mb-16">
+          <h2 className="text-5xl sm:text-6xl font-bold text-white mb-6">
+            Take The Reins
+          </h2>
+          <p className="text-xl sm:text-2xl text-slate-300 max-w-2xl mx-auto">
+            Facilitate your own pathway forward—unemployed or career-changing, you're in control.
           </p>
         </div>
-      </header>
 
-      {/* Navigation Tabs */}
-      <div className="border-b border-gray-200 bg-white sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex space-x-8">
-            {['overview', 'projects', 'discussions', 'opportunities'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm capitalize ${
-                  activeTab === tab
-                    ? 'border-indigo-500 text-indigo-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+        {/* Three Pillar Cards */}
+        <div className="grid md:grid-cols-3 gap-8 mb-16">
+          {/* Pillar 1: Framework */}
+          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 hover:bg-slate-800/70 transition">
+            <div className="flex items-center justify-center w-12 h-12 bg-indigo-600/20 rounded-lg mb-6">
+              <svg className="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-3">
+              Create a Framework for Your Idea
+            </h3>
+            <p className="text-slate-400">
+              Define your vision, identify your goals, and map out the steps to get there. Build on ideas that matter to you.
+            </p>
+          </div>
+
+          {/* Pillar 2: Collaborate */}
+          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 hover:bg-slate-800/70 transition">
+            <div className="flex items-center justify-center w-12 h-12 bg-emerald-600/20 rounded-lg mb-6">
+              <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 10H9m6 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-3">
+              Collaborate on the Approach
+            </h3>
+            <p className="text-slate-400">
+              Connect with mentors, peers, and experts. Get feedback, share ideas, and learn from the community.
+            </p>
+          </div>
+
+          {/* Pillar 3: Manifesto */}
+          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 hover:bg-slate-800/70 transition">
+            <div className="flex items-center justify-center w-12 h-12 bg-rose-600/20 rounded-lg mb-6">
+              <svg className="w-6 h-6 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C6.5 6.253 2 10.998 2 17.25c0 5.079 3.855 9.26 8.756 9.589M12 6.253c5.5 0 10 4.745 10 10.997 0 5.079-3.855 9.26-8.756 9.589m0 0A8.991 8.991 0 0121 12a8.991 8.991 0 01-8.756 8.589" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-3">
+              Build Your Manifesto
+            </h3>
+            <p className="text-slate-400">
+              Speak in your own way about you, not a resume. Give mind bending examples of who you are, what you have done and your aim for this new phase ahead.
+            </p>
           </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-12">
-        {loading && (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+        {/* CTA Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+          <button
+            onClick={() => router.push('/signup')}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-8 py-4 rounded-lg transition"
+          >
+            Start Your Journey
+          </button>
+          <Link
+            href="/hub/projects"
+            className="border border-slate-500 hover:border-slate-400 text-white font-semibold px-8 py-4 rounded-lg transition text-center"
+          >
+            Explore Community
+          </Link>
+        </div>
+
+        {/* Info Section */}
+        <div className="bg-slate-800/30 border border-slate-700 rounded-xl p-8 sm:p-12">
+          <h3 className="text-2xl font-bold text-white mb-6">
+            How TakeTheReins Works
+          </h3>
+          <div className="space-y-4 text-slate-300">
+            <p>
+              <strong>For Job Seekers:</strong> Whether you're unemployed or career-changing, use TakeTheReins to take control of your pathway. Find opportunities aligned with your skills, connect with mentors, ask questions, and build a manifesto that represents who you are.
+            </p>
+            <p>
+              <strong>For Mentors:</strong> Share your expertise, guide others, and build impact in a community focused on real growth and collaboration.
+            </p>
+            <p>
+              <strong>For Employers:</strong> Connect with pre-vetted, passionate talent. Post jobs, discover candidates, and hire people ready to make an impact.
+            </p>
           </div>
-        )}
+        </div>
 
-        {!loading && activeTab === 'overview' && (
-          <div className="space-y-12">
-            {/* Welcome Section */}
-            <div className="bg-white rounded-lg shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome to the Hub</h2>
-              <p className="text-gray-700 mb-6">
-                This is a community space where you can:
-              </p>
-              <ul className="space-y-3">
-                <li className="flex items-start">
-                  <span className="text-green-500 mr-3 text-xl">✓</span>
-                  <span className="text-gray-700">
-                    <strong>Build AI Solutions:</strong> Collaborate on projects that solve real problems
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-green-500 mr-3 text-xl">✓</span>
-                  <span className="text-gray-700">
-                    <strong>Learn Together:</strong> Share knowledge, ask questions, and grow your AI skills
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-green-500 mr-3 text-xl">✓</span>
-                  <span className="text-gray-700">
-                    <strong>Find Opportunities:</strong> Discover jobs, freelance work, and mentorship
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-green-500 mr-3 text-xl">✓</span>
-                  <span className="text-gray-700">
-                    <strong>Build Your Portfolio:</strong> Showcase your work and get recognized
-                  </span>
-                </li>
-              </ul>
-            </div>
+        {/* Bottom CTA */}
+        <div className="text-center mt-16 pt-12 border-t border-slate-700">
+          <p className="text-slate-400 mb-6">
+            Ready to take control of your pathway?
+          </p>
+          <button
+            onClick={() => router.push('/signup')}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-10 py-4 rounded-lg text-lg transition inline-block"
+          >
+            Join TakeTheReins Today
+          </button>
+        </div>
+      </section>
 
-            {/* Action Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Start a Project</h3>
-                <p className="text-gray-600 mb-4">
-                  Lead a team to build an AI solution to a real problem
-                </p>
-                <Link href="/hub/projects/new" className="inline-block bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-                    Create Project
-                </Link>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Browse Projects</h3>
-                <p className="text-gray-600 mb-4">
-                  Find a project to join and start contributing
-                </p>
-                <Link href="/hub/projects" className="inline-block bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-                    View Projects
-                </Link>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Ask Questions</h3>
-                <p className="text-gray-600 mb-4">
-                  Get help from the community on any topic
-                </p>
-                <Link href="/hub/discussions?type=question" className="inline-block bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-                    Ask Now
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {!loading && activeTab === 'projects' && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Active Projects</h2>
-              <Link href="/hub/projects/new" className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-                New Project
-              </Link>
-            </div>
-            {projects.length === 0 ? (
-              <div className="bg-white rounded-lg shadow p-8 text-center">
-                <p className="text-gray-600">No projects yet. Be the first to create one!</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {projects.map((project) => (
-                  <Link key={project.id} href={`/hub/projects/${project.id}`} className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition block">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">{project.title}</h3>
-                      <p className="text-gray-600 mb-4 line-clamp-2">{project.description}</p>
-                      <div className="flex justify-between items-center">
-                        <div className="flex space-x-2">
-                          <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                            {project.difficulty_level}
-                          </span>
-                          <span className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                            {project.status}
-                          </span>
-                        </div>
-
-                      </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {!loading && activeTab === 'discussions' && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Community Discussions</h2>
-              <Link href="/hub/discussions/new" className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-                Start Discussion
-              </Link>
-            </div>
-            {discussions.length === 0 ? (
-              <div className="bg-white rounded-lg shadow p-8 text-center">
-                <p className="text-gray-600">No discussions yet. Start one!</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {discussions.map((discussion) => (
-                  <Link key={discussion.id} href={`/hub/discussions/${discussion.id}`} className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition block">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-lg font-bold text-gray-900">{discussion.title}</h3>
-                        <span className="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
-                          {discussion.type}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm text-gray-500">
-
-                        <span>{new Date(discussion.created_at).toLocaleDateString()}</span>
-                      </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {!loading && activeTab === 'opportunities' && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Opportunities</h2>
-              <Link href="/hub/opportunities/new" className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-                Post Opportunity
-              </Link>
-            </div>
-            {opportunities.length === 0 ? (
-              <div className="bg-white rounded-lg shadow p-8 text-center">
-                <p className="text-gray-600">
-                  No opportunities available right now. Check back soon!
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {opportunities.map((opp) => (
-                  <Link key={opp.id} href={`/hub/opportunities/${opp.id}`} className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition block">
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">{opp.title}</h3>
-                      <p className="text-gray-600 mb-4">{opp.company_name}</p>
-                      <div className="flex justify-between items-center">
-                        <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
-                          {opp.opportunity_type}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          {new Date(opp.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </main>
+      {/* Footer */}
+      <footer className="bg-slate-900/50 border-t border-slate-700 mt-24">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-slate-500 text-sm">
+          <p>Take The Reins © 2026 • Empowering your own pathway forward</p>
+        </div>
+      </footer>
     </div>
   )
 }
-
-export default HubHome
