@@ -87,16 +87,6 @@ export default function TakeTheReins() {
           </div>
         </div>
 
-        {/* CTA Button */}
-        <div className="flex justify-center mb-16">
-          <Link
-            href="/hub/projects"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-8 py-4 rounded-lg transition"
-          >
-            Explore Community
-          </Link>
-        </div>
-
         {/* Info Section */}
         <div className="bg-slate-800/30 border border-slate-700 rounded-xl p-8 sm:p-12">
           <h3 className="text-2xl font-bold text-white mb-6">
