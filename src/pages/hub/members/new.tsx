@@ -3,6 +3,53 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import axios from 'axios'
 
+interface Question {
+  id: string
+  question: string
+  answer: string
+  isDefault: boolean
+  isIncluded: boolean
+}
+
+const defaultQuestions = [
+  {
+    id: 'q1',
+    question: 'In one sentence, what are you professionally (or want to be)?',
+    hint: 'Give us your professional elevator pitch',
+  },
+  {
+    id: 'q2',
+    question: 'What are you genuinely passionate about in your work?',
+    hint: 'What makes you lose track of time?',
+  },
+  {
+    id: 'q3',
+    question:
+      'Describe an accomplishment you\'re genuinely proud of—what made it matter?',
+    hint: 'This shows what you can do and what you value',
+  },
+  {
+    id: 'q4',
+    question: 'What kind of team environment brings out your best work?',
+    hint: 'Help employers understand if they\'re a fit for you',
+  },
+  {
+    id: 'q5',
+    question: 'What\'s a boundary or principle you won\'t compromise on professionally?',
+    hint: 'This shows integrity and self-respect',
+  },
+  {
+    id: 'q6',
+    question: 'What\'s driving your next career move or phase? Why now?',
+    hint: 'Share your why and your momentum',
+  },
+  {
+    id: 'q7',
+    question: 'In 5 years, what do you want to be known for?',
+    hint: 'Your long-term vision and legacy',
+  },
+]
+
 const BuildManifesto = () => {
   const router = useRouter()
   const [stage, setStage] = useState<'intro' | 'questions' | 'preview' | 'complete'>('intro')
@@ -11,34 +58,77 @@ const BuildManifesto = () => {
   const [userId, setUserId] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const [formData, setFormData] = useState({
-    professional_identity: '',
-    passions: '',
-    accomplishment: '',
-    team_environment: '',
-    boundaries: '',
-    next_phase: '',
-    five_year_vision: '',
-  })
+  const [questions, setQuestions] = useState<Question[]>(
+    defaultQuestions.map((q) => ({
+      id: q.id,
+      question: q.question,
+      answer: '',
+      isDefault: true,
+      isIncluded: true,
+    }))
+  )
 
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingText, setEditingText] = useState('')
   const [manifestoContent, setManifestoContent] = useState('')
   const [manifestoUrl, setManifestoUrl] = useState('')
 
   // Generate a unique ID for manifesto (anonymous users don't need to log in)
   useEffect(() => {
-    // Create a random session ID for anonymous manifesto generation
     if (!userId) {
       const sessionId = Math.random().toString(36).substring(2, 15)
       setUserId(sessionId)
     }
   }, [])
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
+  const handleAnswerChange = (id: string, value: string) => {
+    setQuestions((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, answer: value } : q))
+    )
+  }
+
+  const handleEditQuestion = (id: string) => {
+    const question = questions.find((q) => q.id === id)
+    if (question) {
+      setEditingId(id)
+      setEditingText(question.question)
+    }
+  }
+
+  const handleSaveEdit = (id: string) => {
+    if (editingText.trim()) {
+      setQuestions((prev) =>
+        prev.map((q) =>
+          q.id === id ? { ...q, question: editingText.trim() } : q
+        )
+      )
+    }
+    setEditingId(null)
+    setEditingText('')
+  }
+
+  const handleToggleQuestion = (id: string) => {
+    setQuestions((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, isIncluded: !q.isIncluded } : q))
+    )
+  }
+
+  const handleRemoveQuestion = (id: string) => {
+    setQuestions((prev) => prev.filter((q) => q.id !== id))
+  }
+
+  const handleAddQuestion = () => {
+    const newId = `custom-${Date.now()}`
+    const newQuestion: Question = {
+      id: newId,
+      question: '',
+      answer: '',
+      isDefault: false,
+      isIncluded: true,
+    }
+    setQuestions((prev) => [...prev, newQuestion])
+    setEditingId(newId)
+    setEditingText('')
   }
 
   const handleGenerateManifesto = async () => {
@@ -47,19 +137,17 @@ const BuildManifesto = () => {
       return
     }
 
-    // Validate required fields
-    const requiredFields = [
-      formData.professional_identity,
-      formData.passions,
-      formData.accomplishment,
-      formData.team_environment,
-      formData.boundaries,
-      formData.next_phase,
-      formData.five_year_vision,
-    ]
+    // Filter to only included questions
+    const includedQuestions = questions.filter((q) => q.isIncluded)
 
-    if (requiredFields.some((field) => !field.trim())) {
-      setError('Please answer all questions before generating your manifesto')
+    // Validate required fields
+    if (includedQuestions.length === 0) {
+      setError('You need at least one question')
+      return
+    }
+
+    if (includedQuestions.some((q) => !q.question.trim() || !q.answer.trim())) {
+      setError('Please answer all your questions and give them text before generating')
       return
     }
 
@@ -67,9 +155,20 @@ const BuildManifesto = () => {
     setError('')
 
     try {
+      // Build answers object from included questions
+      const answers: Record<string, string> = {}
+      includedQuestions.forEach((q, index) => {
+        answers[`question_${index + 1}`] = q.answer
+        answers[`question_${index + 1}_prompt`] = q.question
+      })
+
       const res = await axios.post('/api/hub/manifesto/generate', {
         userId,
-        answers: formData,
+        answers,
+        questions: includedQuestions.map((q) => ({
+          question: q.question,
+          answer: q.answer,
+        })),
       })
 
       if (res.data.manifesto) {
@@ -217,8 +316,7 @@ const BuildManifesto = () => {
                 <div className="flex gap-3 items-start">
                   <span className="text-rose-400 font-bold text-lg">1.</span>
                   <p className="text-slate-300">
-                    <strong>Answer 7 Quick Questions</strong> - We'll ask about who you are, what you're passionate
-                    about, and what matters to you. (~5 minutes)
+                    <strong>Answer Questions (Your Way)</strong> - We provide 7 starter questions, but you can edit them, remove ones that don't resonate, or add your own. Make it personal.
                   </p>
                 </div>
                 <div className="flex gap-3 items-start">
@@ -251,7 +349,7 @@ const BuildManifesto = () => {
               }}
               className="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold py-4 px-6 rounded-lg transition"
             >
-              Start Building Your Manifesto (5 minutes)
+              Start Build Your Manifesto (In Your Own Words)
             </button>
           </div>
         )}
@@ -259,7 +357,15 @@ const BuildManifesto = () => {
         {/* QUESTIONS STAGE */}
         {stage === 'questions' && (
           <div className="space-y-8 bg-slate-800/30 border border-slate-700 rounded-xl p-8">
-            <h2 className="text-2xl font-bold text-white mb-8">Answer These 7 Questions</h2>
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-2">Answer These Questions</h2>
+              <p className="text-slate-400 text-sm mb-6">
+                Feel free to edit the questions, remove ones you don't want to answer, or add your own. Make it yours.
+              </p>
+              <p className="text-indigo-400 text-sm font-medium mb-6">
+                {questions.filter((q) => q.isIncluded).length} question{questions.filter((q) => q.isIncluded).length !== 1 ? 's' : ''} • Customize to fit your voice
+              </p>
+            </div>
 
             {error && (
               <div className="bg-red-900/30 border border-red-700 text-red-200 px-4 py-3 rounded-lg text-sm">
@@ -267,117 +373,107 @@ const BuildManifesto = () => {
               </div>
             )}
 
-            {/* Q1 */}
-            <div className="space-y-2">
-              <label className="block text-white font-semibold">
-                1. In one sentence, what are you professionally (or want to be)?
-              </label>
-              <textarea
-                name="professional_identity"
-                value={formData.professional_identity}
-                onChange={handleInputChange}
-                placeholder="e.g., A product manager passionate about building tools that solve real human problems"
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                rows={2}
-              />
-              <p className="text-slate-400 text-xs">Give us your professional elevator pitch</p>
+            {/* Questions List */}
+            <div className="space-y-6">
+              {questions.map((q, index) => (
+                <div key={q.id} className="space-y-3 pb-6 border-b border-slate-700 last:border-b-0">
+                  {/* Question Header with Edit/Remove */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      {editingId === q.id ? (
+                        <div className="space-y-2">
+                          <label className="block text-white font-semibold text-sm">
+                            Edit Question {q.isDefault ? '' : '(Custom)'}
+                          </label>
+                          <textarea
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                            className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            rows={2}
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleSaveEdit(q.id)}
+                              className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-3 py-2 rounded transition"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingId(null)}
+                              className="bg-slate-700 hover:bg-slate-600 text-white text-sm px-3 py-2 rounded transition"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <label className="block text-white font-semibold">
+                          {index + 1}. {q.question}
+                        </label>
+                      )}
+                    </div>
+                    {editingId !== q.id && (
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => handleEditQuestion(q.id)}
+                          title="Edit question"
+                          className="text-slate-400 hover:text-indigo-400 transition text-lg"
+                        >
+                          ✏️
+                        </button>
+                        {!q.isDefault ? (
+                          <button
+                            onClick={() => handleRemoveQuestion(q.id)}
+                            title="Remove custom question"
+                            className="text-slate-400 hover:text-red-400 transition text-lg"
+                          >
+                            ✕
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleToggleQuestion(q.id)}
+                            title={q.isIncluded ? 'Skip this question' : 'Include this question'}
+                            className={`text-lg transition ${
+                              q.isIncluded
+                                ? 'text-emerald-400 hover:text-slate-400'
+                                : 'text-slate-600 hover:text-emerald-400'
+                            }`}
+                          >
+                            {q.isIncluded ? '✓' : '○'}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Answer Textarea (if included) */}
+                  {editingId !== q.id && q.isIncluded && (
+                    <textarea
+                      value={q.answer}
+                      onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                      placeholder="Your answer..."
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      rows={3}
+                    />
+                  )}
+
+                  {/* Skipped Indicator */}
+                  {editingId !== q.id && !q.isIncluded && (
+                    <p className="text-slate-500 italic text-sm">
+                      (Skipped - click the ○ button to include)
+                    </p>
+                  )}
+                </div>
+              ))}
             </div>
 
-            {/* Q2 */}
-            <div className="space-y-2">
-              <label className="block text-white font-semibold">
-                2. What are you genuinely passionate about in your work?
-              </label>
-              <textarea
-                name="passions"
-                value={formData.passions}
-                onChange={handleInputChange}
-                placeholder="e.g., I'm energized by mentoring junior developers and seeing them grow into confident engineers"
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                rows={2}
-              />
-              <p className="text-slate-400 text-xs">What makes you lose track of time?</p>
-            </div>
-
-            {/* Q3 */}
-            <div className="space-y-2">
-              <label className="block text-white font-semibold">
-                3. Describe an accomplishment you're genuinely proud of—what made it matter?
-              </label>
-              <textarea
-                name="accomplishment"
-                value={formData.accomplishment}
-                onChange={handleInputChange}
-                placeholder="e.g., Led a cross-functional team through a complete redesign that cut user friction by 40%. What mattered: we shipped it in half the time while improving team morale."
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                rows={3}
-              />
-              <p className="text-slate-400 text-xs">This shows what you can do and what you value</p>
-            </div>
-
-            {/* Q4 */}
-            <div className="space-y-2">
-              <label className="block text-white font-semibold">
-                4. What kind of team environment brings out your best work?
-              </label>
-              <textarea
-                name="team_environment"
-                value={formData.team_environment}
-                onChange={handleInputChange}
-                placeholder="e.g., Teams that are direct, curious, and collaborative. I thrive when I can ask hard questions and people aren't afraid to tell me I'm wrong."
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                rows={2}
-              />
-              <p className="text-slate-400 text-xs">Help employers understand if they're a fit for you</p>
-            </div>
-
-            {/* Q5 */}
-            <div className="space-y-2">
-              <label className="block text-white font-semibold">
-                5. What's a boundary or principle you won't compromise on professionally?
-              </label>
-              <textarea
-                name="boundaries"
-                value={formData.boundaries}
-                onChange={handleInputChange}
-                placeholder="e.g., I won't join teams where we ship low-quality work just to hit a deadline. I also won't work somewhere that doesn't invest in employee growth."
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                rows={2}
-              />
-              <p className="text-slate-400 text-xs">This shows integrity and self-respect</p>
-            </div>
-
-            {/* Q6 */}
-            <div className="space-y-2">
-              <label className="block text-white font-semibold">
-                6. What's driving your next career move or phase? Why now?
-              </label>
-              <textarea
-                name="next_phase"
-                value={formData.next_phase}
-                onChange={handleInputChange}
-                placeholder="e.g., After 8 years in tech, I'm ready to leverage what I've learned to help early-stage companies scale. I want to be part of something from the ground up."
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                rows={2}
-              />
-              <p className="text-slate-400 text-xs">Share your why and your momentum</p>
-            </div>
-
-            {/* Q7 */}
-            <div className="space-y-2">
-              <label className="block text-white font-semibold">
-                7. In 5 years, what do you want to be known for?
-              </label>
-              <textarea
-                name="five_year_vision"
-                value={formData.five_year_vision}
-                onChange={handleInputChange}
-                placeholder="e.g., I want to be known as someone who builds inclusive, high-performing teams and ships products that people love."
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                rows={2}
-              />
-              <p className="text-slate-400 text-xs">Your long-term vision and legacy</p>
-            </div>
+            {/* Add Custom Question Button */}
+            <button
+              onClick={handleAddQuestion}
+              className="w-full border-2 border-dashed border-slate-600 hover:border-indigo-500 text-slate-400 hover:text-indigo-400 font-semibold py-3 px-6 rounded-lg transition"
+            >
+              + Add Your Own Question
+            </button>
 
             {/* Buttons */}
             <div className="flex gap-4 pt-6">
@@ -389,10 +485,10 @@ const BuildManifesto = () => {
               </button>
               <button
                 onClick={handleGenerateManifesto}
-                disabled={loading}
+                disabled={loading || questions.filter((q) => q.isIncluded).length === 0}
                 className="flex-1 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition"
               >
-                {loading ? 'Generating Your Manifesto...' : 'Generate My Manifesto'}
+                {loading ? 'Generating Your Manifesto...' : `Generate My Manifesto (${questions.filter((q) => q.isIncluded).length} Q)`}
               </button>
             </div>
           </div>
