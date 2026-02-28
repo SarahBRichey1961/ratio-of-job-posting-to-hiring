@@ -16,15 +16,14 @@ export default function TakeTheReins() {
       {/* Navigation */}
       <nav className="bg-slate-800/50 backdrop-blur border-b border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <button
+            onClick={() => router.back()}
+            className="text-slate-300 hover:text-white transition text-sm font-medium"
+          >
+            ← Back
+          </button>
           <h1 className="text-2xl font-bold text-white">Take The Reins</h1>
-          <div className="flex gap-6">
-            <Link href="https://jobboardscores.netlify.app/dashboard/comparison" target="_blank" className="text-slate-300 hover:text-white transition">
-              Job Board Comparison
-            </Link>
-            <Link href="/explore" className="text-slate-300 hover:text-white transition">
-              Explore
-            </Link>
-          </div>
+          <div className="w-12"></div>
         </div>
       </nav>
 
