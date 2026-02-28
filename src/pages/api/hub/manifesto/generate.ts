@@ -9,14 +9,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { userId, answers } = req.body
+  const { userId, questions } = req.body
 
   if (!userId) {
     return res.status(400).json({ error: 'User ID required' })
   }
 
-  if (!answers) {
-    return res.status(400).json({ error: 'Answers required' })
+  if (!questions || !Array.isArray(questions) || questions.length === 0) {
+    return res.status(400).json({ error: 'Questions required' })
   }
 
   if (!OPENAI_API_KEY) {
@@ -24,33 +24,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    // Build question/answer pairs for the prompt
+    const questionAnswerPairs = questions
+      .map((q, index) => `**Q${index + 1}: ${q.question}**\n${q.answer}`)
+      .join('\n\n')
+
     // Build prompt for GPT to write the manifesto
     const prompt = `
 You are a ghostwriter creating a compelling personal manifesto for a professional. 
 
-Based on the following answers, write an authentic, powerful manifesto (300-400 words) that captures their essence, values, and vision. The manifesto should:
+Based on the following answers to their custom questions, write an authentic, powerful manifesto (300-400 words) that captures their essence, values, and vision. The manifesto should:
 - Be written in first person
 - Sound personal and authentic, not corporate
 - Balance passion with professionalism
 - Include specific details from their answers
 - Be memorable and quotable
 - End with a clear statement of their vision
+- Respect the unique questions they chose to answer
 
 Here are their answers:
 
-**Professional Identity:** ${answers.professional_identity}
-
-**Passions:** ${answers.passions}
-
-**Key Accomplishment:** ${answers.accomplishment}
-
-**Team Environment:** ${answers.team_environment}
-
-**Non-Negotiables:** ${answers.boundaries}
-
-**Next Phase:** ${answers.next_phase}
-
-**5-Year Vision:** ${answers.five_year_vision}
+${questionAnswerPairs}
 
 Write the manifesto now. Make it powerful, personal, and true.`
 
@@ -62,7 +56,7 @@ Write the manifesto now. Make it powerful, personal, and true.`
           {
             role: 'system',
             content:
-              'You are an expert ghostwriter who creates compelling personal manifestos for professionals. Your writing is authentic, powerful, and memorable.',
+              'You are an expert ghostwriter who creates compelling personal manifestos for professionals. Your writing is authentic, powerful, and memorable. Respect the questions they chose to answer and write to their unique voice and perspective.',
           },
           {
             role: 'user',
@@ -101,3 +95,4 @@ Write the manifesto now. Make it powerful, personal, and true.`
     })
   }
 }
+
