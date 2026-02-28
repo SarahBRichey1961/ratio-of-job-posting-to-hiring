@@ -20,7 +20,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (!OPENAI_API_KEY) {
-    return res.status(500).json({ error: 'OpenAI API key not configured' })
+    console.error('OPENAI_API_KEY is not configured')
+    return res.status(500).json({ 
+      error: 'OpenAI API key not configured. Please set OPENAI_API_KEY in your Netlify environment variables.',
+      details: 'Missing OPENAI_API_KEY'
+    })
   }
 
   try {
@@ -47,6 +51,8 @@ Here are their answers:
 ${questionAnswerPairs}
 
 Write the manifesto now. Make it powerful, personal, and true.`
+
+    console.log('Calling OpenAI API with', questions.length, 'questions')
 
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
@@ -77,8 +83,11 @@ Write the manifesto now. Make it powerful, personal, and true.`
     const manifesto = response.data.choices[0]?.message?.content
 
     if (!manifesto) {
-      return res.status(500).json({ error: 'Failed to generate manifesto' })
+      console.error('No content in OpenAI response')
+      return res.status(500).json({ error: 'Failed to generate manifesto - no content from API' })
     }
+
+    console.log('Successfully generated manifesto')
 
     // Generate a URL slug from the user ID (you can fetch username later)
     const url = `https://takethereins.ai/manifesto/${userId}`
@@ -89,9 +98,30 @@ Write the manifesto now. Make it powerful, personal, and true.`
       preview: manifesto.substring(0, 150) + '...',
     })
   } catch (error: any) {
-    console.error('Error generating manifesto:', error)
+    console.error('Error generating manifesto:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      config: error.config?.url,
+    })
+    
+    if (error.response?.status === 401) {
+      return res.status(500).json({
+        error: 'OpenAI API authentication failed. Check that OPENAI_API_KEY is correct.',
+        details: 'Invalid API key'
+      })
+    }
+
+    if (error.response?.status === 429) {
+      return res.status(500).json({
+        error: 'Too many requests to OpenAI API. Please try again in a moment.',
+        details: 'Rate limited'
+      })
+    }
+
     return res.status(500).json({
-      error: error.message || 'Failed to generate manifesto',
+      error: error.response?.data?.error?.message || error.message || 'Failed to generate manifesto',
+      details: error.response?.data || 'Unknown error'
     })
   }
 }
