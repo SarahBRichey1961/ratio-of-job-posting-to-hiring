@@ -9,6 +9,7 @@ interface ManifestoData {
   avatar_url?: string
   manifesto: string
   updated_at: string
+  isAnonymous?: boolean
 }
 
 const ManifestoPage = () => {
@@ -124,6 +125,11 @@ const ManifestoPage = () => {
           <p className="text-sm text-slate-500">
             Last updated {new Date(manifesto.updated_at).toLocaleDateString()}
           </p>
+          {manifesto.isAnonymous && (
+            <p className="text-sm text-emerald-400 mt-2">
+              ✓ Anonymous manifesto - No account needed to share!
+            </p>
+          )}
         </div>
 
         {/* Manifesto Content */}
