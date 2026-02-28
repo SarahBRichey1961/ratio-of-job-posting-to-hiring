@@ -24,24 +24,14 @@ const BuildManifesto = () => {
   const [manifestoContent, setManifestoContent] = useState('')
   const [manifestoUrl, setManifestoUrl] = useState('')
 
-  // Get user on mount
+  // Generate a unique ID for manifesto (anonymous users don't need to log in)
   useEffect(() => {
-    const getUser = async () => {
-      try {
-        const res = await fetch('/api/auth/user')
-        const data = await res.json()
-        if (data.user?.id) {
-          setUserId(data.user.id)
-        } else {
-          router.push('/hub/login')
-        }
-      } catch (err) {
-        console.error('Error getting user:', err)
-        router.push('/hub/login')
-      }
+    // Create a random session ID for anonymous manifesto generation
+    if (!userId) {
+      const sessionId = Math.random().toString(36).substring(2, 15)
+      setUserId(sessionId)
     }
-    getUser()
-  }, [router])
+  }, [])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { name, value } = e.target
