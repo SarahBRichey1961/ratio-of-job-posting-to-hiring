@@ -26,6 +26,7 @@ export const getSupabase = () => {
   }
 
   // Read environment variables at runtime (not at module load time)
+  // Netlify rebuild triggered for env var refresh
   const supabaseUrl = typeof window !== 'undefined' 
     ? process.env.NEXT_PUBLIC_SUPABASE_URL 
     : process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -33,6 +34,10 @@ export const getSupabase = () => {
   const supabaseAnonKey = typeof window !== 'undefined'
     ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  // Debug logging
+  console.debug('Supabase URL present:', !!supabaseUrl)
+  console.debug('Supabase Anon Key present:', !!supabaseAnonKey)
 
   if (!supabaseUrl) {
     console.error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable')
