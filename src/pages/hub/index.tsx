@@ -101,7 +101,7 @@ export default function TakeTheReins() {
             Collaborate
           </Link>
           <Link
-            href="/hub/members"
+            href="/hub/members/new"
             className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-8 py-4 rounded-lg transition text-center"
           >
             Build Your Manifesto
