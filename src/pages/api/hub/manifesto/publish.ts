@@ -143,6 +143,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (error) {
         console.error('Error saving to manifestos:', error)
         console.error('Error details:', { code: error.code, message: error.message, details: error.details })
+        
+        // Handle specific error cases
+        if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
+          return res.status(503).json({ 
+            error: 'Database tables not initialized yet. Please ensure migrations have been applied.',
+            details: error.message,
+            code: 'TABLES_NOT_FOUND'
+          })
+        }
+        
+        if (error.code === '42501' || error.message?.includes('permission denied')) {
+          return res.status(403).json({ 
+            error: 'Permission denied. RLS policy may be blocking this operation.',
+            details: error.message,
+            code: 'PERMISSION_DENIED'
+          })
+        }
+        
         return res.status(400).json({ 
           error: error.message,
           details: error.details,

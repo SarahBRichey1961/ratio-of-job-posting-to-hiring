@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { getSupabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 interface UserProfile {
   id: string
@@ -34,32 +35,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return
     }
 
+    let isMounted = true
+    let timeoutId: NodeJS.Timeout | null = null
+    let subscription: any = null
+
     // Set a timeout for auth initialization
-    const timeoutId = setTimeout(() => {
+    timeoutId = setTimeout(() => {
       console.warn('Auth initialization timeout - proceeding without session')
-      setIsLoading(false)
+      if (isMounted) {
+        setIsLoading(false)
+      }
     }, 3000)
 
     // Check active sessions and subscribe to auth changes with error handling
     try {
-      const { data: { subscription } } = client.auth.onAuthStateChange(
+      const { data } = client.auth.onAuthStateChange(
         async (_event, session) => {
+          if (!isMounted) return
+
           try {
-            clearTimeout(timeoutId)
-            setUser(session?.user || null)
+            if (timeoutId) clearTimeout(timeoutId)
+
+            // Update user state
+            if (isMounted) {
+              setUser(session?.user || null)
+            }
 
             if (session?.user) {
-              // Fetch user profile
-              const { data, error } = await client
+              // Create an authenticated client with the user's session token
+              let dbClient = client
+              if (session.access_token) {
+                dbClient = createClient(
+                  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                  {
+                    global: {
+                      headers: {
+                        Authorization: `Bearer ${session.access_token}`,
+                      },
+                    },
+                  }
+                )
+              }
+
+              // Fetch user profile with authenticated client
+              const { data: profileData, error: fetchError } = await dbClient
                 .from('user_profiles')
                 .select('*')
                 .eq('id', session.user.id)
                 .maybeSingle()
 
-              if (!data) {
+              if (!isMounted) return
+
+              if (!profileData && fetchError && fetchError.code !== 'PGRST116') {
+                // Table might not exist yet - use anon client
+                console.log('Profile fetch error:', fetchError.code, '- table may not exist')
+                // Set default profile and continue
+                if (isMounted) {
+                  setProfile({
+                    id: session.user.id,
+                    email: session.user.email || '',
+                    role: 'viewer',
+                    created_at: new Date().toISOString(),
+                  })
+                  setIsLoading(false)
+                }
+                return
+              }
+
+              if (!profileData) {
                 console.log('Profile not found, creating default profile')
                 // Try to create the profile now that user is authenticated
-                const { data: createdProfile, error: createError } = await client
+                const { data: createdProfile, error: createError } = await dbClient
                   .from('user_profiles')
                   .insert({
                     id: session.user.id,
@@ -68,36 +115,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   })
                   .select()
                   .single()
-                
+
+                if (!isMounted) return
+
                 if (createError) {
-                  console.error('Could not create profile:', createError)
-                  // Set a default profile anyway
-                  setProfile({
-                    id: session.user.id,
-                    email: session.user.email || '',
-                    role: 'viewer',
-                    created_at: new Date().toISOString(),
-                  })
+                  console.error('Could not create profile:', createError.code, createError.message)
+                  // Set a default profile anyway to allow user to continue
+                  if (isMounted) {
+                    setProfile({
+                      id: session.user.id,
+                      email: session.user.email || '',
+                      role: 'viewer',
+                      created_at: new Date().toISOString(),
+                    })
+                  }
                 } else {
-                  setProfile(createdProfile as UserProfile)
+                  if (isMounted) {
+                    setProfile(createdProfile as UserProfile)
+                  }
                 }
               } else {
-                setProfile(data as UserProfile)
+                if (isMounted) {
+                  setProfile(profileData as UserProfile)
+                }
               }
             } else {
-              setProfile(null)
+              if (isMounted) {
+                setProfile(null)
+              }
             }
-            setIsLoading(false)
+
+            if (isMounted) {
+              setIsLoading(false)
+            }
           } catch (err) {
             console.error('Error in auth state change handler:', err)
-            setIsLoading(false)
+            if (isMounted) {
+              setIsLoading(false)
+            }
           }
         }
       )
 
+      subscription = data.subscription
+
       return () => {
-        clearTimeout(timeoutId)
-        subscription?.unsubscribe()
+        isMounted = false
+        if (timeoutId) clearTimeout(timeoutId)
+        if (subscription) subscription.unsubscribe()
       }
     } catch (err: any) {
       // Handle lock timeout or other auth initialization errors
