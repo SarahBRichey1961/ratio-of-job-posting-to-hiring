@@ -80,7 +80,7 @@ const BuildManifesto = () => {
   const [userEmail, setUserEmail] = useState<string | null>(null)
 
   // Tone selection state
-  const toneOptions = ['Bold', 'Professional', 'Serious', 'Funny', 'Insightful', 'Futuristic', 'BadAss']
+  const toneOptions = ['Bold', 'Professional', 'Serious', 'Funny', 'Insightful', 'Futuristic', 'BadAss', 'Motivational', 'Inspirational', 'Sassy', 'Sarcastic', 'Uppity', 'Kind', 'Loving', 'Humanitarian', 'World peace focus']
   const [selectedTones, setSelectedTones] = useState<string[]>([])
 
   // Check auth status and initialize userId
@@ -650,7 +650,7 @@ const BuildManifesto = () => {
               <p className="text-slate-400 text-sm mb-4">
                 Pick up to 2 tones to guide how your manifesto is written. Leave empty for the default tone.
               </p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 {toneOptions.map((tone) => (
                   <label key={tone} className="flex items-center gap-3 cursor-pointer">
                     <input
