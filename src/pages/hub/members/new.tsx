@@ -300,6 +300,7 @@ const BuildManifesto = () => {
         userId,
         content: manifestoContent,
         questionsData,
+        memeImageUrl: memeImage,
       }, axiosConfig)
 
       if (res.data.success) {
@@ -729,14 +730,33 @@ const BuildManifesto = () => {
                 Read it. Make sure it sounds like you. Edit if needed. Publish when ready.
               </p>
 
+              {/* Meme Preview Section (if applicable) */}
+              {generateMeme && (
+                <div className="mb-8 border border-slate-600 rounded-lg p-6 bg-slate-900/50">
+                  <h3 className="text-lg font-bold text-white mb-4">Inspirational Meme Preview</h3>
+                  {memeImage ? (
+                    <div className="text-center">
+                      <img 
+                        src={memeImage} 
+                        alt="Inspirational Meme" 
+                        className="max-w-xs h-auto rounded-lg border-2 border-indigo-500 shadow-lg mx-auto mb-3"
+                      />
+                      <p className="text-slate-400 text-sm">
+                        ✓ Meme generated - Will be included when published
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="text-center text-slate-400 py-6">
+                      <p className="mb-2">Generating meme...</p>
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Manifesto Content Preview */}
               <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-8 mb-8 min-h-96 relative">
-                {memeImage && (
-                  <div className="absolute top-4 right-4 w-40 h-40 rounded-lg overflow-hidden border-2 border-slate-600 shadow-lg">
-                    <img src={memeImage} alt="Inspirational Meme" className="w-full h-full object-cover" />
-                  </div>
-                )}
-                <div className={`prose prose-invert max-w-none text-slate-200 whitespace-pre-wrap ${memeImage ? 'pr-48' : ''}`}>
+                <div className="prose prose-invert max-w-none text-slate-200 whitespace-pre-wrap">
                   {manifestoContent}
                 </div>
               </div>
