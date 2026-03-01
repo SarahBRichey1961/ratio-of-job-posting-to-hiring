@@ -5,11 +5,14 @@ import axios from 'axios'
 
 interface ManifestoData {
   username: string
+  title?: string
   bio?: string
   avatar_url?: string
   manifesto: string
   updated_at: string
   isAnonymous?: boolean
+  isEmail?: boolean
+  questions_data?: any[]
 }
 
 const ManifestoPage = () => {
@@ -119,13 +122,20 @@ const ManifestoPage = () => {
           <h1 className="text-4xl sm:text-5xl font-bold text-white mb-3">
             {manifesto.username}
           </h1>
+          {manifesto.isEmail && (
+            <div className="inline-block bg-indigo-600/20 border border-indigo-600/50 rounded-lg px-4 py-2 mb-4">
+              <p className="text-indigo-300 text-sm font-semibold">
+                ✓ Email-based URL - Personal & Easy to Share
+              </p>
+            </div>
+          )}
           {manifesto.bio && (
             <p className="text-lg text-slate-300 mb-6">{manifesto.bio}</p>
           )}
           <p className="text-sm text-slate-500">
             Last updated {new Date(manifesto.updated_at).toLocaleDateString()}
           </p>
-          {manifesto.isAnonymous && (
+          {manifesto.isAnonymous && !manifesto.isEmail && (
             <p className="text-sm text-emerald-400 mt-2">
               ✓ Anonymous manifesto - No account needed to share!
             </p>

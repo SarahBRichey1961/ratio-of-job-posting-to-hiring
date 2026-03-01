@@ -21,24 +21,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('=== FETCH MANIFESTO ===')
     console.log('Fetching manifesto with username/id:', username)
 
-    // First, try to find in new manifestos table by slug (authenticated users)
-    console.log('Step 1: Checking manifestos table by slug...')
+    // First, try to find in new manifestos table by slug (authenticated users - supports email as slug)
+    console.log('Step 1: Checking manifestos table by slug (email or custom username)...')
     const { data: newManifesto, error: newError } = await supabase
       .from('manifestos')
-      .select('id, title, content, slug, published, created_at, updated_at')
+      .select('id, title, content, slug, published, created_at, updated_at, questions_data')
       .eq('slug', username)
       .eq('published', true)
       .single()
 
     if (!newError && newManifesto) {
       console.log('Found in manifestos table:', newManifesto.slug)
+      const questionsData = newManifesto.questions_data 
+        ? (typeof newManifesto.questions_data === 'string' ? JSON.parse(newManifesto.questions_data) : newManifesto.questions_data)
+        : []
       return res.status(200).json({
-        username: newManifesto.title || 'Untitled',
+        username: newManifesto.slug,
+        title: newManifesto.title || 'Untitled',
         bio: null,
         avatar_url: null,
         manifesto: newManifesto.content,
+        questions_data: questionsData,
         updated_at: newManifesto.updated_at,
         isPublished: newManifesto.published,
+        isEmail: username.includes('@'),
       })
     }
     console.log('Not found in manifestos:', newError?.message || 'No match')
