@@ -56,6 +56,7 @@ const BuildManifesto = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
+  const [isEditMode, setIsEditMode] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const [questions, setQuestions] = useState<Question[]>(
@@ -74,12 +75,50 @@ const BuildManifesto = () => {
   const [manifestoUrl, setManifestoUrl] = useState('')
 
   // Generate a unique ID for manifesto (anonymous users don't need to log in)
+  // Also check if this is an edit session
   useEffect(() => {
     if (!userId) {
       const sessionId = Math.random().toString(36).substring(2, 15)
       setUserId(sessionId)
     }
-  }, [])
+
+    // Check if we're editing an existing manifesto
+    if (router.query.editId) {
+      loadExistingManifesto(router.query.editId as string)
+    }
+  }, [router.query.editId])
+
+  const loadExistingManifesto = async (userId: string) => {
+    try {
+      const res = await axios.get(`/api/hub/manifesto/get-existing?userId=${userId}`)
+      if (res.data.success) {
+        setIsEditMode(true)
+        setManifestoContent(res.data.content)
+        
+        // Load the questions and answers
+        if (res.data.questions_data && res.data.questions_data.length > 0) {
+          const loadedQuestions = res.data.questions_data.map((qa: any, idx: number) => ({
+            id: `q${idx + 1}`,
+            question: qa.question,
+            answer: qa.answer,
+            isDefault: idx < 7, // Assume first 7 are defaults
+            isIncluded: true,
+          }))
+          setQuestions(loadedQuestions)
+        }
+        
+        // Jump to preview stage if content already exists
+        if (res.data.content) {
+          setStage('preview')
+        } else {
+          setStage('questions')
+        }
+      }
+    } catch (err) {
+      console.error('Error loading existing manifesto:', err)
+      // Continue without loading - create new instead
+    }
+  }
 
   const handleAnswerChange = (id: string, value: string) => {
     setQuestions((prev) =>
@@ -197,9 +236,15 @@ const BuildManifesto = () => {
     setError('')
 
     try {
+      const questionsData = questions.map((q) => ({
+        question: q.question,
+        answer: q.answer,
+      }))
+      
       const res = await axios.post('/api/hub/manifesto/publish', {
         userId,
         content: manifestoContent,
+        questionsData,
       })
 
       if (res.data.success) {
@@ -238,7 +283,9 @@ const BuildManifesto = () => {
           >
             ← Back
           </button>
-          <h1 className="text-xl font-bold text-white">Build Your Manifesto</h1>
+          <h1 className="text-xl font-bold text-white">
+            {isEditMode ? 'Edit Your Manifesto' : 'Build Your Manifesto'}
+          </h1>
           <div className="w-12"></div>
         </div>
       </nav>
@@ -635,6 +682,12 @@ const BuildManifesto = () => {
 
               {/* Navigation */}
               <div className="flex gap-4">
+                <button
+                  onClick={() => handleEdit()}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition"
+                >
+                  Edit Manifesto
+                </button>
                 <button
                   onClick={() => router.push('/hub')}
                   className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"

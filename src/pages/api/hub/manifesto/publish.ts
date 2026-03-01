@@ -9,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { userId, content, username } = req.body
+  const { userId, content, username, questionsData } = req.body
 
   if (!userId || !content) {
     return res.status(400).json({ error: 'User ID and content required' })
@@ -53,6 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .from('hub_members')
         .update({
           manifesto: content,
+          manifesto_questions: questionsData ? JSON.stringify(questionsData) : null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', userId)
@@ -81,6 +82,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .insert({
         id: manifestId,
         content: content,
+        questions_data: questionsData ? JSON.stringify(questionsData) : null,
         username: username || null,
       })
 
