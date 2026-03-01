@@ -10,7 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { userId, questions, tones } = req.body
+  const { userId, questions, tones, generateMeme } = req.body
 
   if (!userId) {
     return res.status(400).json({ error: 'User ID required' })
@@ -105,6 +105,45 @@ Write the manifesto now. Make it powerful, personal, and true.`
 
     console.log('Successfully generated manifesto')
 
+    // Generate meme if requested
+    let memeImage = null
+    if (generateMeme) {
+      try {
+        // Extract a powerful quote from the manifesto (first or last sentence)
+        const sentences = manifesto.split('.').filter((s: string) => s.trim().length > 0)
+        const memeQuote = sentences.length > 0 
+          ? sentences[Math.floor(sentences.length / 2)].trim().slice(0, 100) 
+          : 'I will be the difference'
+
+        console.log('Generating meme with quote:', memeQuote)
+
+        // Call DALL-E to generate an image
+        const imageResponse = await axios.post(
+          'https://api.openai.com/v1/images/generations',
+          {
+            prompt: `Create an inspirational meme graphic with the text "${memeQuote}". Modern design, bold typography, meaningful visual elements, professional look. Image should be square format suitable for web display.`,
+            n: 1,
+            size: '256x256',
+            quality: 'standard',
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${OPENAI_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        )
+
+        if (imageResponse.data.data && imageResponse.data.data.length > 0) {
+          memeImage = imageResponse.data.data[0].url
+          console.log('Successfully generated meme image')
+        }
+      } catch (memeError: any) {
+        console.error('Error generating meme:', memeError.message)
+        // Continue even if meme generation fails - don't block the manifesto
+      }
+    }
+
     // Generate a URL slug from the user ID (you can fetch username later)
     const url = `${BASE_URL}/manifesto/${userId}`
 
@@ -112,6 +151,7 @@ Write the manifesto now. Make it powerful, personal, and true.`
       manifesto,
       url,
       preview: manifesto.substring(0, 150) + '...',
+      memeImage: memeImage || null,
     })
   } catch (error: any) {
     console.error('Error generating manifesto:', {

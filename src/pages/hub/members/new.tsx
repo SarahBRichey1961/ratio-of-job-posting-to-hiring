@@ -83,6 +83,10 @@ const BuildManifesto = () => {
   const toneOptions = ['Bold', 'Professional', 'Serious', 'Funny', 'Insightful', 'Futuristic', 'BadAss', 'Motivational', 'Inspirational', 'Sassy', 'Sarcastic', 'Uppity', 'Kind', 'Loving', 'Humanitarian', 'World peace focus']
   const [selectedTones, setSelectedTones] = useState<string[]>([])
 
+  // Meme generation state
+  const [generateMeme, setGenerateMeme] = useState(false)
+  const [memeImage, setMemeImage] = useState<string | null>(null)
+
   // Check auth status and initialize userId
   useEffect(() => {
     if (!isAuthLoading) {
@@ -242,11 +246,15 @@ const BuildManifesto = () => {
           answer: q.answer,
         })),
         tones: selectedTones,
+        generateMeme: generateMeme,
       })
 
       if (res.data.manifesto) {
         setManifestoContent(res.data.manifesto)
         setManifestoUrl(res.data.url)
+        if (res.data.memeImage) {
+          setMemeImage(res.data.memeImage)
+        }
         setStage('preview')
         scrollRef.current?.scrollIntoView({ behavior: 'smooth' })
       } else {
@@ -677,6 +685,22 @@ const BuildManifesto = () => {
               </p>
             </div>
 
+            {/* Meme Generation Option */}
+            <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={generateMeme}
+                  onChange={(e) => setGenerateMeme(e.target.checked)}
+                  className="w-5 h-5 rounded border-slate-600 bg-slate-700 border-slate-600 cursor-pointer"
+                />
+                <div className="flex-1">
+                  <p className="text-white font-semibold">Generate Inspirational Meme</p>
+                  <p className="text-slate-400 text-sm">Create a graphic with an inspiring quote from your manifesto (Upper right corner preview)</p>
+                </div>
+              </label>
+            </div>
+
             {/* Buttons */}
             <div className="flex gap-4 pt-6">
               <button
@@ -706,8 +730,13 @@ const BuildManifesto = () => {
               </p>
 
               {/* Manifesto Content Preview */}
-              <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-8 mb-8 min-h-96">
-                <div className="prose prose-invert max-w-none text-slate-200 whitespace-pre-wrap">
+              <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-8 mb-8 min-h-96 relative">
+                {memeImage && (
+                  <div className="absolute top-4 right-4 w-40 h-40 rounded-lg overflow-hidden border-2 border-slate-600 shadow-lg">
+                    <img src={memeImage} alt="Inspirational Meme" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <div className={`prose prose-invert max-w-none text-slate-200 whitespace-pre-wrap ${memeImage ? 'pr-48' : ''}`}>
                   {manifestoContent}
                 </div>
               </div>
