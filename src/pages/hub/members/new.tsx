@@ -3,6 +3,7 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import axios from 'axios'
 import { getSupabase } from '@/lib/supabase'
+import { useAuth } from '@/context/AuthContext'
 
 interface Question {
   id: string
@@ -53,11 +54,13 @@ const defaultQuestions = [
 
 const BuildManifesto = () => {
   const router = useRouter()
+  const { user, isLoading: isAuthLoading } = useAuth()
   const [stage, setStage] = useState<'intro' | 'questions' | 'preview' | 'complete'>('intro')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const [questions, setQuestions] = useState<Question[]>(
@@ -76,19 +79,29 @@ const BuildManifesto = () => {
   const [manifestoUrl, setManifestoUrl] = useState('')
   const [userEmail, setUserEmail] = useState<string | null>(null)
 
-  // Generate a unique ID for manifesto (anonymous users don't need to log in)
-  // Also check if this is an edit session
+  // Check auth status and initialize userId
   useEffect(() => {
-    if (!userId) {
-      const sessionId = Math.random().toString(36).substring(2, 15)
-      setUserId(sessionId)
+    if (!isAuthLoading) {
+      if (user?.id) {
+        // User is authenticated - use their real ID
+        setUserId(user.id)
+        setIsAuthenticated(true)
+        setUserEmail(user.email || null)
+      } else {
+        // Anonymous user - generate random sessionId
+        const sessionId = Math.random().toString(36).substring(2, 15)
+        setUserId(sessionId)
+        setIsAuthenticated(false)
+      }
     }
+  }, [user, isAuthLoading])
 
-    // Check if we're editing an existing manifesto
-    if (router.query.editId) {
+  // Check if we're editing an existing manifesto
+  useEffect(() => {
+    if (userId && router.query.editId) {
       loadExistingManifesto(router.query.editId as string)
     }
-  }, [router.query.editId])
+  }, [router.query.editId, userId])
 
   const loadExistingManifesto = async (userId: string) => {
     try {
@@ -401,33 +414,50 @@ const BuildManifesto = () => {
               </div>
             </div>
 
-            {/* Login Offer */}
-            <div className="bg-gradient-to-r from-indigo-600/20 to-rose-600/20 border border-indigo-600/50 rounded-xl p-8">
-              <h2 className="text-2xl font-bold text-white mb-4">Want a Custom URL?</h2>
-              <p className="text-slate-300 mb-6">
-                Sign in to get a personalized, email-based manifesto URL that's easy to share and remember:
-              </p>
-              <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 mb-6">
-                <code className="text-indigo-300 font-semibold">takethereigns.netlify.app/manifesto/your@email.com</code>
+            {/* Login Offer or Auth Status */}
+            {isAuthenticated ? (
+              <div className="bg-gradient-to-r from-emerald-600/20 to-teal-600/20 border border-emerald-600/50 rounded-xl p-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <svg className="w-6 h-6 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                  </svg>
+                  <h2 className="text-2xl font-bold text-white">Account Connected</h2>
+                </div>
+                <p className="text-slate-300 mb-4">
+                  You're logged in as <code className="bg-slate-900 px-2 py-1 rounded text-emerald-300">{userEmail}</code>
+                </p>
+                <p className="text-slate-400 text-sm">
+                  Your manifesto will be saved to your account and you'll get a personalized email-based URL.
+                </p>
               </div>
-              <p className="text-slate-400 text-sm mb-6">
-                Perfect for LinkedIn profiles, résumés, and business cards. Or skip this and create anonymously—it's up to you.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => router.push('/auth/signup')}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition"
-                >
-                  Sign Up (Free)
-                </button>
-                <button
-                  onClick={() => router.push('/auth/login')}
-                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
-                >
-                  Log In
-                </button>
+            ) : (
+              <div className="bg-gradient-to-r from-indigo-600/20 to-rose-600/20 border border-indigo-600/50 rounded-xl p-8">
+                <h2 className="text-2xl font-bold text-white mb-4">Want a Custom URL?</h2>
+                <p className="text-slate-300 mb-6">
+                  Sign in to get a personalized, email-based manifesto URL that's easy to share and remember:
+                </p>
+                <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 mb-6">
+                  <code className="text-indigo-300 font-semibold">takethereigns.netlify.app/manifesto/your@email.com</code>
+                </div>
+                <p className="text-slate-400 text-sm mb-6">
+                  Perfect for LinkedIn profiles, résumés, and business cards. Or skip this and create anonymously—it's up to you.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => router.push('/auth/signup')}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition"
+                  >
+                    Sign Up (Free)
+                  </button>
+                  <button
+                    onClick={() => router.push('/auth/login')}
+                    className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
+                  >
+                    Log In
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* How It Works */}
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-8">

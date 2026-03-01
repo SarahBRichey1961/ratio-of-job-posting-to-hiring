@@ -32,22 +32,20 @@ const SignupPage = () => {
 
     try {
       await signUp(email, password)
-      setSuccess(true)
-      setTimeout(() => {
-        router.push('/auth/login')
-      }, 2000)
+      // After successful signup with auto login, go to manifesto builder
+      router.push('/hub/members/new')
     } catch (err: any) {
       setError(err.message || 'Failed to sign up')
-    } finally {
       setLoading(false)
     }
+    // Note: setLoading(false) is not called here because we're redirecting
   }
 
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <Head>
-          <title>Sign Up Successful - Take The Reins</title>
+          <title>Account Created - Take The Reins</title>
         </Head>
 
         <nav className="bg-slate-800/50 backdrop-blur border-b border-slate-700">
@@ -72,11 +70,11 @@ const SignupPage = () => {
                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-4">Account Created!</h2>
-            <p className="text-slate-300 mb-6">
-              Check your email to confirm your account. Then sign in to manage your manifestos.
+            <h2 className="text-2xl font-bold text-white mb-4">Welcome!</h2>
+            <p className="text-slate-300 mb-2">
+              Your account is ready.
             </p>
-            <p className="text-slate-400 text-sm">Redirecting to sign in...</p>
+            <p className="text-slate-400 text-sm">Taking you to create your manifesto...</p>
           </div>
         </div>
       </div>
