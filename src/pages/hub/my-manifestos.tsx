@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 import Link from 'next/link'
 import axios from 'axios'
 import { useAuth } from '@/context/AuthContext'
+import { getSupabase } from '@/lib/supabase'
 
 interface Manifesto {
   id: string
@@ -37,7 +38,18 @@ const MyManifestosPage = () => {
   const loadManifestos = async () => {
     setLoading(true)
     try {
-      const res = await axios.get('/api/hub/manifestos')
+      // Get the auth token to pass to API
+      const client = getSupabase()
+      const { data: { session } } = await client?.auth.getSession() || { data: { session: null } }
+      
+      const config: any = {}
+      if (session?.access_token) {
+        config.headers = {
+          Authorization: `Bearer ${session.access_token}`,
+        }
+      }
+      
+      const res = await axios.get('/api/hub/manifestos', config)
       setManifestos(res.data.manifestos || [])
       setError('')
     } catch (err: any) {
@@ -53,7 +65,18 @@ const MyManifestosPage = () => {
 
     setDeletingId(id)
     try {
-      await axios.delete(`/api/hub/manifestos?id=${id}`)
+      // Get the auth token to pass to API
+      const client = getSupabase()
+      const { data: { session } } = await client?.auth.getSession() || { data: { session: null } }
+      
+      const config: any = {}
+      if (session?.access_token) {
+        config.headers = {
+          Authorization: `Bearer ${session.access_token}`,
+        }
+      }
+      
+      await axios.delete(`/api/hub/manifestos?id=${id}`, config)
       setManifestos((prev) => prev.filter((m) => m.id !== id))
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to delete manifesto')

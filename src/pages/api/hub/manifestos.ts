@@ -8,13 +8,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Get current user from session
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
+    // Get auth token from Authorization header
+    const authHeader = req.headers.authorization
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'Not authenticated' })
     }
 
-    const userId = session.user.id
+    const token = authHeader.substring(7) // Remove 'Bearer ' prefix
+    
+    // Verify the token and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) {
+      return res.status(401).json({ error: 'Not authenticated' })
+    }
+
+    const userId = user.id
 
     if (req.method === 'GET') {
       // Get all user's manifestos
