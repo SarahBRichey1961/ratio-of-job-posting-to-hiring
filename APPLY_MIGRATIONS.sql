@@ -22,14 +22,17 @@ CREATE INDEX IF NOT EXISTS idx_user_profiles_email ON user_profiles(email);
 CREATE INDEX IF NOT EXISTS idx_user_profiles_role ON user_profiles(role);
 
 -- RLS Policies for user_profiles
+DROP POLICY IF EXISTS "Users can view own profile" ON user_profiles;
 CREATE POLICY "Users can view own profile" ON user_profiles
   FOR SELECT
   USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can create own profile" ON user_profiles;
 CREATE POLICY "Users can create own profile" ON user_profiles
   FOR INSERT
   WITH CHECK (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON user_profiles;
 CREATE POLICY "Users can update own profile" ON user_profiles
   FOR UPDATE
   USING (auth.uid() = id)
@@ -56,29 +59,35 @@ CREATE INDEX IF NOT EXISTS idx_manifestos_user_id ON manifestos(user_id);
 CREATE INDEX IF NOT EXISTS idx_manifestos_slug ON manifestos(slug);
 
 -- Add unique constraint on slug (allows upsert to work)
-ALTER TABLE manifestos
-ADD CONSTRAINT IF NOT EXISTS unique_manifesto_slug UNIQUE(slug);
+-- Drop if exists first to make idempotent
+ALTER TABLE manifestos DROP CONSTRAINT IF EXISTS unique_manifesto_slug;
+ALTER TABLE manifestos ADD CONSTRAINT unique_manifesto_slug UNIQUE(slug);
 
 -- Enable RLS on manifestos
 ALTER TABLE manifestos ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for manifestos
+DROP POLICY IF EXISTS "Users can view own manifestos" ON manifestos;
 CREATE POLICY "Users can view own manifestos" ON manifestos
   FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create own manifestos" ON manifestos;
 CREATE POLICY "Users can create own manifestos" ON manifestos
   FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own manifestos" ON manifestos;
 CREATE POLICY "Users can update own manifestos" ON manifestos
   FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own manifestos" ON manifestos;
 CREATE POLICY "Users can delete own manifestos" ON manifestos
   FOR DELETE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Public can view published manifestos" ON manifestos;
 CREATE POLICY "Public can view published manifestos" ON manifestos
   FOR SELECT
   USING (published = true);

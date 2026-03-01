@@ -79,6 +79,10 @@ const BuildManifesto = () => {
   const [manifestoUrl, setManifestoUrl] = useState('')
   const [userEmail, setUserEmail] = useState<string | null>(null)
 
+  // Tone selection state
+  const toneOptions = ['Bold', 'Professional', 'Serious', 'Funny', 'Insightful', 'Futuristic', 'BadAss']
+  const [selectedTones, setSelectedTones] = useState<string[]>([])
+
   // Check auth status and initialize userId
   useEffect(() => {
     if (!isAuthLoading) {
@@ -185,6 +189,20 @@ const BuildManifesto = () => {
     setEditingText('')
   }
 
+  const handleToneToggle = (tone: string) => {
+    setSelectedTones((prev) => {
+      if (prev.includes(tone)) {
+        // Remove if already selected
+        return prev.filter((t) => t !== tone)
+      } else if (prev.length < 2) {
+        // Add if under 2 selections
+        return [...prev, tone]
+      }
+      // Don't add if already 2 selected
+      return prev
+    })
+  }
+
   const handleGenerateManifesto = async () => {
     if (!userId) {
       setError('User not authenticated')
@@ -223,6 +241,7 @@ const BuildManifesto = () => {
           question: q.question,
           answer: q.answer,
         })),
+        tones: selectedTones,
       })
 
       if (res.data.manifesto) {
@@ -624,6 +643,39 @@ const BuildManifesto = () => {
             >
               + Add Your Own Question
             </button>
+
+            {/* Tone Selection */}
+            <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-white mb-2">Writing Tone (Optional)</h3>
+              <p className="text-slate-400 text-sm mb-4">
+                Pick up to 2 tones to guide how your manifesto is written. Leave empty for the default tone.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {toneOptions.map((tone) => (
+                  <label key={tone} className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedTones.includes(tone)}
+                      onChange={() => handleToneToggle(tone)}
+                      disabled={selectedTones.length === 2 && !selectedTones.includes(tone)}
+                      className={`w-4 h-4 rounded border-slate-600 ${
+                        selectedTones.includes(tone)
+                          ? 'bg-indigo-600 border-indigo-600 cursor-pointer'
+                          : selectedTones.length === 2
+                            ? 'bg-slate-700 border-slate-600 cursor-not-allowed opacity-50'
+                            : 'bg-slate-700 border-slate-600 cursor-pointer'
+                      }`}
+                    />
+                    <span className={selectedTones.includes(tone) ? 'text-white font-semibold' : 'text-slate-400'}>
+                      {tone}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-slate-500 text-xs mt-3">
+                Selected: {selectedTones.length > 0 ? selectedTones.join(' + ') : 'None (default tone)'}
+              </p>
+            </div>
 
             {/* Buttons */}
             <div className="flex gap-4 pt-6">
