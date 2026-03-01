@@ -66,17 +66,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const slug = username || userEmail
       const title = `Manifesto - ${new Date().toLocaleDateString()}`
 
+      // Use upsert (update or insert) to handle re-publishing
       const { data, error } = await supabase
         .from('manifestos')
-        .insert({
-          user_id: authenticatedUserId,
-          content: content,
-          questions_data: questionsData ? JSON.stringify(questionsData) : null,
-          title: title,
-          slug: slug,
-          published: true,
-          public_url: `${BASE_URL}/manifesto/${slug}`,
-        })
+        .upsert(
+          {
+            user_id: authenticatedUserId,
+            content: content,
+            questions_data: questionsData ? JSON.stringify(questionsData) : null,
+            title: title,
+            slug: slug,
+            published: true,
+            public_url: `${BASE_URL}/manifesto/${slug}`,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: 'slug', // Use slug as the unique identifier for upsert
+          }
+        )
         .select()
         .single()
 
