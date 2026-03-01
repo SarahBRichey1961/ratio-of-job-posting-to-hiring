@@ -34,6 +34,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
     }
 
+    // Try public_manifestos table (anonymous users)
+    const { data: publicData, error: publicError } = await supabase
+      .from('public_manifestos')
+      .select('content, questions_data, username')
+      .eq('id', userId)
+      .single()
+
+    if (!publicError && publicData) {
+      return res.status(200).json({
+        success: true,
+        content: publicData.content,
+        questions_data: publicData.questions_data ? (typeof publicData.questions_data === 'string' ? JSON.parse(publicData.questions_data) : publicData.questions_data) : [],
+        username: publicData.username,
+      })
+    }
+
     // Fall back to legacy hub_members table
     const { data, error } = await supabase
       .from('hub_members')
