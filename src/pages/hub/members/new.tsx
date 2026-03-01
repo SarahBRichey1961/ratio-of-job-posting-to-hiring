@@ -83,6 +83,10 @@ const BuildManifesto = () => {
   const toneOptions = ['Bold', 'Professional', 'Serious', 'Funny', 'Insightful', 'Futuristic', 'BadAss', 'Motivational', 'Inspirational', 'Sassy', 'Sarcastic', 'Uppity', 'Kind', 'Loving', 'Humanitarian', 'World peace focus']
   const [selectedTones, setSelectedTones] = useState<string[]>([])
 
+  // Pronouns selection state
+  const pronounsOptions = ['I am woman hear me roar!', "A man's man", 'A bro', 'A sister', 'We', 'Male', 'Female', 'Binary']
+  const [selectedPronouns, setSelectedPronouns] = useState<string | null>(null)
+
   // Meme generation state
   const [generateMeme, setGenerateMeme] = useState(false)
   const [memeImage, setMemeImage] = useState<string | null>(null)
@@ -246,6 +250,7 @@ const BuildManifesto = () => {
           answer: q.answer,
         })),
         tones: selectedTones,
+        pronouns: selectedPronouns,
         generateMeme: generateMeme,
       })
 
@@ -684,6 +689,31 @@ const BuildManifesto = () => {
               <p className="text-slate-500 text-xs mt-3">
                 Selected: {selectedTones.length > 0 ? selectedTones.join(' + ') : 'None (default tone)'}
               </p>
+            </div>
+
+            {/* Pronouns Selection */}
+            <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-white mb-2">Pronouns & Perspective (Optional)</h3>
+              <p className="text-slate-400 text-sm mb-4">
+                Select pronouns to help personalize your manifesto's voice and perspective.
+              </p>
+              <select
+                value={selectedPronouns || ''}
+                onChange={(e) => setSelectedPronouns(e.target.value || null)}
+                className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/50"
+              >
+                <option value="">-- Choose perspective --</option>
+                {pronounsOptions.map((pronoun) => (
+                  <option key={pronoun} value={pronoun}>
+                    {pronoun}
+                  </option>
+                ))}
+              </select>
+              {selectedPronouns && (
+                <p className="text-slate-400 text-sm mt-3">
+                  Selected: <span className="text-indigo-400 font-semibold">{selectedPronouns}</span>
+                </p>
+              )}
             </div>
 
             {/* Meme Generation Option */}

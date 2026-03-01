@@ -10,7 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { userId, questions, tones, generateMeme } = req.body
+  const { userId, questions, tones, pronouns, generateMeme } = req.body
 
   if (!userId) {
     return res.status(400).json({ error: 'User ID required' })
@@ -49,6 +49,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
+    // Build pronouns instruction if provided
+    let pronounsInstruction = ''
+    if (pronouns) {
+      const pronounsMapping: Record<string, string> = {
+        'I am woman hear me roar!': 'as a woman celebrating her power and strength, using "I" and "my"',
+        "A man's man": 'as a confident man, using strong masculine energy with "I" pronouns',
+        'A bro': 'with a casual, friendly brother energy, using "I" and relatable language for men',
+        'A sister': 'with sisterhood energy, using "I" and sister solidarity language',
+        'We': 'using collective "we" to emphasize collaboration and team-oriented perspective',
+        'Male': 'from a male perspective, using "I" and male pronouns',
+        'Female': 'from a female perspective, using "I" and female pronouns',
+        'Binary': 'in a gender-neutral way, using "I" and inclusive language',
+      }
+      const pronounsDescription = pronounsMapping[pronouns] || pronouns
+      pronounsInstruction = `\n\nIMPORTANT: Write this manifesto ${pronounsDescription}.`
+    }
+
     // Build prompt for GPT to write the manifesto
     const prompt = `
 You are a ghostwriter creating a compelling personal manifesto for a professional. 
@@ -64,7 +81,7 @@ Based on the following answers to their custom questions, write an authentic, po
 
 Here are their answers:
 
-${questionAnswerPairs}${toneInstructions}
+${questionAnswerPairs}${pronounsInstruction}${toneInstructions}
 
 Write the manifesto now. Make it powerful, personal, and true.`
 
