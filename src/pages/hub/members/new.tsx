@@ -387,6 +387,34 @@ const BuildManifesto = () => {
               </div>
             </div>
 
+            {/* Login Offer */}
+            <div className="bg-gradient-to-r from-indigo-600/20 to-rose-600/20 border border-indigo-600/50 rounded-xl p-8">
+              <h2 className="text-2xl font-bold text-white mb-4">Want a Custom URL?</h2>
+              <p className="text-slate-300 mb-6">
+                Sign in to get a personalized, email-based manifesto URL that's easy to share and remember:
+              </p>
+              <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 mb-6">
+                <code className="text-indigo-300 font-semibold">takethereigns.netlify.app/manifesto/your@email.com</code>
+              </div>
+              <p className="text-slate-400 text-sm mb-6">
+                Perfect for LinkedIn profiles, résumés, and business cards. Or skip this and create anonymously—it's up to you.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => router.push('/auth/signup')}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition"
+                >
+                  Sign Up (Free)
+                </button>
+                <button
+                  onClick={() => router.push('/auth/login')}
+                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
+                >
+                  Log In
+                </button>
+              </div>
+            </div>
+
             {/* How It Works */}
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-8">
               <h2 className="text-2xl font-bold text-white mb-6">How We Build It Together</h2>
