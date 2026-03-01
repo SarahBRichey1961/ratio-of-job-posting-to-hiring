@@ -2,6 +2,8 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { getSupabase } from '@/lib/supabase'
 import crypto from 'crypto'
 
+const BASE_URL = process.env.NEXT_PUBLIC_MANIFESTO_BASE_URL || 'https://takethereigns.ai'
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -25,7 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       return res.status(200).json({
         success: true,
-        url: `https://takethereins.ai/manifesto/${manifestId}`,
+        url: `${BASE_URL}/manifesto/${manifestId}`,
         isAnonymous: true,
         published_at: new Date().toISOString(),
       })
@@ -66,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (userData?.username) {
           return res.status(200).json({
             success: true,
-            url: `https://takethereins.ai/manifesto/${userData.username}`,
+            url: `${BASE_URL}/manifesto/${userData.username}`,
             published_at: new Date().toISOString(),
           })
         }
@@ -87,7 +89,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Still return the ID even if save fails
       return res.status(200).json({
         success: true,
-        url: `https://takethereins.ai/manifesto/${manifestId}`,
+        url: `${BASE_URL}/manifesto/${manifestId}`,
         isAnonymous: true,
         published_at: new Date().toISOString(),
       })
@@ -95,7 +97,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json({
       success: true,
-      url: `https://takethereins.ai/manifesto/${manifestId}`,
+      url: `${BASE_URL}/manifesto/${manifestId}`,
       isAnonymous: true,
       note: 'Your manifesto is public! Create an account to claim it with your username.',
       published_at: new Date().toISOString(),
@@ -112,7 +114,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json({
       success: true,
-      url: `https://takethereins.ai/manifesto/${manifestId}`,
+      url: `${BASE_URL}/manifesto/${manifestId}`,
       isAnonymous: true,
       published_at: new Date().toISOString(),
     })
