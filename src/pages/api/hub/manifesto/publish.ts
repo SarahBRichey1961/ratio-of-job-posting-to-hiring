@@ -42,8 +42,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let userEmail: string | null = null
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHea && userEmail) {
-      console.log('User is authenticated, saving to manifestos table with email:', userEmail)
+      const token = authHeader.substring(7) // Remove 'Bearer ' prefix
+      
+      try {
+        // Verify the token and get user
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+        if (!authError && user) {
           authenticatedUserId = user.id
           userEmail = user.email || null
         }
@@ -55,12 +59,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('Auth check - authenticatedUserId:', authenticatedUserId, 'email:', userEmail)
 
     // If user is authenticated, save to new manifestos table
-    if (authenticatedUserId) {
-      console.log('User is authenticated, saving to manifestos table')
-      
-      // Get the authenticated user's email for the slug
-      const { data: { user } } = await supabase.auth.admin.getUserById(authenticatedUserId)
-      const userEmail = user?.email || `user-${authenticatedUserId.substring(0, 8)}`
+    if (authenticatedUserId && userEmail) {
+      console.log('User is authenticated, saving to manifestos table with email:', userEmail)
       
       // Use email as slug (or username if provided)
       const slug = username || userEmail
