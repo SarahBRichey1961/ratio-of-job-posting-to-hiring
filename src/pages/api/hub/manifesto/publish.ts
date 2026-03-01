@@ -10,9 +10,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { userId, content, username, questionsData } = req.body
+  const { userId, content, username, questionsData, memeImageUrl } = req.body
   console.log('=== PUBLISH MANIFESTO ===')
-  console.log('Body received:', { userId, hasContent: !!content, username, hasQuestionsData: !!questionsData })
+  console.log('Body received:', { userId, hasContent: !!content, username, hasQuestionsData: !!questionsData, hasMeme: !!memeImageUrl })
 
   if (!content) {
     return res.status(400).json({ error: 'Content required' })
@@ -108,6 +108,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             title: title,
             published: true,
             public_url: `${BASE_URL}/manifesto/${slug}`,
+            meme_image_url: memeImageUrl || null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingManifesto.id)
@@ -131,6 +132,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             slug: slug,
             published: true,
             public_url: `${BASE_URL}/manifesto/${slug}`,
+            meme_image_url: memeImageUrl || null,
           })
           .select()
           .single()
