@@ -44,7 +44,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // If user is authenticated, save to new manifestos table
     if (authenticatedUserId) {
       console.log('User is authenticated, saving to manifestos table')
-      const slug = username || `manifesto-${Date.now()}`
+      
+      // Get the authenticated user's email for the slug
+      const { data: { user } } = await supabase.auth.admin.getUserById(authenticatedUserId)
+      const userEmail = user?.email || `user-${authenticatedUserId.substring(0, 8)}`
+      
+      // Use email as slug (or username if provided)
+      const slug = username || userEmail
       const title = `Manifesto - ${new Date().toLocaleDateString()}`
 
       const { data, error } = await supabase
@@ -66,10 +72,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: error.message })
       }
 
-      console.log('Successfully saved to manifestos:', data.slug)
+      console.log('Successfully saved to manifestos with slug:', data.slug)
       return res.status(200).json({
         success: true,
         url: `${BASE_URL}/manifesto/${data.slug}`,
+        email: userEmail,
         published_at: data.created_at,
       })
     }

@@ -73,6 +73,7 @@ const BuildManifesto = () => {
   const [editingText, setEditingText] = useState('')
   const [manifestoContent, setManifestoContent] = useState('')
   const [manifestoUrl, setManifestoUrl] = useState('')
+  const [userEmail, setUserEmail] = useState<string | null>(null)
 
   // Generate a unique ID for manifesto (anonymous users don't need to log in)
   // Also check if this is an edit session
@@ -249,6 +250,7 @@ const BuildManifesto = () => {
 
       if (res.data.success) {
         setManifestoUrl(res.data.url)
+        setUserEmail(res.data.email || null)
         
         // Extract manifesto ID from URL (e.g., /manifesto/abc123 -> abc123)
         const manifestoId = res.data.url.split('/').pop()
@@ -637,11 +639,20 @@ const BuildManifesto = () => {
                 You've taken a stand. Now share it with the world.
               </p>
 
+              {/* Personalization Badge */}
+              {userEmail && (
+                <div className="mb-6 inline-block bg-indigo-600/20 border border-indigo-600/50 rounded-lg px-4 py-2">
+                  <p className="text-indigo-300 text-sm font-semibold">
+                    ✓ Your email-based URL is easy to share and remember
+                  </p>
+                </div>
+              )}
+
               {/* Shareable Link */}
               <div className="bg-slate-900 border border-slate-600 rounded-lg p-6 mb-8">
                 <p className="text-slate-400 text-sm mb-3">Your manifesto URL:</p>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 text-left text-slate-300 break-all">
+                  <code className="flex-1 text-left text-indigo-300 break-all font-mono text-lg font-semibold">
                     {manifestoUrl}
                   </code>
                   <button
