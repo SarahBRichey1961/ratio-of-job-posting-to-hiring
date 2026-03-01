@@ -122,11 +122,11 @@ Write the manifesto now. Make it powerful, personal, and true.`
 
     console.log('Successfully generated manifesto')
 
-    // Generate meme if requested
+    // Generate meme if requested (with timeout)
     let memeImage = null
     if (generateMeme) {
       try {
-        // Extract a powerful quote from the manifesto (first or last sentence)
+        // Extract a powerful quote from the manifesto (middle sentence)
         const sentences = manifesto.split('.').filter((s: string) => s.trim().length > 0)
         const memeQuote = sentences.length > 0 
           ? sentences[Math.floor(sentences.length / 2)].trim().slice(0, 100) 
@@ -134,30 +134,36 @@ Write the manifesto now. Make it powerful, personal, and true.`
 
         console.log('Generating meme with quote:', memeQuote)
 
-        // Call DALL-E to generate an image
-        const imageResponse = await axios.post(
-          'https://api.openai.com/v1/images/generations',
-          {
-            prompt: `Create an inspirational meme graphic with the text "${memeQuote}". Modern design, bold typography, meaningful visual elements, professional look. Image should be square format suitable for web display.`,
-            n: 1,
-            size: '256x256',
-            quality: 'standard',
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${OPENAI_API_KEY}`,
-              'Content-Type': 'application/json',
+        // Call DALL-E with timeout
+        const imageResponse = await Promise.race([
+          axios.post(
+            'https://api.openai.com/v1/images/generations',
+            {
+              prompt: `Create an inspirational meme graphic with the text "${memeQuote}". Modern design, bold typography, meaningful visual elements, professional look. Image should be square format suitable for web display.`,
+              n: 1,
+              size: '256x256',
+              quality: 'standard',
             },
-          }
-        )
+            {
+              headers: {
+                Authorization: `Bearer ${OPENAI_API_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              timeout: 20000, // 20 second timeout for DALL-E
+            }
+          ),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Meme generation timeout after 25 seconds')), 25000)
+          )
+        ] as const)
 
-        if (imageResponse.data.data && imageResponse.data.data.length > 0) {
-          memeImage = imageResponse.data.data[0].url
+        if ((imageResponse as any).data.data && (imageResponse as any).data.data.length > 0) {
+          memeImage = (imageResponse as any).data.data[0].url
           console.log('Successfully generated meme image')
         }
       } catch (memeError: any) {
-        console.error('Error generating meme:', memeError.message)
-        // Continue even if meme generation fails - don't block the manifesto
+        console.warn('Meme generation failed (non-blocking):', memeError.message)
+        // Continue without meme - it's optional
       }
     }
 
