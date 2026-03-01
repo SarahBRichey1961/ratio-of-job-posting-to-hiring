@@ -249,6 +249,35 @@ const BuildManifesto = () => {
 
       if (res.data.success) {
         setManifestoUrl(res.data.url)
+        
+        // Extract manifesto ID from URL (e.g., /manifesto/abc123 -> abc123)
+        const manifestoId = res.data.url.split('/').pop()
+        
+        // Save to localStorage for easy access
+        if (typeof window !== 'undefined' && manifestoId) {
+          try {
+            const existing = localStorage.getItem('recentManifestos')
+            const recent = existing ? JSON.parse(existing) : []
+            
+            // Add new manifesto to the beginning of the list
+            const newManifesto = {
+              id: manifestoId,
+              url: res.data.url,
+              createdAt: new Date().toISOString(),
+              preview: manifestoContent.substring(0, 150) + '...',
+            }
+            
+            // Remove duplicates (if re-publishing the same one)
+            const filtered = recent.filter((m: any) => m.id !== manifestoId)
+            
+            // Keep only last 10 manifestos
+            const updated = [newManifesto, ...filtered].slice(0, 10)
+            localStorage.setItem('recentManifestos', JSON.stringify(updated))
+          } catch (err) {
+            console.error('Error saving to localStorage:', err)
+          }
+        }
+        
         setStage('complete')
         scrollRef.current?.scrollIntoView({ behavior: 'smooth' })
       } else {
