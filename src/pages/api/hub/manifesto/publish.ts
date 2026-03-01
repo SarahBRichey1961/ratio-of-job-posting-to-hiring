@@ -11,8 +11,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { userId, content, username, questionsData } = req.body
 
-  if (!userId || !content) {
-    return res.status(400).json({ error: 'User ID and content required' })
+  if (!content) {
+    return res.status(400).json({ error: 'Content required' })
   }
 
   try {
@@ -21,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Even without Supabase, generate a shareable ID
       const manifestId = crypto
         .createHash('sha256')
-        .update(`${userId}-${Date.now()}`)
+        .update(`${userId || 'anon'}-${Date.now()}`)
         .digest('hex')
         .substring(0, 12)
 
@@ -33,50 +33,49 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
     }
 
-    // Generate a unique manifest ID
+    // Get current authenticated user from session
+    const { data: { session } } = await supabase.auth.getSession()
+    const authenticatedUserId = session?.user?.id
+
+    // If user is authenticated, save to new manifestos table
+    if (authenticatedUserId) {
+      const slug = username || `manifesto-${Date.now()}`
+      const title = `Manifesto - ${new Date().toLocaleDateString()}`
+
+      const { data, error } = await supabase
+        .from('manifestos')
+        .insert({
+          user_id: authenticatedUserId,
+          content: content,
+          questions_data: questionsData ? JSON.stringify(questionsData) : null,
+          title: title,
+          slug: slug,
+          published: true,
+          public_url: `${BASE_URL}/manifesto/${slug}`,
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error saving to manifestos:', error)
+        return res.status(400).json({ error: error.message })
+      }
+
+      return res.status(200).json({
+        success: true,
+        url: `${BASE_URL}/manifesto/${data.slug}`,
+        published_at: data.created_at,
+      })
+    }
+
+    // For anonymous users, generate a unique manifest ID
     const manifestId = crypto
       .createHash('sha256')
       .update(`${userId}-${Date.now()}`)
       .digest('hex')
       .substring(0, 12)
 
-    // Try to save to database if user is authenticated
-    const { data: existingUser, error: checkError } = await supabase
-      .from('hub_members')
-      .select('id')
-      .eq('id', userId)
-      .single()
-
-    if (!checkError && existingUser) {
-      // User exists - update their manifesto in hub_members
-      const { error: updateError } = await supabase
-        .from('hub_members')
-        .update({
-          manifesto: content,
-          manifesto_questions: questionsData ? JSON.stringify(questionsData) : null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', userId)
-
-      if (!updateError) {
-        // Fetch username for nice URL
-        const { data: userData } = await supabase
-          .from('hub_members')
-          .select('username')
-          .eq('id', userId)
-          .single()
-
-        if (userData?.username) {
-          return res.status(200).json({
-            success: true,
-            url: `${BASE_URL}/manifesto/${userData.username}`,
-            published_at: new Date().toISOString(),
-          })
-        }
-      }
-    }
-
-    // For anonymous users - save to public_manifestos table
+    // Save to public_manifestos table for anonymous users
     const { error: insertError } = await supabase
       .from('public_manifestos')
       .insert({
@@ -110,7 +109,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Fallback: still return a URL even if everything fails
     const manifestId = crypto
       .createHash('sha256')
-      .update(`${userId}-${Date.now()}`)
+      .update(`${userId || 'anon'}-${Date.now()}`)
       .digest('hex')
       .substring(0, 12)
 
