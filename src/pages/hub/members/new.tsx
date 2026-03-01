@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import axios from 'axios'
+import { getSupabase } from '@/lib/supabase'
 
 interface Question {
   id: string
@@ -242,11 +243,24 @@ const BuildManifesto = () => {
         answer: q.answer,
       }))
       
+      // Get auth token if user is logged in
+      const client = getSupabase()
+      const { data: { session } } = await client?.auth.getSession() || { data: { session: null } }
+      
+      const axiosConfig: any = {
+        headers: {}
+      }
+      
+      // Pass auth token if available
+      if (session?.access_token) {
+        axiosConfig.headers.Authorization = `Bearer ${session.access_token}`
+      }
+      
       const res = await axios.post('/api/hub/manifesto/publish', {
         userId,
         content: manifestoContent,
         questionsData,
-      })
+      }, axiosConfig)
 
       if (res.data.success) {
         setManifestoUrl(res.data.url)

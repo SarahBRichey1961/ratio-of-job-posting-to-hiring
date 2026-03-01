@@ -36,10 +36,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
     }
 
-    // Get current authenticated user from session
-    const { data: { session } } = await supabase.auth.getSession()
-    const authenticatedUserId = session?.user?.id
-    console.log('Auth check - authenticatedUserId:', authenticatedUserId)
+    // Get auth token from Authorization header
+    const authHeader = req.headers.authorization
+    let authenticatedUserId: string | null = null
+    let userEmail: string | null = null
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHea && userEmail) {
+      console.log('User is authenticated, saving to manifestos table with email:', userEmail)
+          authenticatedUserId = user.id
+          userEmail = user.email || null
+        }
+      } catch (err) {
+        console.error('Error verifying token:', err)
+      }
+    }
+    
+    console.log('Auth check - authenticatedUserId:', authenticatedUserId, 'email:', userEmail)
 
     // If user is authenticated, save to new manifestos table
     if (authenticatedUserId) {
