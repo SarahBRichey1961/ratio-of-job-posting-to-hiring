@@ -65,6 +65,12 @@ const DiscussionDetail = () => {
   const [submittingReply, setSubmittingReply] = useState(false)
   const [replyError, setReplyError] = useState('')
 
+  // Delete State
+  const [deletingDiscussionId, setDeletingDiscussionId] = useState<string | null>(null)
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteConfirmType, setDeleteConfirmType] = useState<'discussion' | 'comment'>('discussion')
+
   // Get user ID from Supabase on mount
   useEffect(() => {
     const getUser = async () => {
@@ -248,6 +254,51 @@ const DiscussionDetail = () => {
     }
   }
 
+  const handleDeleteDiscussion = async () => {
+    if (!token || !discussion) return
+
+    setDeletingDiscussionId(discussion.id)
+
+    try {
+      await axios.delete(`/api/hub/discussions/${discussion.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      // Redirect to discussions list on success
+      router.push('/hub/discussions')
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to delete discussion'
+      setError(errorMessage)
+      setDeletingDiscussionId(null)
+      setShowDeleteConfirm(false)
+    }
+  }
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!token) return
+
+    setDeletingCommentId(commentId)
+
+    try {
+      await axios.delete(`/api/hub/discussions/${id}/comments?commentId=${commentId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      // Remove comment from list
+      setComments(comments.filter((c) => c.id !== commentId))
+      setShowDeleteConfirm(false)
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to delete comment'
+      setError(errorMessage)
+      setDeletingCommentId(null)
+      setShowDeleteConfirm(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -354,11 +405,22 @@ const DiscussionDetail = () => {
           <div className="bg-white rounded-lg shadow p-6">
           <div className="space-y-3">
               {isCreator && (
-                <button 
-                  onClick={handleEditClick}
-                  className="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium text-sm">
-                  Edit
-                </button>
+                <>
+                  <button 
+                    onClick={handleEditClick}
+                    className="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium text-sm">
+                    Edit
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setDeleteConfirmType('discussion')
+                      setDeletingDiscussionId(discussion.id)
+                      setShowDeleteConfirm(true)
+                    }}
+                    className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium text-sm">
+                    Delete
+                  </button>
+                </>
               )}
               {userId && (
                 <button 
@@ -456,11 +518,25 @@ const DiscussionDetail = () => {
                         {new Date(comment.created_at).toLocaleTimeString()}
                       </p>
                     </div>
-                    {comment.is_solution && (
-                      <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
-                        Solution
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {comment.is_solution && (
+                        <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                          Solution
+                        </span>
+                      )}
+                      {userId === comment.author_id && (
+                        <button
+                          onClick={() => {
+                            setDeleteConfirmType('comment')
+                            setDeletingCommentId(comment.id)
+                            setShowDeleteConfirm(true)
+                          }}
+                          className="text-xs text-red-600 hover:text-red-800 font-medium"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <p className="text-gray-700 whitespace-pre-wrap">{comment.content}</p>
                   <div className="mt-3 flex items-center gap-4">
@@ -615,6 +691,53 @@ const DiscussionDetail = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+              <div className="bg-red-50 border-b border-red-200 px-8 py-6">
+                <h2 className="text-2xl font-bold text-red-900">
+                  Delete {deleteConfirmType === 'discussion' ? 'Discussion' : 'Comment'}?
+                </h2>
+              </div>
+
+              <div className="px-8 py-6">
+                <p className="text-gray-700 mb-6">
+                  {deleteConfirmType === 'discussion'
+                    ? 'Are you sure you want to delete this discussion? This action cannot be undone and all comments will be deleted.'
+                    : 'Are you sure you want to delete this comment? This action cannot be undone.'}
+                </p>
+
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => {
+                      setShowDeleteConfirm(false)
+                      setDeletingDiscussionId(null)
+                      setDeletingCommentId(null)
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (deleteConfirmType === 'discussion' && deletingDiscussionId) {
+                        handleDeleteDiscussion()
+                      } else if (deleteConfirmType === 'comment' && deletingCommentId) {
+                        handleDeleteComment(deletingCommentId)
+                      }
+                    }}
+                    disabled={deletingDiscussionId !== null || deletingCommentId !== null}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 font-medium"
+                  >
+                    {deletingDiscussionId || deletingCommentId ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

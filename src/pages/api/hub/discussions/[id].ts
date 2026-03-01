@@ -158,6 +158,91 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
+  // DELETE: Delete a discussion
+  else if (req.method === 'DELETE') {
+    try {
+      // Get auth token from Authorization header
+      const authHeader = req.headers.authorization
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Unauthorized' })
+      }
+
+      const token = authHeader.substring(7)
+
+      // Verify the token and get user ID
+      let userId: string | null = null
+      
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+        if (user && !authError) {
+          userId = user.id
+        }
+      } catch (err) {
+        console.error('Error verifying token with getUser:', err)
+      }
+
+      // If that failed, try to decode the JWT for the user ID
+      if (!userId) {
+        try {
+          const parts = token.split('.')
+          if (parts.length === 3) {
+            const decoded = JSON.parse(Buffer.from(parts[1], 'base64').toString())
+            userId = decoded.sub
+          }
+        } catch (err) {
+          console.error('Error decoding token:', err)
+        }
+      }
+
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' })
+      }
+
+      // Get discussion to verify creator
+      const { data: discussion, error: getError } = await supabase
+        .from('hub_discussions')
+        .select('creator_id')
+        .eq('id', id)
+        .single()
+
+      if (getError || !discussion) {
+        return res.status(404).json({ error: 'Discussion not found' })
+      }
+
+      // Verify user is the creator
+      if (discussion.creator_id !== userId) {
+        return res.status(403).json({ error: 'Only the discussion creator can delete' })
+      }
+
+      // Delete all comments first (cascade would handle this, but doing it explicitly for clarity)
+      const { error: commentsError } = await supabase
+        .from('hub_discussion_comments')
+        .delete()
+        .eq('discussion_id', id)
+
+      if (commentsError) {
+        console.error('Error deleting comments:', commentsError)
+        return res.status(500).json({ error: 'Failed to delete discussion' })
+      }
+
+      // Delete the discussion
+      const { error: deleteError } = await supabase
+        .from('hub_discussions')
+        .delete()
+        .eq('id', id)
+
+      if (deleteError) {
+        console.error('Error deleting discussion:', deleteError)
+        return res.status(500).json({ error: 'Failed to delete discussion' })
+      }
+
+      return res.status(200).json({ success: true, message: 'Discussion deleted successfully' })
+    } catch (error) {
+      console.error('Error deleting discussion:', error)
+      return res.status(500).json({ error: 'Failed to delete discussion' })
+    }
+  }
+
   else {
     res.status(405).json({ error: 'Method not allowed' })
   }

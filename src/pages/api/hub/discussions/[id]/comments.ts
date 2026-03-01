@@ -284,6 +284,72 @@ export default async function handler(
     }
   }
 
+  // DELETE - Delete a comment
+  if (req.method === 'DELETE') {
+    try {
+      console.log('DELETE /comments - starting')
+
+      // Get comment ID from query parameter
+      const { commentId } = req.query
+
+      if (!commentId || typeof commentId !== 'string') {
+        console.log('DELETE /comments - commentId missing or invalid')
+        return res.status(400).json({ error: 'Comment ID is required' })
+      }
+
+      // Get auth token from Authorization header
+      const authHeader = req.headers.authorization
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        console.log('DELETE /comments - no auth header')
+        return res.status(401).json({ error: 'Unauthorized' })
+      }
+
+      const token = authHeader.substring(7)
+      const userIdFromToken = getUserIdFromToken(token)
+
+      if (!userIdFromToken) {
+        console.log('DELETE /comments - could not extract user ID from token')
+        return res.status(401).json({ error: 'Unauthorized' })
+      }
+
+      // Fetch the comment to verify ownership and existence
+      const { data: comment, error: fetchError } = await supabase
+        .from('hub_discussion_comments')
+        .select('id, author_id')
+        .eq('id', commentId)
+        .single()
+
+      if (fetchError || !comment) {
+        console.log('DELETE /comments - comment not found', { fetchError })
+        return res.status(404).json({ error: 'Comment not found' })
+      }
+
+      // Verify the user is the comment author
+      if (comment.author_id !== userIdFromToken) {
+        console.log('DELETE /comments - user is not comment author')
+        return res.status(403).json({ error: 'Only the comment author can delete' })
+      }
+
+      // Delete the comment
+      const { error: deleteError } = await supabase
+        .from('hub_discussion_comments')
+        .delete()
+        .eq('id', commentId)
+
+      if (deleteError) {
+        console.error('DELETE /comments - Error deleting comment:', deleteError)
+        return res.status(500).json({ error: 'Failed to delete comment' })
+      }
+
+      console.log('DELETE /comments - success', { commentId })
+
+      return res.status(200).json({ message: 'Comment deleted successfully' } as any)
+    } catch (error) {
+      console.error('DELETE /comments - Caught exception:', error)
+      return res.status(500).json({ error: 'Internal server error' })
+    }
+  }
+
   return res.status(405).json({ error: 'Method not allowed' })
   } catch (error) {
     console.error('Handler error:', error)
