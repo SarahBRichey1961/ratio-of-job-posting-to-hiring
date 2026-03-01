@@ -66,11 +66,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const slug = username || userEmail
       const title = `Manifesto - ${new Date().toLocaleDateString()}`
 
-      // Use upsert (update or insert) to handle re-publishing
-      const { data, error } = await supabase
+      // First, check if a manifesto with this slug already exists for this user
+      const { data: existingManifesto, error: checkError } = await supabase
         .from('manifestos')
-        .upsert(
-          {
+        .select('id')
+        .eq('user_id', authenticatedUserId)
+        .eq('slug', slug)
+        .maybeSingle()
+
+      if (checkError) {
+        console.error('Error checking for existing manifesto:', checkError)
+        // Continue anyway - we'll try to insert
+      }
+
+      let data, error
+
+      if (existingManifesto && existingManifesto.id) {
+        // Update existing manifesto
+        console.log('Updating existing manifesto:', existingManifesto.id)
+        const result = await supabase
+          .from('manifestos')
+          .update({
+            content: content,
+            questions_data: questionsData ? JSON.stringify(questionsData) : null,
+            title: title,
+            published: true,
+            public_url: `${BASE_URL}/manifesto/${slug}`,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingManifesto.id)
+          .select()
+          .single()
+        
+        data = result.data
+        error = result.error
+        if (error) console.error('Update error:', error)
+      } else {
+        // Insert new manifesto
+        console.log('Creating new manifesto with slug:', slug)
+        console.log('Insert data:', { user_id: authenticatedUserId, slug, content_length: content.length })
+        const result = await supabase
+          .from('manifestos')
+          .insert({
             user_id: authenticatedUserId,
             content: content,
             questions_data: questionsData ? JSON.stringify(questionsData) : null,
@@ -78,18 +115,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             slug: slug,
             published: true,
             public_url: `${BASE_URL}/manifesto/${slug}`,
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: 'slug', // Use slug as the unique identifier for upsert
-          }
-        )
-        .select()
-        .single()
+          })
+          .select()
+          .single()
+        
+        data = result.data
+        error = result.error
+        if (error) console.error('Insert error:', error)
+      }
 
       if (error) {
         console.error('Error saving to manifestos:', error)
-        return res.status(400).json({ error: error.message })
+        console.error('Error details:', { code: error.code, message: error.message, details: error.details })
+        return res.status(400).json({ 
+          error: error.message,
+          details: error.details,
+          code: error.code
+        })
       }
 
       console.log('Successfully saved to manifestos with slug:', data.slug)
