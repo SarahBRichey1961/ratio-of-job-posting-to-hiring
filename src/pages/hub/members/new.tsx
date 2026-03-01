@@ -254,7 +254,7 @@ const BuildManifesto = () => {
         pronouns: selectedPronouns,
         generateMeme: generateMeme,
       }, {
-        timeout: 50000 // 50 second timeout (manifesto ~15-20s + meme ~20-25s max)
+        timeout: 65000 // 65 second timeout (manifesto ~15-20s + meme ~40-45s max)
       })
 
       if (res.data.manifesto) {

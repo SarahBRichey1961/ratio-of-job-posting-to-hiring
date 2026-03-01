@@ -149,11 +149,11 @@ Write the manifesto now. Make it powerful, personal, and true.`
                 Authorization: `Bearer ${OPENAI_API_KEY}`,
                 'Content-Type': 'application/json',
               },
-              timeout: 20000, // 20 second timeout for DALL-E
+              timeout: 40000, // 40 second timeout for DALL-E (it can be slow)
             }
           ),
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Meme generation timeout after 25 seconds')), 25000)
+            setTimeout(() => reject(new Error('Meme generation timeout after 45 seconds')), 45000)
           )
         ] as const)
 
