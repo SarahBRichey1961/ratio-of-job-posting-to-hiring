@@ -113,23 +113,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Authentication service is not available. Please try again or contact support.')
       }
       
-      const { data, error } = await client.auth.signUp({
+      // Sign up the user
+      const { data: signUpData, error: signUpError } = await client.auth.signUp({
         email,
         password,
       })
 
-      if (error) throw error
+      if (signUpError) throw signUpError
+
+      if (!signUpData.user) {
+        throw new Error('User creation failed')
+      }
 
       // Create user profile
-      if (data.user) {
-        await client
-          .from('user_profiles')
-          .insert({
-            id: data.user.id,
-            email: data.user.email,
-            role: 'viewer',
-          })
+      await client
+        .from('user_profiles')
+        .insert({
+          id: signUpData.user.id,
+          email: signUpData.user.email,
+          role: 'viewer',
+        })
+        .single()
+
+      // Automatically sign them in with the same credentials
+      const { data: signInData, error: signInError } = await client.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInError) {
+        console.error('Auto sign-in after signup failed:', signInError)
+        // Even if auto sign-in fails, the account is created
+        // They can sign in manually
+        throw signInError
       }
+
+      // The onAuthStateChange listener will automatically update the context
+      setUser(signInData.user || null)
+      
     } catch (error: any) {
       console.error('Sign-up error:', error)
       throw error
