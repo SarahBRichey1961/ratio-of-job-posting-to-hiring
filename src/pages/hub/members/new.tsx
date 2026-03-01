@@ -233,6 +233,7 @@ const BuildManifesto = () => {
 
     setLoading(true)
     setError('')
+    setMemeImage(null) // Reset meme image
 
     try {
       // Build answers object from included questions
@@ -252,6 +253,8 @@ const BuildManifesto = () => {
         tones: selectedTones,
         pronouns: selectedPronouns,
         generateMeme: generateMeme,
+      }, {
+        timeout: 50000 // 50 second timeout (manifesto ~15-20s + meme ~20-25s max)
       })
 
       if (res.data.manifesto) {
@@ -259,6 +262,9 @@ const BuildManifesto = () => {
         setManifestoUrl(res.data.url)
         if (res.data.memeImage) {
           setMemeImage(res.data.memeImage)
+        } else if (generateMeme) {
+          // Meme was requested but not generated (might have timed out)
+          console.warn('Meme generation did not complete in time')
         }
         setStage('preview')
         scrollRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -267,7 +273,11 @@ const BuildManifesto = () => {
       }
     } catch (err: any) {
       console.error('Error generating manifesto:', err)
-      setError(err.response?.data?.error || 'Failed to generate manifesto')
+      if (err.code === 'ECONNABORTED') {
+        setError('Request timed out. Manifesto generation took too long. Try again with fewer questions or without meme generation.')
+      } else {
+        setError(err.response?.data?.error || 'Failed to generate manifesto')
+      }
     } finally {
       setLoading(false)
     }
