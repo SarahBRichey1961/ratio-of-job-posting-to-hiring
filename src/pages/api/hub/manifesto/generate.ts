@@ -10,7 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { userId, questions } = req.body
+  const { userId, questions, tones } = req.body
 
   if (!userId) {
     return res.status(400).json({ error: 'User ID required' })
@@ -18,6 +18,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (!questions || !Array.isArray(questions) || questions.length === 0) {
     return res.status(400).json({ error: 'Questions required' })
+  }
+
+  // Validate tones if provided
+  if (tones && (!Array.isArray(tones) || tones.length > 2)) {
+    return res.status(400).json({ error: 'Tones must be an array with maximum 2 items' })
   }
 
   if (!OPENAI_API_KEY) {
@@ -34,6 +39,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .map((q, index) => `**Q${index + 1}: ${q.question}**\n${q.answer}`)
       .join('\n\n')
 
+    // Build tone instructions if provided
+    let toneInstructions = ''
+    if (tones && tones.length > 0) {
+      if (tones.length === 1) {
+        toneInstructions = `\n\nIMPORTANT: Write this manifesto with a strong ${tones[0]} tone. Infuse the writing with the characteristics of the ${tones[0]} style.`
+      } else {
+        toneInstructions = `\n\nIMPORTANT: Blend the ${tones[0]} and ${tones[1]} tones in this manifesto. The writing should reflect both ${tones[0].toLowerCase()} and ${tones[1].toLowerCase()} characteristics in equal measure.`
+      }
+    }
+
     // Build prompt for GPT to write the manifesto
     const prompt = `
 You are a ghostwriter creating a compelling personal manifesto for a professional. 
@@ -49,7 +64,7 @@ Based on the following answers to their custom questions, write an authentic, po
 
 Here are their answers:
 
-${questionAnswerPairs}
+${questionAnswerPairs}${toneInstructions}
 
 Write the manifesto now. Make it powerful, personal, and true.`
 
