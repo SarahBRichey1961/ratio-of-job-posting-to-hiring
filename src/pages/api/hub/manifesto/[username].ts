@@ -18,7 +18,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: 'Supabase not initialized' })
     }
 
+    console.log('=== FETCH MANIFESTO ===')
+    console.log('Fetching manifesto with username/id:', username)
+
     // First, try to find in new manifestos table by slug (authenticated users)
+    console.log('Step 1: Checking manifestos table by slug...')
     const { data: newManifesto, error: newError } = await supabase
       .from('manifestos')
       .select('id, title, content, slug, published, created_at, updated_at')
@@ -27,6 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .single()
 
     if (!newError && newManifesto) {
+      console.log('Found in manifestos table:', newManifesto.slug)
       return res.status(200).json({
         username: newManifesto.title || 'Untitled',
         bio: null,
@@ -36,8 +41,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         isPublished: newManifesto.published,
       })
     }
+    console.log('Not found in manifestos:', newError?.message || 'No match')
 
     // Second, try to find by username in hub_members (authenticated users - legacy)
+    console.log('Step 2: Checking hub_members table by username...')
     const { data: authenticatedUser, error: authError } = await supabase
       .from('hub_members')
       .select('username, bio, avatar_url, manifesto, updated_at')
@@ -46,10 +53,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .single()
 
     if (!authError && authenticatedUser) {
+      console.log('Found in hub_members:', authenticatedUser.username)
       return res.status(200).json(authenticatedUser)
     }
+    console.log('Not found in hub_members:', authError?.message || 'No match')
 
     // Third, try to find by ID in public_manifestos (anonymous users - legacy)
+    console.log('Step 3: Checking public_manifestos table by id...')
     const { data: anonymousManifesto, error: anonError } = await supabase
       .from('public_manifestos')
       .select('id, content, username, created_at, updated_at')
@@ -57,6 +67,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .single()
 
     if (!anonError && anonymousManifesto) {
+      console.log('Found in public_manifestos:', anonymousManifesto.id)
       return res.status(200).json({
         username: anonymousManifesto.username || 'Anonymous',
         bio: null,
@@ -66,8 +77,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         isAnonymous: true,
       })
     }
+    console.log('Not found in public_manifestos:', anonError?.message || 'No match')
 
-    // Not found in either table
+    // Not found in any table
+    console.log('Manifesto not found in any table')
     return res.status(404).json({ error: 'Manifesto not found' })
   } catch (error: any) {
     console.error('Error fetching manifesto:', error)
