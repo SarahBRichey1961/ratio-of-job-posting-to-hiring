@@ -141,6 +141,22 @@ const ManifestoPage = () => {
           </div>
         </div>
 
+        {/* Actions for Owner */}
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 mb-8 text-center">
+          <p className="text-slate-300 mb-4 text-sm">Is this your manifesto?</p>
+          <button
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                const manifestoId = router.query.username as string
+                router.push(`/hub/members/new?editId=${manifestoId}`)
+              }
+            }}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg text-sm transition font-semibold"
+          >
+            Edit & Regenerate
+          </button>
+        </div>
+
         {/* Share Section */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 text-center">
           <p className="text-slate-300 mb-6">
