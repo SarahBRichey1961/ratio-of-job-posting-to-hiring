@@ -3,6 +3,8 @@ import axios from 'axios'
 import { getSupabase } from '@/lib/supabase'
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
+const BASE_URL = process.env.NEXT_PUBLIC_MANIFESTO_BASE_URL || 'https://takethereigns.ai'
+const BASE_URL = process.env.NEXT_PUBLIC_MANIFESTO_BASE_URL || 'https://takethereigns.ai'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -90,7 +92,7 @@ Write the manifesto now. Make it powerful, personal, and true.`
     console.log('Successfully generated manifesto')
 
     // Generate a URL slug from the user ID (you can fetch username later)
-    const url = `https://takethereins.ai/manifesto/${userId}`
+    const url = `${BASE_URL}/manifesto/${userId}`
 
     return res.status(200).json({
       manifesto,
