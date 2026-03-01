@@ -23,7 +23,20 @@ export default function TakeTheReins() {
             ← Back
           </button>
           <h1 className="text-2xl font-bold text-white">Take The Reins</h1>
-          <div className="w-12"></div>
+          <div className="flex gap-3">
+            <Link
+              href="/hub/recent"
+              className="text-slate-300 hover:text-white transition text-sm font-medium px-3 py-2 rounded hover:bg-slate-700/20"
+            >
+              Recent Manifestos
+            </Link>
+            <Link
+              href="/hub/my-manifestos"
+              className="text-slate-300 hover:text-white transition text-sm font-medium px-3 py-2 rounded hover:bg-slate-700/20"
+            >
+              My Account
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -87,7 +100,13 @@ export default function TakeTheReins() {
         </div>
 
         {/* CTA Buttons */}
-        <div className="grid md:grid-cols-3 gap-6 mb-16">
+        <div className="grid md:grid-cols-4 gap-6 mb-16">
+          <Link
+            href="/hub/recent"
+            className="bg-slate-700 hover:bg-slate-600 text-white font-semibold px-8 py-4 rounded-lg transition text-center"
+          >
+            Your Recent Manifestos
+          </Link>
           <Link
             href="/hub/projects/new"
             className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-8 py-4 rounded-lg transition text-center"
