@@ -18,7 +18,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: 'Database connection failed' })
     }
 
-    // Fetch the user's manifesto and Q&A data
+    // First try to fetch from new manifestos table (by ID)
+    const { data: newData, error: newError } = await supabase
+      .from('manifestos')
+      .select('content, questions_data, title, slug')
+      .eq('id', userId)
+      .single()
+
+    if (!newError && newData) {
+      return res.status(200).json({
+        success: true,
+        content: newData.content,
+        questions_data: newData.questions_data ? (typeof newData.questions_data === 'string' ? JSON.parse(newData.questions_data) : newData.questions_data) : [],
+        username: newData.slug || newData.title,
+      })
+    }
+
+    // Fall back to legacy hub_members table
     const { data, error } = await supabase
       .from('hub_members')
       .select('manifesto, manifesto_questions, username')

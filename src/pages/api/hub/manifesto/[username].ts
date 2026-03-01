@@ -18,7 +18,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: 'Supabase not initialized' })
     }
 
-    // First, try to find by username in hub_members (authenticated users)
+    // First, try to find in new manifestos table by slug (authenticated users)
+    const { data: newManifesto, error: newError } = await supabase
+      .from('manifestos')
+      .select('id, title, content, slug, published, created_at, updated_at')
+      .eq('slug', username)
+      .eq('published', true)
+      .single()
+
+    if (!newError && newManifesto) {
+      return res.status(200).json({
+        username: newManifesto.title || 'Untitled',
+        bio: null,
+        avatar_url: null,
+        manifesto: newManifesto.content,
+        updated_at: newManifesto.updated_at,
+        isPublished: newManifesto.published,
+      })
+    }
+
+    // Second, try to find by username in hub_members (authenticated users - legacy)
     const { data: authenticatedUser, error: authError } = await supabase
       .from('hub_members')
       .select('username, bio, avatar_url, manifesto, updated_at')
@@ -30,7 +49,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json(authenticatedUser)
     }
 
-    // If not found, try to find by ID in public_manifestos (anonymous users)
+    // Third, try to find by ID in public_manifestos (anonymous users - legacy)
     const { data: anonymousManifesto, error: anonError } = await supabase
       .from('public_manifestos')
       .select('id, content, username, created_at, updated_at')
