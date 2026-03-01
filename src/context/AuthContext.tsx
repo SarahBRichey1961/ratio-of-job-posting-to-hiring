@@ -58,20 +58,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
               if (error) {
                 console.error('Error fetching profile:', error)
-                // Create default profile if it doesn't exist
-                await client
-                  .from('user_profiles')
-                  .insert({
-                    id: session.user.id,
-                    email: session.user.email,
-                    role: 'viewer',
+                // Create profile via API (uses service role, bypasses RLS)
+                try {
+                  const response = await fetch('/api/auth/create-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      userId: session.user.id,
+                      email: session.user.email,
+                    }),
                   })
-                setProfile({
-                  id: session.user.id,
-                  email: session.user.email || '',
-                  role: 'viewer',
-                  created_at: new Date().toISOString(),
-                })
+                  const profileData = await response.json()
+                  setProfile(profileData.profile || {
+                    id: session.user.id,
+                    email: session.user.email || '',
+                    role: 'viewer',
+                    created_at: new Date().toISOString(),
+                  })
+                } catch (err) {
+                  console.error('Error creating profile via API:', err)
+                  setProfile({
+                    id: session.user.id,
+                    email: session.user.email || '',
+                    role: 'viewer',
+                    created_at: new Date().toISOString(),
+                  })
+                }
               } else {
                 setProfile(data as UserProfile)
               }
@@ -125,15 +137,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('User creation failed')
       }
 
-      // Create user profile
-      await client
-        .from('user_profiles')
-        .insert({
-          id: signUpData.user.id,
-          email: signUpData.user.email,
-          role: 'viewer',
+      // Create user profile via API (uses service role, bypasses RLS)
+      try {
+        await fetch('/api/auth/create-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: signUpData.user.id,
+            email: signUpData.user.email,
+          }),
         })
-        .single()
+      } catch (profileError) {
+        console.error('Error creating profile:', profileError)
+        // Continue anyway - the auth listener will try to create it
+      }
 
       // Automatically sign them in with the same credentials
       const { data: signInData, error: signInError } = await client.auth.signInWithPassword({

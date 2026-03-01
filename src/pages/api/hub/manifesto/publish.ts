@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getSupabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 
 const BASE_URL = process.env.NEXT_PUBLIC_MANIFESTO_BASE_URL || 'https://takethereigns.ai'
@@ -40,6 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const authHeader = req.headers.authorization
     let authenticatedUserId: string | null = null
     let userEmail: string | null = null
+    let authenticatedClient = supabase
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7) // Remove 'Bearer ' prefix
@@ -50,6 +52,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (!authError && user) {
           authenticatedUserId = user.id
           userEmail = user.email || null
+          
+          // Create a new client with the user's access token for RLS queries
+          authenticatedClient = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+              global: {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              },
+            }
+          )
+          console.log('Created authenticated client with user token')
         }
       } catch (err) {
         console.error('Error verifying token:', err)
@@ -67,7 +83,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const title = `Manifesto - ${new Date().toLocaleDateString()}`
 
       // First, check if a manifesto with this slug already exists for this user
-      const { data: existingManifesto, error: checkError } = await supabase
+      const { data: existingManifesto, error: checkError } = await authenticatedClient
         .from('manifestos')
         .select('id')
         .eq('user_id', authenticatedUserId)
@@ -84,7 +100,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (existingManifesto && existingManifesto.id) {
         // Update existing manifesto
         console.log('Updating existing manifesto:', existingManifesto.id)
-        const result = await supabase
+        const result = await authenticatedClient
           .from('manifestos')
           .update({
             content: content,
@@ -105,7 +121,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Insert new manifesto
         console.log('Creating new manifesto with slug:', slug)
         console.log('Insert data:', { user_id: authenticatedUserId, slug, content_length: content.length })
-        const result = await supabase
+        const result = await authenticatedClient
           .from('manifestos')
           .insert({
             user_id: authenticatedUserId,
