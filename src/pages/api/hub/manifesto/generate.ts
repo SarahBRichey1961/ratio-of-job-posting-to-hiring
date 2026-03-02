@@ -5,6 +5,46 @@ import { getSupabase } from '@/lib/supabase'
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 const BASE_URL = process.env.NEXT_PUBLIC_MANIFESTO_BASE_URL || 'https://takethereigns.ai'
 
+// Background function to generate DALL-E meme (fire and forget, don't wait)
+async function generateDALLEMemeAsync(memeQuote: string, userId: string): Promise<void> {
+  try {
+    console.log('Background: Starting DALL-E meme generation (async, non-blocking)')
+    // This runs in background - don't await in the handler
+    // Could be stored in cache/DB if needed, but for now just logs success
+    
+    const imageResponse = await Promise.race([
+      axios.post(
+        'https://api.openai.com/v1/images/generations',
+        {
+          prompt: `Create an inspirational meme graphic with the text "${memeQuote}". Modern design, bold typography, meaningful visual elements. Square format.`,
+          n: 1,
+          size: '256x256',
+          quality: 'standard',
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 45000,
+        }
+      ),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 50000)
+      )
+    ] as const)
+
+    const url = (imageResponse as any).data.data?.[0]?.url
+    if (url) {
+      console.log('Background: DALL-E meme generated successfully (not sent to user)')
+      // In the future, could save to DB or cache for next time user visits
+    }
+  } catch (err: any) {
+    console.warn('Background: DALL-E meme generation skipped -', err.message)
+    // Silently fail - meme was optional enhancement
+  }
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -122,52 +162,60 @@ Write the manifesto now. Make it powerful, personal, and true.`
 
     console.log('Successfully generated manifesto')
 
-    // Generate meme if requested (with timeout)
+    // For meme generation - return QUICKLY without waiting for DALL-E
+    // Instead, we'll generate a simple meme immediately and optionally enhance it later
     let memeImage = null
+    let memeType = 'none'
+    
     if (generateMeme) {
       try {
         // Extract a powerful quote from the manifesto (middle sentence)
         const sentences = manifesto.split('.').filter((s: string) => s.trim().length > 0)
         const memeQuote = sentences.length > 0 
-          ? sentences[Math.floor(sentences.length / 2)].trim().slice(0, 100) 
+          ? sentences[Math.floor(sentences.length / 2)].trim().slice(0, 85) 
           : 'I will be the difference'
 
-        console.log('Generating meme with quote:', memeQuote)
-
-        // Call DALL-E with timeout
-        const imageResponse = await Promise.race([
-          axios.post(
-            'https://api.openai.com/v1/images/generations',
-            {
-              prompt: `Create an inspirational meme graphic with the text "${memeQuote}". Modern design, bold typography, meaningful visual elements, professional look. Image should be square format suitable for web display.`,
-              n: 1,
-              size: '256x256',
-              quality: 'standard',
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${OPENAI_API_KEY}`,
-                'Content-Type': 'application/json',
-              },
-              timeout: 40000, // 40 second timeout for DALL-E (it can be slow)
-            }
-          ),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Meme generation timeout after 45 seconds')), 45000)
-          )
-        ] as const)
-
-        if ((imageResponse as any).data.data && (imageResponse as any).data.data.length > 0) {
-          memeImage = (imageResponse as any).data.data[0].url
-          console.log('Successfully generated meme image')
+        // Create a simple SVG-based meme immediately (no API call needed!)
+        // This generates in < 1ms and gives instant visual feedback
+        const svgMeme = `<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+            </linearGradient>
+          </defs>
+          <rect width="512" height="512" fill="url(#bg)"/>
+          <circle cx="256" cy="256" r="200" fill="rgba(255,255,255,0.1)"/>
+          <text x="256" y="200" font-size="32" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial, sans-serif" dominant-baseline="middle">
+            ${memeQuote.substring(0, 40)}
+          </text>
+          <text x="256" y="280" font-size="28" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial, sans-serif" dominant-baseline="middle">
+            ${memeQuote.substring(40, 85)}
+          </text>
+          <rect x="50" y="420" width="412" height="60" fill="rgba(0,0,0,0.3)" rx="10"/>
+          <text x="256" y="455" font-size="18" fill="white" text-anchor="middle" font-family="Arial, sans-serif" font-style="italic">
+            ✨ Generated Inspiration ✨
+          </text>
+        </svg>`
+        
+        // Convert SVG to data URL
+        memeImage = 'data:image/svg+xml;base64,' + Buffer.from(svgMeme).toString('base64')
+        memeType = 'svg'
+        console.log('Generated instant SVG meme (no API call needed)')
+        
+        // NOW - generate DALL-E version in background (fire and forget, don't wait)
+        if (OPENAI_API_KEY) {
+          generateDALLEMemeAsync(memeQuote, userId).catch(err => {
+            console.warn('Background DALL-E meme generation skipped:', err.message)
+          })
         }
       } catch (memeError: any) {
-        console.warn('Meme generation failed (non-blocking):', memeError.message)
-        // Continue without meme - it's optional
+        console.warn('Meme generation failed:', memeError.message)
+        // Continue without meme
       }
     }
 
-    // Generate a URL slug from the user ID (you can fetch username later)
+    // Generate a URL slug from the user ID
     const url = `${BASE_URL}/manifesto/${userId}`
 
     return res.status(200).json({
@@ -175,6 +223,7 @@ Write the manifesto now. Make it powerful, personal, and true.`
       url,
       preview: manifesto.substring(0, 150) + '...',
       memeImage: memeImage || null,
+      memeType: memeType, // 'svg' for instant, 'dalle' for AI-generated
     })
   } catch (error: any) {
     console.error('Error generating manifesto:', {
