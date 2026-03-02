@@ -165,8 +165,10 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
   // Search for jobs by title
   const handleSearchJobs = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('🔍 Search button clicked, jobTitle:', jobTitle)
     
     if (!jobTitle.trim()) {
+      console.warn('⚠️ Empty job title')
       setSearchError('Please enter a job title')
       return
     }
@@ -175,18 +177,26 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
     setSearchError('')
     
     try {
-      const response = await fetch(`/api/jobs/search?title=${encodeURIComponent(jobTitle)}`)
+      const url = `/api/jobs/search?title=${encodeURIComponent(jobTitle)}`
+      console.log('📡 Calling API:', url)
+      
+      const response = await fetch(url)
+      console.log('📊 API Response status:', response.status, response.statusText)
+      
       const data = await response.json()
+      console.log('✅ API Response data:', data)
       
       if (data.success) {
+        console.log(`🎉 Found ${data.jobs?.length || 0} jobs`)
         setSearchResults(data.jobs || [])
         setShowSearchResults(true)
       } else {
+        console.error('❌ API returned error:', data.error)
         setSearchError(data.error || 'Failed to search jobs')
         setSearchResults([])
       }
     } catch (error) {
-      console.error('Search error:', error)
+      console.error('💥 Search error:', error)
       setSearchError('Failed to search jobs. Please try again.')
       setSearchResults([])
     } finally {

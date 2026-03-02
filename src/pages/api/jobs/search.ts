@@ -30,7 +30,11 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  console.log('📥 API /api/jobs/search called with method:', req.method)
+  console.log('📥 Query params:', req.query)
+  
   if (req.method !== 'GET') {
+    console.warn('⚠️ Method not allowed:', req.method)
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
@@ -39,13 +43,18 @@ export default async function handler(
     const targetDate = (date as string) || new Date().toISOString().split('T')[0]
     const resultLimit = Math.min(parseInt(limit as string), 100)
 
+    console.log('🔍 Searching for:', { title, targetDate, resultLimit })
+
     if (!title) {
+      console.error('❌ Missing title parameter')
       return res.status(400).json({
         error: 'Missing required parameter: title',
       })
     }
 
+    console.log('🚀 Calling fetchJobsByTitle with:', title)
     const jobs = await fetchJobsByTitle(title as string, targetDate, resultLimit)
+    console.log(`✅ fetchJobsByTitle returned ${jobs.length} jobs`)
 
     const response = {
       success: true,
@@ -55,9 +64,10 @@ export default async function handler(
       jobs: jobs,
     }
 
+    console.log('📤 Sending response with', jobs.length, 'jobs')
     return res.status(200).json(response)
   } catch (error) {
-    console.error('Error searching jobs:', error)
+    console.error('💥 Handler error:', error)
     return res.status(500).json({
       error: `Failed to search jobs for title: ${req.query.title}`,
       details: String(error),
@@ -75,19 +85,25 @@ async function fetchJobsByTitle(
 ): Promise<JobPosting[]> {
   try {
     const apiKey = process.env.RAPIDAPI_KEY
+    console.log('🔐 RAPIDAPI_KEY present:', !!apiKey)
+    
     if (!apiKey) {
-      console.error('RAPIDAPI_KEY environment variable not set')
+      console.error('❌ RAPIDAPI_KEY environment variable not set')
       return []
     }
 
     // Use the job title directly as the search query
-    const response = await axios.get('https://jsearch.p.rapidapi.com/search', {
-      params: {
-        query: jobTitle,
-        page: 1,
-        num_pages: 1,
-        date_posted: targetDate,
-      },
+    const url = 'https://jsearch.p.rapidapi.com/search'
+    const params = {
+      query: jobTitle,
+      page: 1,
+      num_pages: 1,
+    }
+    
+    console.log('🌐 Calling JSearch API with params:', params)
+    
+    const response = await axios.get(url, {
+      params,
       headers: {
         'X-RapidAPI-Key': apiKey,
         'X-RapidAPI-Host': 'jsearch.p.rapidapi.com',
@@ -95,6 +111,9 @@ async function fetchJobsByTitle(
       timeout: 15000,
     })
 
+    console.log('📊 JSearch API status:', response.status)
+    console.log('📊 JSearch API response data:', response.data)
+    
     const jobs: JobPosting[] = []
 
     // Map JSearch response to JobPosting format
@@ -118,12 +137,13 @@ async function fetchJobsByTitle(
       })
     })
 
-    console.log(`Job search for "${jobTitle}": Found ${jobs.length} jobs`)
+    console.log(`✅ Mapped ${jobs.length} jobs from JSearch response`)
     return jobs.slice(0, limit)
   } catch (error) {
-    console.error('JSearch API error:', error)
+    console.error('💥 fetchJobsByTitle error:', error)
     if (axios.isAxiosError(error)) {
-      console.error('JSearch error response:', error.response?.data)
+      console.error('❌ Axios error response:', error.response?.data)
+      console.error('❌ Axios error status:', error.response?.status)
     }
     return []
   }
