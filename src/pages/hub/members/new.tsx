@@ -495,7 +495,7 @@ const BuildManifesto = () => {
       <nav className="bg-slate-800/50 backdrop-blur border-b border-slate-700">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <button
-            onClick={() => router.push('/hub')}
+            onClick={() => router.back()}
             className="text-slate-300 hover:text-white transition text-sm font-medium"
           >
             ← Back
