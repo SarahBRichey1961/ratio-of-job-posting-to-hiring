@@ -63,11 +63,33 @@ const BuildManifesto = () => {
   const [isEditMode, setIsEditMode] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const [backDestination, setBackDestination] = useState<string | null>(null)
+
+  // Initialize back navigation on mount and when router is ready
+  useEffect(() => {
+    if (router.isReady) {
+      // Check query parameter first (priority)
+      if (returnTo === 'dashboard') {
+        setBackDestination('/dashboard/comparison')
+        return
+      }
+      
+      // Check localStorage as fallback
+      const savedDest = typeof window !== 'undefined' ? localStorage.getItem('hubReturnDestination') : null
+      if (savedDest === 'dashboard') {
+        setBackDestination('/dashboard/comparison')
+        return
+      }
+
+      // Default to back button
+      setBackDestination(null)
+    }
+  }, [router.isReady, returnTo])
 
   // Smart back navigation
   const handleBack = () => {
-    if (returnTo === 'dashboard') {
-      router.push('/dashboard/comparison')
+    if (backDestination) {
+      router.push(backDestination)
     } else {
       router.back()
     }
