@@ -69,7 +69,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('Step 3: Checking public_manifestos table by id...')
     const { data: anonymousManifesto, error: anonError } = await supabase
       .from('public_manifestos')
-      .select('id, content, username, created_at, updated_at')
+      .select('id, content, username, created_at, updated_at, meme_image_url')
       .eq('id', username)
       .single()
 
@@ -82,6 +82,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         manifesto: anonymousManifesto.content,
         updated_at: anonymousManifesto.updated_at,
         isAnonymous: true,
+        meme_image_url: anonymousManifesto.meme_image_url || null,
       })
     }
     console.log('Not found in public_manifestos:', anonError?.message || 'No match')
