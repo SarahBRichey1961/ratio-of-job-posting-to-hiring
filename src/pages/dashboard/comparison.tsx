@@ -101,6 +101,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
 
   // Job search state
   const [jobTitle, setJobTitle] = useState<string>('')
+  const [jobType, setJobType] = useState<string>('') // '' = all, 'remote', 'hybrid', 'onsite'
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [searchLoading, setSearchLoading] = useState(false)
   const [searchError, setSearchError] = useState<string>('')
@@ -165,7 +166,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
   // Search for jobs by title
   const handleSearchJobs = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('🔍 Search button clicked, jobTitle:', jobTitle)
+    console.log('🔍 Search button clicked, jobTitle:', jobTitle, 'jobType:', jobType)
     
     if (!jobTitle.trim()) {
       console.warn('⚠️ Empty job title')
@@ -177,7 +178,10 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
     setSearchError('')
     
     try {
-      const url = `/api/jobs/search?title=${encodeURIComponent(jobTitle)}`
+      let url = `/api/jobs/search?title=${encodeURIComponent(jobTitle)}`
+      if (jobType) {
+        url += `&type=${encodeURIComponent(jobType)}`
+      }
       console.log('📡 Calling API:', url)
       
       const response = await fetch(url)
@@ -257,6 +261,59 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
             {searchError && (
               <p className="mt-2 text-sm text-red-600">{searchError}</p>
             )}
+          </div>
+
+          {/* Job Type Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Job Type (Optional)
+            </label>
+            <div className="flex gap-3">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="jobType"
+                  value=""
+                  checked={jobType === ''}
+                  onChange={(e) => setJobType(e.target.value)}
+                  className="w-4 h-4 text-blue-600 cursor-pointer"
+                />
+                <span className="ml-2 text-sm text-gray-700 cursor-pointer">All</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="jobType"
+                  value="remote"
+                  checked={jobType === 'remote'}
+                  onChange={(e) => setJobType(e.target.value)}
+                  className="w-4 h-4 text-blue-600 cursor-pointer"
+                />
+                <span className="ml-2 text-sm text-gray-700 cursor-pointer">Remote</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="jobType"
+                  value="hybrid"
+                  checked={jobType === 'hybrid'}
+                  onChange={(e) => setJobType(e.target.value)}
+                  className="w-4 h-4 text-blue-600 cursor-pointer"
+                />
+                <span className="ml-2 text-sm text-gray-700 cursor-pointer">Hybrid</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="jobType"
+                  value="onsite"
+                  checked={jobType === 'onsite'}
+                  onChange={(e) => setJobType(e.target.value)}
+                  className="w-4 h-4 text-blue-600 cursor-pointer"
+                />
+                <span className="ml-2 text-sm text-gray-700 cursor-pointer">Onsite</span>
+              </label>
+            </div>
           </div>
 
           {/* Search Results */}

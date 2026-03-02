@@ -44,11 +44,12 @@ export default async function handler(
   }
 
   try {
-    const { title, date, limit = '50' } = req.query
+    const { title, date, limit = '50', type = '' } = req.query
     const targetDate = (date as string) || new Date().toISOString().split('T')[0]
     const resultLimit = Math.min(parseInt(limit as string), 100)
+    const jobType = (type as string) || ''
 
-    console.log('🔍 Searching for:', { title, targetDate, resultLimit })
+    console.log('🔍 Searching for:', { title, targetDate, resultLimit, jobType })
 
     if (!title) {
       console.error('❌ Missing title parameter')
@@ -57,8 +58,8 @@ export default async function handler(
       })
     }
 
-    console.log('🚀 Calling fetchJobsByTitle with:', title)
-    const result = await fetchJobsByTitle(title as string, targetDate, resultLimit)
+    console.log('🚀 Calling fetchJobsByTitle with:', title, 'type:', jobType)
+    const result = await fetchJobsByTitle(title as string, targetDate, resultLimit, jobType)
     console.log(`✅ fetchJobsByTitle returned ${result.jobs.length} jobs`)
 
     const apiResponse = {
@@ -91,7 +92,8 @@ export default async function handler(
 async function fetchJobsByTitle(
   jobTitle: string,
   targetDate: string,
-  limit: number = 50
+  limit: number = 50,
+  jobType: string = ''
 ): Promise<JobSearchResult> {
   try {
     const apiKey = process.env.RAPIDAPI_KEY
@@ -143,6 +145,17 @@ async function fetchJobsByTitle(
     axiosResponse.data.data.forEach((job: any, index: number) => {
       console.log(`📍 Processing job ${index}:`, job.job_title, '-', job.employer_name)
       
+      // Extract employment type from JSearch response
+      // JSearch returns values like 'REMOTE', 'HYBRID', 'ONSITE'
+      const employmentType = job.job_employment_type ? job.job_employment_type.toLowerCase() : ''
+      console.log(`📍 Employment type for job ${index}: ${employmentType}`)
+      
+      // Filter by job type if specified
+      if (jobType && employmentType !== jobType) {
+        console.log(`⏭️ Skipping job ${index} - type ${employmentType} doesn't match filter ${jobType}`)
+        return
+      }
+      
       const postedDate = job.job_posted_at_timestamp
         ? new Date(job.job_posted_at_timestamp * 1000).toISOString().split('T')[0]
         : targetDate
@@ -162,7 +175,7 @@ async function fetchJobsByTitle(
       })
     })
 
-    console.log(`✅ Successfully mapped ${jobs.length} jobs from JSearch response`)
+    console.log(`✅ Successfully mapped ${jobs.length} jobs from JSearch response (after filtering by type: ${jobType || 'all'})`)
     return { jobs: jobs.slice(0, limit), rawResponse: axiosResponse.data }
   } catch (error) {
     console.error('💥 fetchJobsByTitle error:', error)
