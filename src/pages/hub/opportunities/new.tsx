@@ -127,6 +127,15 @@ const NewOpportunity = () => {
 
       <header className="bg-white shadow">
         <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between mb-4">
+            <div></div>
+            <a
+              href="/dashboard/comparison"
+              className="text-gray-600 hover:text-gray-900 font-semibold flex items-center gap-2"
+            >
+              📊 Job Board Scores
+            </a>
+          </div>
           <h1 className="text-3xl font-bold text-gray-900">Post an Opportunity</h1>
           <p className="text-gray-600 mt-2">
             Share a job, freelance opportunity, internship, or mentorship with the hub community
