@@ -109,10 +109,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <nav className="p-4 space-y-2">
           {navItems.map((item) => {
             const isActive = router.pathname === item.href
-            // Add referrer parameter for "Take The Reins" link back to dashboard
-            const href = item.label === 'Take The Reins' ? `${item.href}?returnTo=dashboard` : item.href
             return (
-              <Link key={item.href} href={href}>
+              <Link key={item.href} href={item.href}>
                 <div
                   className={`p-3 rounded-lg transition-colors cursor-pointer ${
                     isActive
