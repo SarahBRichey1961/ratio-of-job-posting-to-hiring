@@ -99,6 +99,13 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
     'All Industries'
   )
 
+  // Job search state
+  const [jobTitle, setJobTitle] = useState<string>('')
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchError, setSearchError] = useState<string>('')
+  const [showSearchResults, setShowSearchResults] = useState(false)
+
   const boards = initialBoards
 
   const filtered = useMemo(() => {
@@ -155,6 +162,38 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
     return ['All Industries', ...industryList].sort()
   }, [industryList])
 
+  // Search for jobs by title
+  const handleSearchJobs = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!jobTitle.trim()) {
+      setSearchError('Please enter a job title')
+      return
+    }
+
+    setSearchLoading(true)
+    setSearchError('')
+    
+    try {
+      const response = await fetch(`/api/jobs/search?title=${encodeURIComponent(jobTitle)}`)
+      const data = await response.json()
+      
+      if (data.success) {
+        setSearchResults(data.jobs || [])
+        setShowSearchResults(true)
+      } else {
+        setSearchError(data.error || 'Failed to search jobs')
+        setSearchResults([])
+      }
+    } catch (error) {
+      console.error('Search error:', error)
+      setSearchError('Failed to search jobs. Please try again.')
+      setSearchResults([])
+    } finally {
+      setSearchLoading(false)
+    }
+  }
+
   const avgScore =
     filtered.length > 0
       ? (
@@ -181,6 +220,84 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
         title="Board Comparison"
         description="Compare efficiency scores across all job boards"
       />
+
+      {/* Job Search Section */}
+      <Section title="Search Jobs by Title">
+        <form onSubmit={handleSearchJobs} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Job Title (e.g., "Senior Technical Program Manager")
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={jobTitle}
+                onChange={(e) => setJobTitle(e.target.value)}
+                placeholder="Enter job title to find posted today..."
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="submit"
+                disabled={searchLoading}
+                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 font-medium transition-colors"
+              >
+                {searchLoading ? 'Searching...' : 'Search'}
+              </button>
+            </div>
+            {searchError && (
+              <p className="mt-2 text-sm text-red-600">{searchError}</p>
+            )}
+          </div>
+
+          {/* Search Results */}
+          {showSearchResults && searchResults.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Found {searchResults.length} jobs for "{jobTitle}"
+              </h3>
+              <div className="space-y-3 max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
+                {searchResults.map((job, index) => (
+                  <div key={job.id || index} className="p-4 border-b border-gray-100 hover:bg-gray-50">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h4 className="font-semibold text-gray-900">{job.title}</h4>
+                        <p className="text-sm text-gray-600">{job.company}</p>
+                      </div>
+                      <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
+                        Posted: {job.postedDate}
+                      </span>
+                    </div>
+                    {job.location && (
+                      <p className="text-sm text-gray-600 mb-2">📍 {job.location}</p>
+                    )}
+                    {job.salary && (
+                      <p className="text-sm text-green-700 font-medium mb-2">💰 {job.salary}</p>
+                    )}
+                    {job.url && (
+                      <a
+                        href={job.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        View Job →
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {showSearchResults && searchResults.length === 0 && !searchError && (
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                No jobs found for "{jobTitle}" posted today. Try a different job title or check back later.
+              </p>
+            </div>
+          )}
+        </form>
+      </Section>
 
       <Section title="Filters">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
