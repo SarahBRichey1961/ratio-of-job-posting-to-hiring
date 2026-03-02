@@ -13,6 +13,7 @@ interface ManifestoData {
   isAnonymous?: boolean
   isEmail?: boolean
   questions_data?: any[]
+  meme_image_url?: string | null
 }
 
 const ManifestoPage = () => {
@@ -150,6 +151,18 @@ const ManifestoPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Meme Display - if available */}
+        {manifesto.meme_image_url && (
+          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 mb-12 text-center">
+            <h2 className="text-2xl font-bold text-white mb-6">Inspirational Meme</h2>
+            <img 
+              src={manifesto.meme_image_url} 
+              alt="Inspirational Meme" 
+              className="max-w-full h-auto rounded-lg shadow-lg mx-auto"
+            />
+          </div>
+        )}
 
         {/* Actions for Owner */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 mb-8 text-center">
