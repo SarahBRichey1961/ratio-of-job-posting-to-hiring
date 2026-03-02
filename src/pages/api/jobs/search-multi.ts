@@ -18,9 +18,11 @@ import {
  * - location: (optional) Job location
  * - limit: (optional) Max results (default: 25)
  * - providers: (optional) Comma-separated list of providers to use
+ * - hoursBack: (optional) Filter to jobs posted within last N hours (default: 0 = all)
+ * - industry: (optional) Industry filter
  *
  * Example:
- * GET /api/jobs/search-multi?query=Engineer&jobType=remote&limit=50
+ * GET /api/jobs/search-multi?query=Engineer&jobType=remote&limit=50&hoursBack=72
  */
 
 export default async function handler(
@@ -32,8 +34,15 @@ export default async function handler(
   }
 
   try {
-    const { query, jobType, location, limit = 25, providers: providerParam } =
-      req.query
+    const {
+      query,
+      jobType,
+      location,
+      limit = 25,
+      providers: providerParam,
+      hoursBack = 0,
+      industry,
+    } = req.query
 
     // Validate required parameters
     if (!query || typeof query !== 'string') {
@@ -53,6 +62,9 @@ export default async function handler(
     console.log(`   Query: ${query}`)
     console.log(`   Type: ${jobTypeValue() || 'Any'}`)
     console.log(`   Location: ${location || 'Any'}`)
+    console.log(
+      `   Time Range: ${hoursBack ? `Last ${hoursBack} hours` : 'All time'}`
+    )
 
     // Initialize all providers (Adzuna first now!)
     const allProviders = [
@@ -81,12 +93,34 @@ export default async function handler(
     const orchestrator = new JobSearchOrchestrator(activeProviders)
 
     // Execute search
-    const result = await orchestrator.search({
+    let result = await orchestrator.search({
       query,
       jobType: jobTypeValue(),
       location: location ? String(location) : undefined,
       limit: Math.min(parseInt(String(limit)) || 25, 100),
     })
+
+    // Filter by date if specified
+    if (hoursBack && parseInt(String(hoursBack)) > 0) {
+      const hoursBackNum = parseInt(String(hoursBack))
+      const now = new Date()
+      const cutoffTime = new Date(now.getTime() - hoursBackNum * 60 * 60 * 1000)
+
+      const filteredJobs = result.jobs.filter((job) => {
+        const postedTime = new Date(job.postedDate)
+        return postedTime >= cutoffTime
+      })
+
+      console.log(
+        `   📅 Filtered ${result.jobs.length} jobs to ${filteredJobs.length} posted in last ${hoursBackNum}h`
+      )
+
+      result = {
+        ...result,
+        jobs: filteredJobs,
+        totalJobs: filteredJobs.length,
+      }
+    }
 
     return res.status(200).json({
       success: true,
