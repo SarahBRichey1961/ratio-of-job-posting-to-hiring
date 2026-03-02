@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import {
+  AdzunaProvider,
   JSearchProvider,
   IndeedProvider,
   LinkedInProvider,
@@ -53,11 +54,12 @@ export default async function handler(
     console.log(`   Type: ${jobTypeValue() || 'Any'}`)
     console.log(`   Location: ${location || 'Any'}`)
 
-    // Initialize all providers
+    // Initialize all providers (Adzuna first now!)
     const allProviders = [
+      new AdzunaProvider(),
       new JSearchProvider(),
-      new IndeedProvider(),
       new StackOverflowProvider(),
+      new IndeedProvider(),
       new LinkedInProvider(),
     ]
 
