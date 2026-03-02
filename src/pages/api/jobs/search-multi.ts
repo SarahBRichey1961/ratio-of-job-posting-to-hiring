@@ -65,6 +65,8 @@ export default async function handler(
     console.log(
       `   Time Range: ${hoursBack ? `Last ${hoursBack} hours` : 'All time'}`
     )
+    console.log(`   Env - ADZUNA_API_KEY: ${process.env.ADZUNA_API_KEY ? '✓' : '✗'}`)
+    console.log(`   Env - ADZUNA_API_ID: ${process.env.ADZUNA_API_ID ? '✓' : '✗'}`)
 
     // Initialize all providers (Adzuna first now!)
     const allProviders = [

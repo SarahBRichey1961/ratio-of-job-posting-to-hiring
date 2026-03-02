@@ -32,12 +32,17 @@ export class JobSearchOrchestrator {
   async search(
     params: JobSearchParams
   ): Promise<AggregatedJobSearchResult> {
+    const enabledProviders = this.getEnabledProviders()
+    const disabledProviders = this.providers.filter((p) => !p.enabled)
+    
     console.log(`\n🚀 Job Search Orchestrator Starting`)
     console.log(
-      `📋 Query: "${params.query}" | Enabled Providers: ${this.getEnabledProviders().length}`
+      `📋 Query: "${params.query}" | Enabled: ${enabledProviders.length} | Disabled: ${disabledProviders.length}`
     )
-
-    const enabledProviders = this.getEnabledProviders()
+    console.log(`   ✓ Enabled: ${enabledProviders.map((p) => p.name).join(', ')}`)
+    if (disabledProviders.length > 0) {
+      console.log(`   ✗ Disabled: ${disabledProviders.map((p) => p.name).join(', ')}`)
+    }
 
     if (enabledProviders.length === 0) {
       console.error('❌ No job providers configured!')
