@@ -86,6 +86,7 @@ async function fetchJobsByTitle(
   try {
     const apiKey = process.env.RAPIDAPI_KEY
     console.log('🔐 RAPIDAPI_KEY present:', !!apiKey)
+    console.log('🔐 RAPIDAPI_KEY value (first 10 chars):', apiKey?.substring(0, 10))
     
     if (!apiKey) {
       console.error('❌ RAPIDAPI_KEY environment variable not set')
@@ -100,7 +101,9 @@ async function fetchJobsByTitle(
       num_pages: 1,
     }
     
-    console.log('🌐 Calling JSearch API with params:', params)
+    console.log('🌐 Calling JSearch API with params:', JSON.stringify(params))
+    console.log('🌐 API URL:', url)
+    console.log('🌐 Using RapidAPI Key:', apiKey.substring(0, 10) + '...')
     
     const response = await axios.get(url, {
       params,
@@ -112,12 +115,24 @@ async function fetchJobsByTitle(
     })
 
     console.log('📊 JSearch API status:', response.status)
-    console.log('📊 JSearch API response data:', response.data)
+    console.log('📊 JSearch API full response:', JSON.stringify(response.data, null, 2))
+    console.log('📊 Response data keys:', Object.keys(response.data || {}))
+    console.log('📊 Response data.data type:', typeof response.data?.data)
+    console.log('📊 Response data.data length:', response.data?.data?.length)
     
     const jobs: JobPosting[] = []
 
+    // Check if response has data
+    if (!response.data?.data) {
+      console.warn('⚠️ JSearch response has no data.data property')
+      console.warn('⚠️ Full response object:', response.data)
+      return []
+    }
+
     // Map JSearch response to JobPosting format
-    response.data?.data?.forEach((job: any, index: number) => {
+    response.data.data.forEach((job: any, index: number) => {
+      console.log(`📍 Processing job ${index}:`, job.job_title, '-', job.employer_name)
+      
       const postedDate = job.job_posted_at_timestamp
         ? new Date(job.job_posted_at_timestamp * 1000).toISOString().split('T')[0]
         : targetDate
@@ -137,13 +152,15 @@ async function fetchJobsByTitle(
       })
     })
 
-    console.log(`✅ Mapped ${jobs.length} jobs from JSearch response`)
+    console.log(`✅ Successfully mapped ${jobs.length} jobs from JSearch response`)
     return jobs.slice(0, limit)
   } catch (error) {
     console.error('💥 fetchJobsByTitle error:', error)
     if (axios.isAxiosError(error)) {
-      console.error('❌ Axios error response:', error.response?.data)
+      console.error('❌ Axios error response data:', JSON.stringify(error.response?.data, null, 2))
       console.error('❌ Axios error status:', error.response?.status)
+      console.error('❌ Axios error headers:', error.response?.headers)
+      console.error('❌ Axios error message:', error.message)
     }
     return []
   }
