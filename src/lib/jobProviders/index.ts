@@ -4,6 +4,7 @@
  *
  * Usage:
  * const orchestrator = new JobSearchOrchestrator([
+ *   new AdzunaProvider(),
  *   new JSearchProvider(),
  *   new IndeedProvider(),
  *   new StackOverflowProvider(),
@@ -19,6 +20,7 @@
 
 export * from './types'
 export * from './BaseJobProvider'
+export * from './AdzunaProvider'
 export * from './JSearchProvider'
 export * from './IndeedProvider'
 export * from './LinkedInProvider'
