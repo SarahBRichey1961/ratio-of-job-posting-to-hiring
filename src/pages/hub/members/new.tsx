@@ -814,7 +814,7 @@ const BuildManifesto = () => {
                 />
                 <div className="flex-1">
                   <p className="text-white font-semibold">Generate Inspirational Meme</p>
-                  <p className="text-slate-400 text-sm">Create a graphic with an inspiring quote from your manifesto (Upper right corner preview)</p>
+                  <p className="text-slate-400 text-sm">Create a graphic with an inspiring quote from your manifesto</p>
                 </div>
               </label>
             </div>
