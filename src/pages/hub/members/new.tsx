@@ -199,8 +199,18 @@ const BuildManifesto = () => {
       </text>
     </svg>`
 
-    // Use btoa for browser-safe base64 encoding
-    return 'data:image/svg+xml;base64,' + btoa(svgMeme)
+    // UTF-8 safe base64 encoding - handles special characters, accents, emojis
+    const encodeToBase64UTF8 = (str: string): string => {
+      try {
+        return btoa(unescape(encodeURIComponent(str)))
+      } catch (err) {
+        // Fallback: just return data URL without base64 encoding
+        console.warn('Base64 encoding failed, using SVG data URI directly')
+        return 'data:image/svg+xml,' + encodeURIComponent(str)
+      }
+    }
+
+    return 'data:image/svg+xml;base64,' + encodeToBase64UTF8(svgMeme)
   }
 
   // Update meme when custom text changes
