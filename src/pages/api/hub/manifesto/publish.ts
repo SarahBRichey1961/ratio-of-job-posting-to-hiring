@@ -197,6 +197,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         content: content,
         questions_data: questionsData ? JSON.stringify(questionsData) : null,
         username: username || null,
+        meme_image_url: memeImageUrl || null,
       })
 
     if (insertError) {
