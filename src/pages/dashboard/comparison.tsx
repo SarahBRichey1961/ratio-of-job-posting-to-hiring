@@ -163,7 +163,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
     return ['All Industries', ...industryList].sort()
   }, [industryList])
 
-  // Search for jobs by title
+  // Search for jobs by title using multi-provider orchestrator
   const handleSearchJobs = async (e: React.FormEvent) => {
     e.preventDefault()
     console.log('🔍 Search button clicked, jobTitle:', jobTitle, 'jobType:', jobType)
@@ -178,11 +178,11 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
     setSearchError('')
     
     try {
-      let url = `/api/jobs/search?title=${encodeURIComponent(jobTitle)}`
+      let url = `/api/jobs/search-multi?query=${encodeURIComponent(jobTitle)}`
       if (jobType) {
-        url += `&type=${encodeURIComponent(jobType)}`
+        url += `&jobType=${encodeURIComponent(jobType)}`
       }
-      console.log('📡 Calling API:', url)
+      console.log('📡 Calling multi-provider API:', url)
       
       const response = await fetch(url)
       console.log('📊 API Response status:', response.status, response.statusText)
@@ -191,7 +191,8 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
       console.log('✅ API Response data:', data)
       
       if (data.success) {
-        console.log(`🎉 Found ${data.jobs?.length || 0} jobs`)
+        console.log(`🎉 Found ${data.totalJobs || 0} jobs from ${data.sources?.length || 0} sources`)
+        console.log(`📊 Provider results:`, data.providerResults)
         setSearchResults(data.jobs || [])
         setShowSearchResults(true)
       } else {
@@ -239,7 +240,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
       <Section title="Search Jobs by Title">
         <form onSubmit={handleSearchJobs} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-900 mb-2">
               Job Title (e.g., "Senior Technical Program Manager")
             </label>
             <div className="flex gap-2">
@@ -248,7 +249,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                 value={jobTitle}
                 onChange={(e) => setJobTitle(e.target.value)}
                 placeholder="Enter job title to find posted today..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 type="submit"
@@ -265,7 +266,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
 
           {/* Job Type Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-gray-900 mb-3">
               Job Type (Optional)
             </label>
             <div className="flex gap-3">
@@ -278,7 +279,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                   onChange={(e) => setJobType(e.target.value)}
                   className="w-4 h-4 text-blue-600 cursor-pointer"
                 />
-                <span className="ml-2 text-sm text-gray-700 cursor-pointer">All</span>
+                <span className="ml-2 text-sm text-gray-900 cursor-pointer font-medium">All</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -289,7 +290,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                   onChange={(e) => setJobType(e.target.value)}
                   className="w-4 h-4 text-blue-600 cursor-pointer"
                 />
-                <span className="ml-2 text-sm text-gray-700 cursor-pointer">Remote</span>
+                <span className="ml-2 text-sm text-gray-900 cursor-pointer font-medium">Remote</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -300,7 +301,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                   onChange={(e) => setJobType(e.target.value)}
                   className="w-4 h-4 text-blue-600 cursor-pointer"
                 />
-                <span className="ml-2 text-sm text-gray-700 cursor-pointer">Hybrid</span>
+                <span className="ml-2 text-sm text-gray-900 cursor-pointer font-medium">Hybrid</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -311,7 +312,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                   onChange={(e) => setJobType(e.target.value)}
                   className="w-4 h-4 text-blue-600 cursor-pointer"
                 />
-                <span className="ml-2 text-sm text-gray-700 cursor-pointer">Onsite</span>
+                <span className="ml-2 text-sm text-gray-900 cursor-pointer font-medium">Onsite</span>
               </label>
             </div>
           </div>
@@ -319,9 +320,12 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
           {/* Search Results */}
           {showSearchResults && searchResults.length > 0 && (
             <div className="mt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Found {searchResults.length} jobs for "{jobTitle}"
               </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Searching across multiple job boards for the best results
+              </p>
               <div className="space-y-3 max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
                 {searchResults.map((job, index) => (
                   <div key={job.id || index} className="p-4 border-b border-gray-100 hover:bg-gray-50">
@@ -330,9 +334,14 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
                         <h4 className="font-semibold text-gray-900">{job.title}</h4>
                         <p className="text-sm text-gray-600">{job.company}</p>
                       </div>
-                      <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
-                        Posted: {job.postedDate}
-                      </span>
+                      <div className="flex items-center gap-2 ml-2">
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          {job.source}
+                        </span>
+                        <span className="text-xs text-gray-500 whitespace-nowrap">
+                          Posted: {job.postedDate}
+                        </span>
+                      </div>
                     </div>
                     {job.location && (
                       <p className="text-sm text-gray-600 mb-2">📍 {job.location}</p>
