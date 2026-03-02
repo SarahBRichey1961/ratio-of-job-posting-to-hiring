@@ -150,35 +150,67 @@ const BuildManifesto = () => {
 
   // Function to generate SVG meme with custom text
   const generateSvgMeme = (text: string): string => {
-    // Simple word wrap for SVG text
-    const wrapText = (txt: string, maxChars: number = 35): string[] => {
+    // Smart word wrap that fits text width and adjusts font size
+    const wrapTextSmart = (txt: string): { lines: string[]; fontSize: number } => {
+      // Determine max chars per line based on text length
+      const textLength = txt.length
+      let maxCharsPerLine = 30
+      let fontSize = 22
+      
+      // Adjust based on total text length
+      if (textLength > 150) {
+        maxCharsPerLine = 25
+        fontSize = 16
+      } else if (textLength > 100) {
+        maxCharsPerLine = 28
+        fontSize = 18
+      } else if (textLength > 60) {
+        maxCharsPerLine = 32
+        fontSize = 20
+      } else {
+        maxCharsPerLine = 35
+        fontSize = 24
+      }
+      
       const words = txt.split(' ')
       const lines: string[] = []
       let currentLine = ''
       
       for (const word of words) {
-        if ((currentLine + ' ' + word).trim().length <= maxChars) {
-          currentLine = (currentLine + ' ' + word).trim()
+        const testLine = (currentLine + ' ' + word).trim()
+        if (testLine.length <= maxCharsPerLine) {
+          currentLine = testLine
         } else {
           if (currentLine) lines.push(currentLine)
           currentLine = word
         }
       }
       if (currentLine) lines.push(currentLine)
-      return lines
+      
+      return { lines, fontSize }
     }
 
-    const textLines = wrapText(text)
-    let startY = 220
-    if (textLines.length === 1) startY = 250
-    else if (textLines.length > 2) startY = 200
-    const lineSpacing = 60
+    const { lines: textLines, fontSize } = wrapTextSmart(text)
+    
+    // Calculate starting Y position based on number of lines
+    let startY = 200
+    let lineSpacing = 32
+    
+    if (textLines.length <= 2) {
+      startY = 240
+      lineSpacing = 40
+    } else if (textLines.length <= 4) {
+      startY = 200
+      lineSpacing = 35
+    } else {
+      startY = 150
+      lineSpacing = 30
+    }
 
     let textElements = ''
     textLines.forEach((line, index) => {
       const yPos = startY + (index * lineSpacing)
-      const fontSize = textLines.length > 2 ? 24 : 28
-      textElements += `<text x="256" y="${yPos}" font-size="${fontSize}" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial, sans-serif" dominant-baseline="middle">
+      textElements += `<text x="256" y="${yPos}" font-size="${fontSize}" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial, sans-serif" dominant-baseline="middle" word-spacing="0" letter-spacing="0">
         ${line}
       </text>\n`
     })
@@ -192,9 +224,16 @@ const BuildManifesto = () => {
       </defs>
       <rect width="512" height="512" fill="url(#bg)"/>
       <circle cx="256" cy="256" r="200" fill="rgba(255,255,255,0.1)"/>
-      ${textElements}
+      <g clip-path="url(#textClip)">
+        ${textElements}
+      </g>
+      <defs>
+        <clipPath id="textClip">
+          <rect x="40" y="60" width="432" height="330"/>
+        </clipPath>
+      </defs>
       <rect x="40" y="420" width="432" height="70" fill="rgba(0,0,0,0.3)" rx="10"/>
-      <text x="256" y="460" font-size="16" fill="white" text-anchor="middle" font-family="Arial, sans-serif">
+      <text x="256" y="460" font-size="14" fill="white" text-anchor="middle" font-family="Arial, sans-serif">
         ✨ Generated Inspiration ✨
       </text>
     </svg>`
