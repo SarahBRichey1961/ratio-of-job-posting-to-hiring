@@ -114,6 +114,11 @@ export const FALLBACK_BOARDS: BoardData[] = [
   { id: 71, name: 'FlexJobs', url: 'https://flexjobs.com', industry: 'Technology', score: 82, grade: 'A', avgLifespan: 18, repostRate: 7.8, totalPostings: 2100, topRole: 'Full-Stack Engineer', trend: 'up', trendValue: 2.1, dataQuality: 88, affiliateUrl: 'https://flexjobs.com', roles: ['Full-Stack Engineer', 'Front-End Engineer', 'Developer', 'Designer', 'Product Manager'] },
 ]
 
+// Extract unique industries from FALLBACK_BOARDS
+export const FALLBACK_INDUSTRIES = Array.from(
+  new Set(FALLBACK_BOARDS.map((board) => board.industry))
+).sort()
+
 /**
  * Calculate aggregated board metrics for insights page
  */
