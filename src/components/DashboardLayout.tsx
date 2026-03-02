@@ -21,6 +21,12 @@ const navItems: NavItem[] = [
     description: 'Compare job boards',
   },
   {
+    label: 'Recently Posted',
+    href: '/dashboard/recently-posted-jobs',
+    icon: '🔥',
+    description: 'Last 72 hours',
+  },
+  {
     label: 'Insights',
     href: '/dashboard/insights',
     icon: '💡',
@@ -32,18 +38,6 @@ const navItems: NavItem[] = [
     icon: '🚀',
     description: 'Learn, build & collaborate',
   },
-  // {
-  //   label: 'Surveys',
-  //   href: '/dashboard/surveys',
-  //   icon: '📝',
-  //   description: 'Submit feedback & surveys',
-  // },
-  // {
-  //   label: 'QA Status',
-  //   href: '/dashboard/qa',
-  //   icon: '✅',
-  //   description: 'System health check',
-  // },
 ]
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
