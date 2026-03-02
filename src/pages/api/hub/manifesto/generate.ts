@@ -182,12 +182,46 @@ Write the manifesto now. Make it powerful, personal, and true.`
       try {
         // Extract a powerful quote from the manifesto (middle sentence)
         const sentences = manifesto.split('.').filter((s: string) => s.trim().length > 0)
-        const memeQuote = sentences.length > 0 
-          ? sentences[Math.floor(sentences.length / 2)].trim().slice(0, 85) 
+        let memeQuote = sentences.length > 0 
+          ? sentences[Math.floor(sentences.length / 2)].trim().slice(0, 100) 
           : 'I will be the difference'
 
-        // Create a simple SVG-based meme immediately (no API call needed!)
-        // This generates in < 1ms and gives instant visual feedback
+        // Simple word wrap for SVG text (break at ~35 chars or word boundary)
+        const wrapText = (text: string, maxChars: number = 35): string[] => {
+          const words = text.split(' ')
+          const lines: string[] = []
+          let currentLine = ''
+          
+          for (const word of words) {
+            if ((currentLine + ' ' + word).trim().length <= maxChars) {
+              currentLine = (currentLine + ' ' + word).trim()
+            } else {
+              if (currentLine) lines.push(currentLine)
+              currentLine = word
+            }
+          }
+          if (currentLine) lines.push(currentLine)
+          return lines
+        }
+
+        const textLines = wrapText(memeQuote)
+        
+        // Calculate vertical positioning based on number of lines
+        let startY = 220
+        if (textLines.length === 1) startY = 250
+        else if (textLines.length > 2) startY = 200
+        const lineSpacing = 60
+
+        // Build SVG with properly wrapped text
+        let textElements = ''
+        textLines.forEach((line, index) => {
+          const yPos = startY + (index * lineSpacing)
+          const fontSize = textLines.length > 2 ? 24 : 28
+          textElements += `<text x="256" y="${yPos}" font-size="${fontSize}" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial, sans-serif" dominant-baseline="middle">
+            ${line}
+          </text>\n`
+        })
+
         const svgMeme = `<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -197,14 +231,9 @@ Write the manifesto now. Make it powerful, personal, and true.`
           </defs>
           <rect width="512" height="512" fill="url(#bg)"/>
           <circle cx="256" cy="256" r="200" fill="rgba(255,255,255,0.1)"/>
-          <text x="256" y="200" font-size="32" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial, sans-serif" dominant-baseline="middle">
-            ${memeQuote.substring(0, 40)}
-          </text>
-          <text x="256" y="280" font-size="28" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial, sans-serif" dominant-baseline="middle">
-            ${memeQuote.substring(40, 85)}
-          </text>
-          <rect x="50" y="420" width="412" height="60" fill="rgba(0,0,0,0.3)" rx="10"/>
-          <text x="256" y="455" font-size="18" fill="white" text-anchor="middle" font-family="Arial, sans-serif" font-style="italic">
+          ${textElements}
+          <rect x="40" y="420" width="432" height="70" fill="rgba(0,0,0,0.3)" rx="10"/>
+          <text x="256" y="460" font-size="16" fill="white" text-anchor="middle" font-family="Arial, sans-serif">
             ✨ Generated Inspiration ✨
           </text>
         </svg>`

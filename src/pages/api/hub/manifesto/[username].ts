@@ -25,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('Step 1: Checking manifestos table by slug (email or custom username)...')
     const { data: newManifesto, error: newError } = await supabase
       .from('manifestos')
-      .select('id, title, content, slug, published, created_at, updated_at, questions_data')
+      .select('id, title, content, slug, published, created_at, updated_at, questions_data, meme_image_url')
       .eq('slug', username)
       .eq('published', true)
       .single()
@@ -45,6 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         updated_at: newManifesto.updated_at,
         isPublished: newManifesto.published,
         isEmail: username.includes('@'),
+        meme_image_url: newManifesto.meme_image_url || null,
       })
     }
     console.log('Not found in manifestos:', newError?.message || 'No match')
