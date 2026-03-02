@@ -62,6 +62,11 @@ export default async function handler(
       date: targetDate,
       jobCount: jobs.length,
       jobs: jobs,
+      debug: {
+        rawJobsCount: response.data?.data?.length || 0,
+        responseKeys: Object.keys(response.data || {}),
+        responsePreview: JSON.stringify(response.data).substring(0, 500),
+      }
     }
 
     console.log('📤 Sending response with', jobs.length, 'jobs')
