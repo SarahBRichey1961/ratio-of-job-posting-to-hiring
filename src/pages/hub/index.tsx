@@ -5,6 +5,16 @@ import { useRouter } from 'next/router'
 
 export default function TakeTheReins() {
   const router = useRouter()
+  const { returnTo } = router.query
+
+  // Smart back navigation: if coming from dashboard, go back to dashboard
+  const handleBack = () => {
+    if (returnTo === 'dashboard') {
+      router.push('/dashboard/comparison')
+    } else {
+      router.back()
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -17,7 +27,7 @@ export default function TakeTheReins() {
       <nav className="bg-slate-800/50 backdrop-blur border-b border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <button
-            onClick={() => router.back()}
+            onClick={handleBack}
             className="text-slate-300 hover:text-white transition text-sm font-medium"
           >
             ← Back
