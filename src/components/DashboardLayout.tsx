@@ -109,42 +109,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <nav className="p-4 space-y-2">
           {navItems.map((item) => {
             const isActive = router.pathname === item.href
-            
-            // For "Take The Reins", use onClick to set localStorage
-            if (item.label === 'Take The Reins') {
-              return (
-                <div
-                  key={item.href}
-                  onClick={() => {
-                    // Store that user came from dashboard for back navigation
-                    if (typeof window !== 'undefined') {
-                      localStorage.setItem('hubReturnDestination', 'dashboard')
-                    }
-                    router.push(`${item.href}?returnTo=dashboard`)
-                  }}
-                  className={`p-3 rounded-lg transition-colors cursor-pointer ${
-                    isActive
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                  }`}
-                  title={item.label}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{item.icon}</span>
-                    {sidebarOpen && (
-                      <div>
-                        <p className="font-medium">{item.label}</p>
-                        <p className="text-xs opacity-75">{item.description}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-            }
-
-            // Regular links for other nav items
+            // Add referrer parameter for "Take The Reins" link back to dashboard
+            const href = item.label === 'Take The Reins' ? `${item.href}?returnTo=dashboard` : item.href
             return (
-              <Link key={item.href} href={item.href}>
+              <Link key={item.href} href={href}>
                 <div
                   className={`p-3 rounded-lg transition-colors cursor-pointer ${
                     isActive
