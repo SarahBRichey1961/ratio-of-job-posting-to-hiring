@@ -26,6 +26,11 @@ interface JobPosting {
   source: 'api'
 }
 
+interface JobSearchResult {
+  jobs: JobPosting[]
+  rawResponse?: any
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -53,24 +58,24 @@ export default async function handler(
     }
 
     console.log('🚀 Calling fetchJobsByTitle with:', title)
-    const jobs = await fetchJobsByTitle(title as string, targetDate, resultLimit)
-    console.log(`✅ fetchJobsByTitle returned ${jobs.length} jobs`)
+    const result = await fetchJobsByTitle(title as string, targetDate, resultLimit)
+    console.log(`✅ fetchJobsByTitle returned ${result.jobs.length} jobs`)
 
-    const response = {
+    const apiResponse = {
       success: true,
       title: title,
       date: targetDate,
-      jobCount: jobs.length,
-      jobs: jobs,
+      jobCount: result.jobs.length,
+      jobs: result.jobs,
       debug: {
-        rawJobsCount: response.data?.data?.length || 0,
-        responseKeys: Object.keys(response.data || {}),
-        responsePreview: JSON.stringify(response.data).substring(0, 500),
+        rawJobsCount: result.rawResponse?.data?.length || 0,
+        responseKeys: result.rawResponse ? Object.keys(result.rawResponse) : [],
+        responsePreview: result.rawResponse ? JSON.stringify(result.rawResponse).substring(0, 500) : 'No response',
       }
     }
 
-    console.log('📤 Sending response with', jobs.length, 'jobs')
-    return res.status(200).json(response)
+    console.log('📤 Sending response with', result.jobs.length, 'jobs')
+    return res.status(200).json(apiResponse)
   } catch (error) {
     console.error('💥 Handler error:', error)
     return res.status(500).json({
@@ -87,7 +92,7 @@ async function fetchJobsByTitle(
   jobTitle: string,
   targetDate: string,
   limit: number = 50
-): Promise<JobPosting[]> {
+): Promise<JobSearchResult> {
   try {
     const apiKey = process.env.RAPIDAPI_KEY
     console.log('🔐 RAPIDAPI_KEY present:', !!apiKey)
@@ -95,7 +100,7 @@ async function fetchJobsByTitle(
     
     if (!apiKey) {
       console.error('❌ RAPIDAPI_KEY environment variable not set')
-      return []
+      return { jobs: [] }
     }
 
     // Use the job title directly as the search query
@@ -110,7 +115,7 @@ async function fetchJobsByTitle(
     console.log('🌐 API URL:', url)
     console.log('🌐 Using RapidAPI Key:', apiKey.substring(0, 10) + '...')
     
-    const response = await axios.get(url, {
+    const axiosResponse = await axios.get(url, {
       params,
       headers: {
         'X-RapidAPI-Key': apiKey,
@@ -119,23 +124,23 @@ async function fetchJobsByTitle(
       timeout: 15000,
     })
 
-    console.log('📊 JSearch API status:', response.status)
-    console.log('📊 JSearch API full response:', JSON.stringify(response.data, null, 2))
-    console.log('📊 Response data keys:', Object.keys(response.data || {}))
-    console.log('📊 Response data.data type:', typeof response.data?.data)
-    console.log('📊 Response data.data length:', response.data?.data?.length)
+    console.log('📊 JSearch API status:', axiosResponse.status)
+    console.log('📊 JSearch API full response:', JSON.stringify(axiosResponse.data, null, 2))
+    console.log('📊 Response data keys:', Object.keys(axiosResponse.data || {}))
+    console.log('📊 Response data.data type:', typeof axiosResponse.data?.data)
+    console.log('📊 Response data.data length:', axiosResponse.data?.data?.length)
     
     const jobs: JobPosting[] = []
 
     // Check if response has data
-    if (!response.data?.data) {
+    if (!axiosResponse.data?.data) {
       console.warn('⚠️ JSearch response has no data.data property')
-      console.warn('⚠️ Full response object:', response.data)
-      return []
+      console.warn('⚠️ Full response object:', axiosResponse.data)
+      return { jobs: [], rawResponse: axiosResponse.data }
     }
 
     // Map JSearch response to JobPosting format
-    response.data.data.forEach((job: any, index: number) => {
+    axiosResponse.data.data.forEach((job: any, index: number) => {
       console.log(`📍 Processing job ${index}:`, job.job_title, '-', job.employer_name)
       
       const postedDate = job.job_posted_at_timestamp
@@ -158,7 +163,7 @@ async function fetchJobsByTitle(
     })
 
     console.log(`✅ Successfully mapped ${jobs.length} jobs from JSearch response`)
-    return jobs.slice(0, limit)
+    return { jobs: jobs.slice(0, limit), rawResponse: axiosResponse.data }
   } catch (error) {
     console.error('💥 fetchJobsByTitle error:', error)
     if (axios.isAxiosError(error)) {
@@ -167,6 +172,6 @@ async function fetchJobsByTitle(
       console.error('❌ Axios error headers:', error.response?.headers)
       console.error('❌ Axios error message:', error.message)
     }
-    return []
+    return { jobs: [] }
   }
 }
