@@ -3,44 +3,55 @@ import axios from 'axios'
 import { getSupabase } from '@/lib/supabase'
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
+const STABILITY_API_KEY = process.env.STABILITY_API_KEY
 const BASE_URL = process.env.NEXT_PUBLIC_MANIFESTO_BASE_URL || 'https://takethereigns.ai'
 
-// Background function to generate DALL-E meme (fire and forget, don't wait)
-async function generateDALLEMemeAsync(memeQuote: string, userId: string): Promise<void> {
+// Background function to generate Stability AI meme (fire and forget, don't wait)
+// Stability AI is 3-5x faster than DALL-E
+async function generateStabilityMemeAsync(memeQuote: string, userId: string): Promise<void> {
   try {
-    console.log('Background: Starting DALL-E meme generation (async, non-blocking)')
-    // This runs in background - don't await in the handler
-    // Could be stored in cache/DB if needed, but for now just logs success
+    console.log('Background: Starting Stability AI meme generation (async, non-blocking)')
     
+    if (!STABILITY_API_KEY) {
+      console.warn('Background: STABILITY_API_KEY not configured, skipping')
+      return
+    }
+
     const imageResponse = await Promise.race([
       axios.post(
-        'https://api.openai.com/v1/images/generations',
+        'https://api.stability.ai/v1/generate',
         {
-          prompt: `Create an inspirational meme graphic with the text "${memeQuote}". Modern design, bold typography, meaningful visual elements. Square format.`,
-          n: 1,
-          size: '256x256',
-          quality: 'standard',
+          prompt: `Inspirational meme with text "${memeQuote}". Modern design, gradient background, bold white text, professional.`,
+          negative_prompt: 'blurry, low quality, distorted text',
+          steps: 20,
+          guidance_scale: 7,
+          width: 512,
+          height: 512,
+          samples: 1,
+          sampler: 'k_dpmpp_2m',
         },
         {
           headers: {
-            Authorization: `Bearer ${OPENAI_API_KEY}`,
+            Authorization: `Bearer ${STABILITY_API_KEY}`,
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
-          timeout: 45000,
+          timeout: 30000, // Stability AI typically responds in 10-20s
         }
       ),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 50000)
+        setTimeout(() => reject(new Error('Stability AI timeout')), 35000)
       )
     ] as const)
 
-    const url = (imageResponse as any).data.data?.[0]?.url
-    if (url) {
-      console.log('Background: DALL-E meme generated successfully (not sent to user)')
+    const artifacts = (imageResponse as any).data.artifacts
+    if (artifacts && artifacts.length > 0) {
+      const base64Image = artifacts[0].base64
+      console.log('Background: Stability AI meme generated successfully')
       // In the future, could save to DB or cache for next time user visits
     }
   } catch (err: any) {
-    console.warn('Background: DALL-E meme generation skipped -', err.message)
+    console.warn('Background: Stability AI meme generation skipped -', err.message)
     // Silently fail - meme was optional enhancement
   }
 }
@@ -203,10 +214,11 @@ Write the manifesto now. Make it powerful, personal, and true.`
         memeType = 'svg'
         console.log('Generated instant SVG meme (no API call needed)')
         
-        // NOW - generate DALL-E version in background (fire and forget, don't wait)
-        if (OPENAI_API_KEY) {
-          generateDALLEMemeAsync(memeQuote, userId).catch(err => {
-            console.warn('Background DALL-E meme generation skipped:', err.message)
+        // NOW - generate Stability AI version in background (fire and forget, don't wait)
+        // Stability AI is much faster than DALL-E (10-20s vs 30-60s)
+        if (STABILITY_API_KEY) {
+          generateStabilityMemeAsync(memeQuote, userId).catch(err => {
+            console.warn('Background Stability AI meme generation skipped:', err.message)
           })
         }
       } catch (memeError: any) {
