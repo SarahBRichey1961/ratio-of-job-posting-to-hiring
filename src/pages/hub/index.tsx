@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -6,33 +6,11 @@ import { useRouter } from 'next/router'
 export default function TakeTheReins() {
   const router = useRouter()
   const { returnTo } = router.query
-  const [backDestination, setBackDestination] = useState<string | null>(null)
 
-  // Initialize back navigation on mount and when router is ready
-  useEffect(() => {
-    if (router.isReady) {
-      // Check query parameter first (priority)
-      if (returnTo === 'dashboard') {
-        setBackDestination('/dashboard/comparison')
-        return
-      }
-      
-      // Check localStorage as fallback
-      const savedDest = typeof window !== 'undefined' ? localStorage.getItem('hubReturnDestination') : null
-      if (savedDest === 'dashboard') {
-        setBackDestination('/dashboard/comparison')
-        return
-      }
-
-      // Default to back button
-      setBackDestination(null)
-    }
-  }, [router.isReady, returnTo])
-
-  // Smart back navigation
+  // Smart back navigation: if coming from dashboard, go back to dashboard
   const handleBack = () => {
-    if (backDestination) {
-      router.push(backDestination)
+    if (returnTo === 'dashboard') {
+      router.push('/dashboard/comparison')
     } else {
       router.back()
     }
