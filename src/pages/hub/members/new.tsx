@@ -90,6 +90,7 @@ const BuildManifesto = () => {
   // Meme generation state
   const [generateMeme, setGenerateMeme] = useState(false)
   const [memeImage, setMemeImage] = useState<string | null>(null)
+  const [customMemeText, setCustomMemeText] = useState<string>('')
 
   // Check auth status and initialize userId
   useEffect(() => {
@@ -146,6 +147,70 @@ const BuildManifesto = () => {
       // Continue without loading - create new instead
     }
   }
+
+  // Function to generate SVG meme with custom text
+  const generateSvgMeme = (text: string): string => {
+    // Simple word wrap for SVG text
+    const wrapText = (txt: string, maxChars: number = 35): string[] => {
+      const words = txt.split(' ')
+      const lines: string[] = []
+      let currentLine = ''
+      
+      for (const word of words) {
+        if ((currentLine + ' ' + word).trim().length <= maxChars) {
+          currentLine = (currentLine + ' ' + word).trim()
+        } else {
+          if (currentLine) lines.push(currentLine)
+          currentLine = word
+        }
+      }
+      if (currentLine) lines.push(currentLine)
+      return lines
+    }
+
+    const textLines = wrapText(text)
+    let startY = 220
+    if (textLines.length === 1) startY = 250
+    else if (textLines.length > 2) startY = 200
+    const lineSpacing = 60
+
+    let textElements = ''
+    textLines.forEach((line, index) => {
+      const yPos = startY + (index * lineSpacing)
+      const fontSize = textLines.length > 2 ? 24 : 28
+      textElements += `<text x="256" y="${yPos}" font-size="${fontSize}" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial, sans-serif" dominant-baseline="middle">
+        ${line}
+      </text>\n`
+    })
+
+    const svgMeme = `<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      <rect width="512" height="512" fill="url(#bg)"/>
+      <circle cx="256" cy="256" r="200" fill="rgba(255,255,255,0.1)"/>
+      ${textElements}
+      <rect x="40" y="420" width="432" height="70" fill="rgba(0,0,0,0.3)" rx="10"/>
+      <text x="256" y="460" font-size="16" fill="white" text-anchor="middle" font-family="Arial, sans-serif">
+        ✨ Generated Inspiration ✨
+      </text>
+    </svg>`
+
+    // Use btoa for browser-safe base64 encoding
+    return 'data:image/svg+xml;base64,' + btoa(svgMeme)
+  }
+
+  // Update meme when custom text changes
+  useEffect(() => {
+    if (memeImage && customMemeText) {
+      // User has edited the text, regenerate SVG with new text
+      const updatedMeme = generateSvgMeme(customMemeText)
+      setMemeImage(updatedMeme)
+    }
+  }, [customMemeText, memeImage])
 
   const handleAnswerChange = (id: string, value: string) => {
     setQuestions((prev) =>
@@ -234,6 +299,7 @@ const BuildManifesto = () => {
     setLoading(true)
     setError('')
     setMemeImage(null) // Reset meme image
+    setCustomMemeText('') // Reset custom meme text
 
     try {
       // Build answers object from included questions
@@ -316,6 +382,7 @@ const BuildManifesto = () => {
         content: manifestoContent,
         questionsData,
         memeImageUrl: memeImage,
+        memeCustomText: customMemeText || null,
       }, axiosConfig)
 
       if (res.data.success) {
@@ -779,8 +846,26 @@ const BuildManifesto = () => {
                       <img 
                         src={memeImage} 
                         alt="Inspirational Meme" 
-                        className="max-w-xs h-auto rounded-lg border-2 border-indigo-500 shadow-lg mx-auto mb-3"
+                        className="max-w-xs h-auto rounded-lg border-2 border-indigo-500 shadow-lg mx-auto mb-4"
                       />
+                      
+                      {/* Editable Meme Text Section */}
+                      <div className="bg-slate-800 rounded-lg p-4 mb-3">
+                        <label className="block text-sm font-semibold text-slate-300 mb-2">
+                          Customize meme text (optional)
+                        </label>
+                        <textarea
+                          value={customMemeText}
+                          onChange={(e) => setCustomMemeText(e.target.value)}
+                          placeholder="Edit the text that appears on the meme..."
+                          className="w-full bg-slate-700 text-white rounded px-3 py-2 text-sm placeholder-slate-500 border border-slate-600 focus:border-indigo-500 focus:outline-none resize-none"
+                          rows={3}
+                        />
+                        <p className="text-xs text-slate-400 mt-2">
+                          Leave empty to use auto-extracted text from your manifesto
+                        </p>
+                      </div>
+                      
                       <p className="text-slate-400 text-sm">
                         ✓ Meme generated - Will be included when published
                       </p>
