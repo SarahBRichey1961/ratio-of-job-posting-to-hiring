@@ -94,7 +94,7 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = ({ industries 
       const data = await response.json()
       console.log('✅ API Response:', data)
 
-      if (data.success) {
+      if (data.success && data.jobs && data.jobs.length > 0) {
         // Filter by posted date (last 72 hours)
         const now = new Date()
         const seventyTwoHoursAgo = new Date(now.getTime() - 72 * 60 * 60 * 1000)
@@ -117,8 +117,12 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = ({ industries 
           )
         }
       } else {
-        console.error('❌ API returned error:', data.error)
-        setSearchError(data.error || 'Failed to search jobs')
+        let errorMsg = data.error || 'No jobs found'
+        if (!data.success) {
+          errorMsg = 'No jobs found matching your search criteria. Try different search terms.'
+        }
+        console.error('❌ API returned error:', errorMsg)
+        setSearchError(errorMsg)
         setSearchResults([])
       }
     } catch (error) {

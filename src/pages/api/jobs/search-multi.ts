@@ -122,11 +122,15 @@ export default async function handler(
       }
     }
 
-    return res.status(200).json({
-      success: true,
+    const response = {
+      success: result.jobs.length > 0 || result.totalJobs > 0,
       ...result,
       configuration: orchestrator.getConfiguration(),
-    })
+    }
+    
+    console.log(`   ✅ Final response - Success: ${response.success}, Jobs: ${response.jobs?.length || 0}`)
+
+    return res.status(200).json(response)
   } catch (error) {
     console.error('❌ Search error:', error)
     return res.status(500).json({
