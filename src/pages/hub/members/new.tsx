@@ -503,7 +503,12 @@ const BuildManifesto = () => {
           <h1 className="text-xl font-bold text-white">
             {isEditMode ? 'Edit Your Manifesto' : 'Build Your Manifesto'}
           </h1>
-          <div className="w-12"></div>
+          <a
+            href="/dashboard/comparison"
+            className="text-slate-300 hover:text-white transition text-sm font-medium"
+          >
+            📊 Job Board Scores
+          </a>
         </div>
       </nav>
 

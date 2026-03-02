@@ -25,6 +25,12 @@ export default function TakeTheReins() {
           <h1 className="text-2xl font-bold text-white">Take The Reins</h1>
           <div className="flex gap-3">
             <Link
+              href="/dashboard/comparison"
+              className="text-slate-300 hover:text-white transition text-sm font-medium px-3 py-2 rounded hover:bg-slate-700/20"
+            >
+              📊 Job Board Scores
+            </Link>
+            <Link
               href="/hub/recent"
               className="text-slate-300 hover:text-white transition text-sm font-medium px-3 py-2 rounded hover:bg-slate-700/20"
             >
