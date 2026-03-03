@@ -22,6 +22,7 @@ export interface JobSearchParams {
   jobType?: 'remote' | 'hybrid' | 'onsite'
   limit?: number
   postedWithinDays?: number
+  hoursBack?: number // Hours to look back for recently posted jobs
 }
 
 export interface JobProviderResponse {

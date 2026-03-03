@@ -68,6 +68,10 @@ export class SerperProvider extends BaseJobProvider {
         searchQuery += ' on-site'
       }
 
+      // Add date filter for recently posted jobs (3 days by default)
+      const daysBack = Math.ceil((params.hoursBack || 72) / 24)
+      searchQuery += ` posted:${daysBack}d`
+
       const payload = {
         q: searchQuery,
         gl: 'us',
@@ -117,7 +121,17 @@ export class SerperProvider extends BaseJobProvider {
           try {
             // Handle both jobs array and organic search results
             // Organic results: {title, link, snippet}
-            // Jobs results (if available): {title, company, location, link, snippet}
+            // Jobs results (if available): {title, company, location, link, snippet, date}
+            // Estimate posted date from metadata if available, otherwise estimate as recent
+            let postedDate = new Date().toISOString()
+            if (result.date) {
+              try {
+                postedDate = new Date(result.date).toISOString()
+              } catch {
+                // Keep default current date
+              }
+            }
+
             return {
               id: result.link || `serper-${result.title}-${Date.now()}`,
               title: result.title || 'Position Available',
@@ -125,7 +139,7 @@ export class SerperProvider extends BaseJobProvider {
               location: result.location || this.extractLocationFromSnippet(result.snippet),
               url: result.link || '',
               description: result.snippet || '',
-              postedDate: new Date().toISOString(), // Serper doesn't provide dates
+              postedDate,
               jobType: this.extractJobType(result),
               source: this.name,
             }
