@@ -20,6 +20,7 @@ const ProjectsPage = () => {
   const [projects, setProjects] = useState<HubProject[]>([])
   const [loading, setLoading] = useState(true)
   const [showMyProjects, setShowMyProjects] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
   const [filters, setFilters] = useState({
     status: '',
     category: '',
@@ -28,6 +29,19 @@ const ProjectsPage = () => {
   })
   const [currentPage, setCurrentPage] = useState(0)
   const LIMIT = 12
+
+  // Get user ID on mount to auto-select "My Projects" if logged in
+  useEffect(() => {
+    const getUser = async () => {
+      const supabase = getSupabase()
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user?.id) {
+        setUserId(session.user.id)
+        setShowMyProjects(true) // Auto-select "My Projects" for logged-in users
+      }
+    }
+    getUser()
+  }, [])
 
   useEffect(() => {
     fetchProjects()
