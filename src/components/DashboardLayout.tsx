@@ -40,69 +40,29 @@ const navItems: NavItem[] = [
   },
 ]
 
+/**
+ * DashboardLayout Component
+ * Pure CSS layout - no state = no hydration mismatches
+ */
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
-  const [sidebarOpen, setSidebarOpen] = React.useState(false)
-  const [mounted, setMounted] = React.useState(false)
-
-  // Only set sidebar state AFTER mounted to avoid hydration mismatch
-  React.useEffect(() => {
-    setMounted(true)
-
-    // Handle window resize
-    const handleResize = () => {
-      setSidebarOpen(window.innerWidth >= 768)
-    }
-
-    window.addEventListener('resize', handleResize)
-    // Set initial state based on current window size
-    handleResize()
-    
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
 
   return (
-    <div className="flex h-screen bg-gray-900 flex-col md:flex-row">
-      {/* Mobile Overlay - only render after hydration to avoid mismatch */}
-      {mounted && sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 md:hidden z-30"
-          onClick={() => setSidebarOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        className={`fixed left-0 top-0 bottom-0 md:relative md:flex z-40 md:z-auto flex-col h-screen bg-gray-800 transition-all duration-300 overflow-y-auto border-r border-gray-700
-          ${!mounted ? 'w-0' : sidebarOpen ? 'w-64' : 'w-0'} 
-          md:w-64`}
-        role="navigation"
-        aria-label="Main navigation"
-      >
+    <div className="flex h-screen bg-gray-900">
+      {/* Sidebar - Desktop only (hidden md:flex means invisible on mobile, visible on md+) */}
+      <aside className="w-64 hidden md:flex flex-col h-screen bg-gray-800 overflow-y-auto border-r border-gray-700">
         {/* Logo */}
-        <div className="p-4 border-b border-gray-700">
+        <div className="p-4 border-b border-gray-700 flex-shrink-0">
           <Link href="/dashboard">
-            <div className="flex items-center gap-3 cursor-pointer">
+            <div className="flex items-center gap-3 cursor-pointer hover:opacity-80">
               <div className="text-2xl">📊</div>
-              {mounted && sidebarOpen && <h1 className="text-xl font-bold text-white">Job Board Score</h1>}
+              <h1 className="text-xl font-bold text-white whitespace-nowrap">Job Board Score</h1>
             </div>
           </Link>
         </div>
 
-        {/* Toggle Button */}
-        <div className="p-2">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="w-full p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-700 transition-colors"
-            title={sidebarOpen ? 'Collapse' : 'Expand'}
-          >
-            {mounted ? (sidebarOpen ? '←' : '→') : '→'}
-          </button>
-        </div>
-
-        {/* Navigation Items */}
-        <nav className="p-4 space-y-2">
+        {/* Navigation */}
+        <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = router.pathname === item.href
             return (
@@ -110,19 +70,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <div
                   className={`p-3 rounded-lg transition-colors cursor-pointer ${
                     isActive
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                   }`}
-                  title={item.label}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-xl">{item.icon}</span>
-                    {sidebarOpen && (
-                      <div>
-                        <p className="font-medium">{item.label}</p>
-                        <p className="text-xs opacity-75">{item.description}</p>
-                      </div>
-                    )}
+                    <span className="text-xl flex-shrink-0">{item.icon}</span>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm">{item.label}</p>
+                      <p className="text-xs text-gray-400">{item.description}</p>
+                    </div>
                   </div>
                 </div>
               </Link>
@@ -131,96 +88,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </nav>
 
         {/* Footer */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700 bg-gray-800">
-          {sidebarOpen && (
-            <div className="text-xs text-gray-500">
-              <p className="font-semibold mb-1">Job Board Score MVP</p>
-              <p>Week 3 - Frontend Build</p>
-            </div>
-          )}
+        <div className="p-4 border-t border-gray-700 flex-shrink-0">
+          <div className="text-xs text-gray-400">
+            <p className="font-semibold">Job Board Analytics</p>
+            <p className="text-gray-500 mt-1">v1.0.0</p>
+          </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header 
-          className="bg-gray-800 border-b border-gray-700 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between gap-4"
-          role="banner"
-        >
-          {/* Mobile Menu Toggle */}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="md:hidden flex-shrink-0 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-            aria-label="Toggle navigation menu"
-            aria-expanded={sidebarOpen}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-
-          <h2 className="text-xl sm:text-2xl font-bold text-white truncate flex-1">
-            {navItems.find((item) => item.href === router.pathname)?.label || 'Dashboard'}
-          </h2>
-
-          <div className="flex items-center gap-3 sm:gap-6">
-            <div className="hidden sm:block text-xs sm:text-sm text-gray-400 whitespace-nowrap">
-              {new Date().toLocaleDateString('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              })}
-            </div>
-
-            {/* User Menu - Hidden */}
-            {/* 
-            <div className="relative">
-              <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors"
-                aria-haspopup="menu"
-                aria-expanded={showUserMenu}
-                aria-label="User menu"
-              >
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                  {profile?.email?.charAt(0).toUpperCase() || '👤'}
-                </div>
-                <div className="text-left hidden sm:block min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-white truncate">{profile?.email?.split('@')[0] || 'User'}</p>
-                  <p className="text-xs text-gray-400">{profile?.role === 'admin' ? 'Admin' : 'Viewer'}</p>
-                </div>
-              </button>
-
-              <div 
-                className="absolute right-0 mt-2 w-48 bg-gray-700 rounded-lg shadow-xl border border-gray-600 z-50"
-                role="menu"
-                aria-orientation="vertical"
-              >
-                <div className="p-3 border-b border-gray-600">
-                  <p className="text-sm font-medium text-white truncate">{profile?.email}</p>
-                  <p className="text-xs text-gray-400 mt-1">{profile?.role === 'admin' ? 'Administrator' : 'Viewer'}</p>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="w-full px-4 py-2 text-left text-red-400 hover:bg-gray-600 transition-colors text-sm"
-                >
-                  Sign Out
-                </button>
-              </div>
-            </div>
-            */}
-          </div>
-        </header>
-
-        {/* Content Area */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-4 sm:p-6 lg:p-8 bg-gray-900 min-h-full max-w-7xl mx-auto w-full">
-            {children}
-          </div>
-        </main>
-      </div>
+      <main className="flex-1 overflow-y-auto">{children}</main>
     </div>
   )
 }
