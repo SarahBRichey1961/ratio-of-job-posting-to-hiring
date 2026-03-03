@@ -2,6 +2,7 @@ import React from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { AdRotationBanner } from '@/components/AdRotationBanner'
 
 export default function TakeTheReins() {
   const router = useRouter()
@@ -45,6 +46,9 @@ export default function TakeTheReins() {
           </div>
         </div>
       </nav>
+
+      {/* Ad Banner */}
+      <AdRotationBanner pageType="hub" />
 
       {/* Hero Section */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">

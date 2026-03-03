@@ -1,0 +1,107 @@
+import { NextApiRequest, NextApiResponse } from 'next'
+import { createClient } from '@supabase/supabase-js'
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+  const supabase = createClient(supabaseUrl, supabaseKey)
+
+  // Get auth token
+  const authHeader = req.headers.authorization
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+
+  const token = authHeader.substring(7)
+
+  // Create authenticated client
+  const authSupabase = createClient(supabaseUrl, supabaseKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false
+    }
+  })
+
+  // Get authenticated user
+  const { data: { user }, error: userError } = await authSupabase.auth.getUser()
+  if (userError || !user) {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+
+  // Get advertiser account
+  const { data: advertiser, error: advertiserError } = await supabase
+    .from('advertiser_accounts')
+    .select('id')
+    .eq('user_id', user.id)
+    .single()
+
+  if (advertiserError || !advertiser) {
+    return res.status(403).json({ error: 'You must be an advertiser to create ads' })
+  }
+
+  if (req.method === 'POST') {
+    try {
+      const {
+        title,
+        description,
+        banner_image_url,
+        banner_height,
+        click_url,
+        alt_text,
+        expires_at
+      } = req.body
+
+      if (!title || !banner_image_url || !click_url) {
+        return res.status(400).json({
+          error: 'Title, banner image URL, and click URL are required'
+        })
+      }
+
+      const { data, error } = await supabase
+        .from('advertisements')
+        .insert({
+          advertiser_id: advertiser.id,
+          title,
+          description,
+          banner_image_url,
+          banner_height: banner_height || 80,
+          click_url,
+          alt_text: alt_text || title,
+          is_active: true,
+          expires_at: expires_at || null
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      return res.status(201).json(data)
+    } catch (error) {
+      console.error('Error creating ad:', error)
+      res.status(500).json({ error: (error as Error).message })
+    }
+  } else if (req.method === 'GET') {
+    try {
+      // Get all ads for this advertiser
+      const { data, error } = await supabase
+        .from('advertisements')
+        .select('*')
+        .eq('advertiser_id', advertiser.id)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      return res.status(200).json(data)
+    } catch (error) {
+      console.error('Error fetching ads:', error)
+      res.status(500).json({ error: (error as Error).message })
+    }
+  } else {
+    res.status(405).json({ error: 'Method not allowed' })
+  }
+}

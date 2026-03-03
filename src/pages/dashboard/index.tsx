@@ -1,6 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { DashboardLayout } from '@/components/DashboardLayout'
+import { AdRotationBanner } from '@/components/AdRotationBanner'
 import {
   PageHeader,
   StatsSection,
@@ -12,6 +13,7 @@ import {
 export default function DashboardHome() {
   return (
     <DashboardLayout>
+      <AdRotationBanner pageType="search" />
       <PageHeader
         title="Dashboard"
         description="Overall job board efficiency metrics and market overview"
