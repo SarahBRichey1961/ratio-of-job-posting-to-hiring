@@ -20,6 +20,7 @@ interface JobListing {
 interface RecentlyPostedJobsProps {}
 
 const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
+  const [mounted, setMounted] = useState(false)
   const [jobTitle, setJobTitle] = useState<string>('')
   const [jobType, setJobType] = useState<string>('')
   const [location, setLocation] = useState<string>('')
@@ -27,6 +28,11 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
   const [searchLoading, setSearchLoading] = useState(false)
   const [searchError, setSearchError] = useState<string>('')
   const [showSearchResults, setShowSearchResults] = useState(false)
+
+  // Only render relative time after hydration to avoid server/client mismatch
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Validate the search form
   const validateSearch = (): string | null => {
@@ -288,7 +294,7 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
                       <span className="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full">
                         {job.source}
                       </span>
-                      <span className="text-xs text-gray-300">⏱️ {formatTimeAgo(job.postedDate)}</span>
+                      <span className="text-xs text-gray-300">⏱️ {mounted ? formatTimeAgo(job.postedDate) : ''}</span>
                     </div>
                   </div>
 
