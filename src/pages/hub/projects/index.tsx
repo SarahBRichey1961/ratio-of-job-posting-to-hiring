@@ -3,6 +3,7 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import axios from 'axios'
+import { getSupabase } from '@/lib/supabase'
 
 interface HubProject {
   id: string
@@ -18,6 +19,7 @@ const ProjectsPage = () => {
   const router = useRouter()
   const [projects, setProjects] = useState<HubProject[]>([])
   const [loading, setLoading] = useState(true)
+  const [showMyProjects, setShowMyProjects] = useState(false)
   const [filters, setFilters] = useState({
     status: '',
     category: '',
@@ -29,11 +31,11 @@ const ProjectsPage = () => {
 
   useEffect(() => {
     fetchProjects()
-  }, [filters, currentPage])
+  }, [filters, currentPage, showMyProjects])
 
   const fetchProjects = async () => {
     try {
-      console.log('Fetching projects with filters:', filters)
+      console.log('Fetching projects with filters:', filters, 'showMyProjects:', showMyProjects)
       setLoading(true)
       const params = new URLSearchParams()
       params.append('limit', LIMIT.toString())
@@ -44,8 +46,24 @@ const ProjectsPage = () => {
       if (filters.difficulty) params.append('difficulty', filters.difficulty)
       if (filters.search) params.append('search', filters.search)
 
+      const config: any = {}
+
+      // If showing my projects, include auth token
+      if (showMyProjects) {
+        params.append('myProjects', 'true')
+        const supabase = getSupabase()
+        if (supabase) {
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session?.access_token) {
+            config.headers = {
+              Authorization: `Bearer ${session.access_token}`,
+            }
+          }
+        }
+      }
+
       console.log('Calling API: /api/hub/projects?' + params.toString())
-      const response = await axios.get(`/api/hub/projects?${params}`)
+      const response = await axios.get(`/api/hub/projects?${params}`, config)
       console.log('API Response:', response.data)
       console.log('Projects array:', response.data.data || [])
       console.log('Projects count:', (response.data.data || []).length)
@@ -67,7 +85,7 @@ const ProjectsPage = () => {
 
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push('/hub')}
@@ -80,6 +98,35 @@ const ProjectsPage = () => {
             <Link href="/hub/projects/new" className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
               Start Project
             </Link>
+          </div>
+          {/* Toggle View */}
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                setShowMyProjects(false)
+                setCurrentPage(0)
+              }}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${
+                !showMyProjects
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              All Projects
+            </button>
+            <button
+              onClick={() => {
+                setShowMyProjects(true)
+                setCurrentPage(0)
+              }}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${
+                showMyProjects
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              My Projects
+            </button>
           </div>
         </div>
       </header>
