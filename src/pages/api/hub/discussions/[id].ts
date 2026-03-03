@@ -209,28 +209,63 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(403).json({ error: 'Only the discussion creator can delete' })
       }
 
+      console.log('=== DELETE /api/hub/discussions/[id] ===')
+      console.log('Discussion ID:', id)
+      console.log('User ID:', user.id)
+      console.log('Creator ID:', discussion.creator_id)
+
       // Delete all comments first (cascade would handle this, but doing it explicitly for clarity)
-      const { error: commentsError } = await authenticatedSupabase
+      const { error: commentsError, count: commentsCount } = await authenticatedSupabase
         .from('hub_discussion_comments')
         .delete()
         .eq('discussion_id', id)
 
+      console.log('Comments delete result:')
+      console.log('  Error:', commentsError)
+      console.log('  Count:', commentsCount)
+
       if (commentsError) {
         console.error('Error deleting comments:', commentsError)
-        return res.status(500).json({ error: 'Failed to delete discussion' })
+        // Continue anyway - comments might be empty
       }
 
       // Delete the discussion using authenticated client (respects RLS)
-      const { error: deleteError } = await authenticatedSupabase
+      const { data: deleteData, error: deleteError, count } = await authenticatedSupabase
         .from('hub_discussions')
         .delete()
         .eq('id', id)
+        .select()
+
+      console.log('Discussion delete result:')
+      console.log('  Error:', deleteError)
+      console.log('  Data:', deleteData)
+      console.log('  Count:', count)
 
       if (deleteError) {
-        console.error('Error deleting discussion:', deleteError)
+        console.error('Delete error details:', deleteError)
         return res.status(500).json({ error: 'Failed to delete discussion' })
       }
 
+      // Verify deletion succeeded
+      if (!deleteData || deleteData.length === 0) {
+        console.warn('Delete returned no data - might be RLS policy issue')
+        // Check if RLS is blocking by trying to fetch the row
+        const { data: stillExists } = await supabase
+          .from('hub_discussions')
+          .select('id')
+          .eq('id', id)
+          .single()
+        
+        if (stillExists) {
+          console.error('Discussion still exists after delete - RLS policy likely blocking deletion')
+          return res.status(500).json({ 
+            error: 'Failed to delete discussion - permission issue with database policies',
+            details: 'Row-level security policy may be blocking delete operation'
+          })
+        }
+      }
+
+      console.log('Discussion deleted successfully')
       return res.status(200).json({ success: true, message: 'Discussion deleted successfully' })
     } catch (error) {
       console.error('Error deleting discussion:', error)
