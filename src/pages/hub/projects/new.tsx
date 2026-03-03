@@ -32,18 +32,18 @@ const NewProject = () => {
         const supabase = getSupabase()
         if (!supabase) {
           console.error('Supabase client not initialized')
-          router.push('/hub/login')
+          router.push('/hub/login?redirect=/hub/projects/new')
           return
         }
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.user?.id) {
           setUserId(session.user.id)
         } else {
-          router.push('/hub/login')
+          router.push('/hub/login?redirect=/hub/projects/new')
         }
       } catch (err) {
         console.error('Error getting user:', err)
-        router.push('/hub/login')
+        router.push('/hub/login?redirect=/hub/projects/new')
       }
     }
     getUser()

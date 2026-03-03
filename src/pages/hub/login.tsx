@@ -5,6 +5,7 @@ import { getSupabase } from '@/lib/supabase'
 
 const HubLogin = () => {
   const router = useRouter()
+  const { redirect } = router.query
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -35,7 +36,7 @@ const HubLogin = () => {
         if (data?.user) {
           setError('Account created! Logging in...')
           await new Promise(r => setTimeout(r, 1000))
-          router.push('/hub')
+          router.push(redirect ? String(redirect) : '/hub')
         }
       } else {
         // Sign in
@@ -46,7 +47,7 @@ const HubLogin = () => {
         if (signinError) throw signinError
         if (data?.user) {
           await new Promise(r => setTimeout(r, 500))
-          router.push('/hub')
+          router.push(redirect ? String(redirect) : '/hub')
         }
       }
     } catch (err) {
