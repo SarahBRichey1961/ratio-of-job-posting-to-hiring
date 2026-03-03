@@ -17,23 +17,16 @@ interface JobListing {
   source: string
 }
 
-interface RecentlyPostedJobsProps {
-  industries: string[]
-}
+interface RecentlyPostedJobsProps {}
 
-const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = ({ industries }) => {
+const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
   const [jobTitle, setJobTitle] = useState<string>('')
-  const [selectedIndustry, setSelectedIndustry] = useState<string>('All Industries')
   const [jobType, setJobType] = useState<string>('')
   const [location, setLocation] = useState<string>('')
   const [searchResults, setSearchResults] = useState<JobListing[]>([])
   const [searchLoading, setSearchLoading] = useState(false)
   const [searchError, setSearchError] = useState<string>('')
   const [showSearchResults, setShowSearchResults] = useState(false)
-
-  const uniqueIndustries = useMemo(() => {
-    return ['All Industries', ...industries].sort()
-  }, [industries])
 
   // Validate the search form
   const validateSearch = (): string | null => {
@@ -71,11 +64,6 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = ({ industries 
       }
       if (location && jobType === 'onsite') {
         url += `&location=${encodeURIComponent(location)}`
-      }
-
-      // Add industry to query if not "All"
-      if (selectedIndustry !== 'All Industries') {
-        url += `&industry=${encodeURIComponent(selectedIndustry)}`
       }
 
       // Add time range: last 72 hours
@@ -174,26 +162,8 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = ({ industries 
             />
           </div>
 
-          {/* Three-column filter layout */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Filter by Industry */}
-            <div>
-              <label className="block text-sm font-semibold text-white mb-2">
-                Industry
-              </label>
-              <select
-                value={selectedIndustry}
-                onChange={(e) => setSelectedIndustry(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {uniqueIndustries.map((industry) => (
-                  <option key={industry} value={industry}>
-                    {industry}
-                  </option>
-                ))}
-              </select>
-            </div>
-
+          {/* Two-column filter layout */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Filter by Job Type */}
             <div>
               <label className="block text-sm font-semibold text-white mb-3">
@@ -257,23 +227,20 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = ({ industries 
             </div>
 
             {/* Location (only for on-site) */}
-            <div>
-              <label className="block text-sm font-semibold text-white mb-2">
-                {jobType === 'onsite' ? 'Location (Required) *' : 'Location (Optional)'}
-              </label>
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder={jobType === 'onsite' ? 'e.g., San Francisco, CA' : 'e.g., New York, NY'}
-                disabled={jobType !== 'onsite'}
-                className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  jobType === 'onsite'
-                    ? 'bg-gray-700 text-white placeholder-gray-400 border-gray-600'
-                    : 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed'
-                }`}
-              />
-            </div>
+            {jobType === 'onsite' && (
+              <div>
+                <label className="block text-sm font-semibold text-white mb-2">
+                  Location (Required) *
+                </label>
+                <input
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="e.g., San Francisco, CA"
+                  className="w-full px-4 py-2 rounded-lg border bg-gray-700 text-white placeholder-gray-400 border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            )}
           </div>
 
           {/* Error Message */}
@@ -392,25 +359,8 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = ({ industries 
 }
 
 export const getServerSideProps: GetServerSideProps = async () => {
-  // Get industries list
-  const FALLBACK_INDUSTRIES = [
-    'Construction',
-    'Creative & Media',
-    'Education',
-    'Finance & Accounting',
-    'General',
-    'Government',
-    'Legal',
-    'Manufacturing',
-    'Remote',
-    'Retail & Hospitality',
-    'Technology',
-  ]
-
   return {
-    props: {
-      industries: FALLBACK_INDUSTRIES,
-    },
+    props: {},
   }
 }
 
