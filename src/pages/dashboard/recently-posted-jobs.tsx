@@ -79,7 +79,7 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
         url += `&location=${encodeURIComponent(location.trim())}`
       }
 
-      // Add time range: last 72 hours
+      // Add time range: last 3 days (72 hours)
       url += '&hoursBack=72'
 
       console.log('🔍 Searching recently posted jobs:', {
@@ -95,17 +95,17 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
       console.log('✅ API Response:', data)
 
       if (data.success && data.jobs && data.jobs.length > 0) {
-        // Filter by posted date (last 72 hours)
+        // Filter by posted date (last 3 days / 72 hours)
         const now = new Date()
-        const seventyTwoHoursAgo = new Date(now.getTime() - 72 * 60 * 60 * 1000)
+        const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
 
         const recentJobs = (data.jobs || []).filter((job: JobListing) => {
           const postedTime = new Date(job.postedDate)
-          return postedTime >= seventyTwoHoursAgo
+          return postedTime >= threeDaysAgo
         })
 
         console.log(
-          `🎉 Found ${recentJobs.length} jobs posted in last 72 hours (from ${data.jobs?.length || 0} total)`
+          `🎉 Found ${recentJobs.length} jobs posted in last 3 days (from ${data.jobs?.length || 0} total)`
         )
 
         setSearchResults(recentJobs)
@@ -113,7 +113,7 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
 
         if (recentJobs.length === 0) {
           setSearchError(
-            'No jobs found matching your criteria in the last 72 hours. Try adjusting your filters.'
+            'No jobs found matching your criteria in the last 3 days. Try adjusting your filters.'
           )
         }
       } else {
@@ -155,7 +155,7 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
     <DashboardLayout>
       <PageHeader
         title="Recently Posted Jobs"
-        description="Find jobs posted in the last 72 hours with advanced filtering"
+        description="Find jobs posted in the last 3 days with advanced filtering"
       />
 
       <Section title="Job Search Filters">
@@ -269,7 +269,7 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
               disabled={searchLoading}
               className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-500 transition-colors"
             >
-              {searchLoading ? '⏳ Searching...' : '🔍 Search Jobs (Last 72 Hours)'}
+              {searchLoading ? '⏳ Searching...' : '🔍 Search Jobs (Last 3 Days)'}
             </button>
           </div>
         </form>
