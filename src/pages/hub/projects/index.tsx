@@ -31,6 +31,7 @@ const ProjectsPage = () => {
   const [currentPage, setCurrentPage] = useState(0)
   const [deleteConfirmProjectId, setDeleteConfirmProjectId] = useState<string | null>(null)
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState('')
   const LIMIT = 12
 
   // Get user ID on mount to auto-select "My Projects" if logged in
@@ -96,28 +97,39 @@ const ProjectsPage = () => {
 
   const handleDeleteProject = async (projectId: string) => {
     setDeletingProjectId(projectId)
+    setDeleteError('')
+    
     try {
       const supabase = getSupabase()
       const { data: { session } } = await supabase.auth.getSession()
       
       if (!session?.access_token) {
+        setDeleteError('Authentication token not available. Please log in again.')
         setDeletingProjectId(null)
         return
       }
 
+      console.log('Deleting project:', projectId)
       const response = await axios.delete(`/api/hub/projects/${projectId}`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
         },
       })
 
-      if (response.data.success) {
+      console.log('Delete response:', response.status, response.data)
+
+      if (response.status === 200 && response.data.success) {
+        console.log('Project deleted successfully, refetching...')
         setDeleteConfirmProjectId(null)
         // Refetch projects to ensure consistency across all views
-        fetchProjects()
+        await fetchProjects()
+      } else {
+        setDeleteError('Failed to delete project. Please try again.')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting project:', error)
+      const errorMsg = error.response?.data?.error || error.message || 'Failed to delete project'
+      setDeleteError(errorMsg)
     } finally {
       setDeletingProjectId(null)
     }
@@ -322,9 +334,17 @@ const ProjectsPage = () => {
             <div className="bg-white rounded-lg p-6 max-w-sm mx-4 shadow-xl">
               <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Project</h3>
               <p className="text-gray-700 mb-6">Are you sure you want to delete this project? This action cannot be undone.</p>
+              {deleteError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
+                  {deleteError}
+                </div>
+              )}
               <div className="flex gap-3">
                 <button
-                  onClick={() => setDeleteConfirmProjectId(null)}
+                  onClick={() => {
+                    setDeleteConfirmProjectId(null)
+                    setDeleteError('')
+                  }}
                   disabled={deletingProjectId === deleteConfirmProjectId}
                   className="flex-1 bg-gray-300 text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-400 font-medium disabled:opacity-50"
                 >
