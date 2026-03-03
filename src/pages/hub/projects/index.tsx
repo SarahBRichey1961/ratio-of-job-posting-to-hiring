@@ -112,8 +112,9 @@ const ProjectsPage = () => {
       })
 
       if (response.data.success) {
-        setProjects(projects.filter((p) => p.id !== projectId))
         setDeleteConfirmProjectId(null)
+        // Refetch projects to ensure consistency across all views
+        fetchProjects()
       }
     } catch (error) {
       console.error('Error deleting project:', error)
