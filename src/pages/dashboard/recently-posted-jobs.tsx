@@ -71,7 +71,6 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
 
       console.log('🔍 Searching recently posted jobs:', {
         title: jobTitle,
-        industry: selectedIndustry,
         jobType,
         location: jobType === 'onsite' ? location : 'N/A',
       })
