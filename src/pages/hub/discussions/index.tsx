@@ -3,6 +3,7 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import axios from 'axios'
+import { getSupabase } from '@/lib/supabase'
 
 interface Discussion {
   id: string
@@ -18,6 +19,10 @@ const DiscussionsPage = () => {
   const router = useRouter()
   const [discussions, setDiscussions] = useState<Discussion[]>([])
   const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [token, setToken] = useState<string | null>(null)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [filters, setFilters] = useState({
     type: '',
     category: '',
@@ -26,6 +31,21 @@ const DiscussionsPage = () => {
   })
   const [currentPage, setCurrentPage] = useState(0)
   const LIMIT = 20
+
+  // Get user ID and token from Supabase
+  useEffect(() => {
+    const getUser = async () => {
+      const supabase = getSupabase()
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user?.id) {
+        setUserId(session.user.id)
+      }
+      if (session?.access_token) {
+        setToken(session.access_token)
+      }
+    }
+    getUser()
+  }, [])
 
   useEffect(() => {
     fetchDiscussions()
@@ -49,6 +69,29 @@ const DiscussionsPage = () => {
       console.error('Error fetching discussions:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDeleteDiscussion = async (discussionId: string) => {
+    if (!token) return
+    
+    setDeletingId(discussionId)
+    try {
+      const response = await axios.delete(`/api/hub/discussions/${discussionId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.status === 200) {
+        setDeleteConfirmId(null)
+        // Refetch to ensure consistency
+        fetchDiscussions()
+      }
+    } catch (error) {
+      console.error('Error deleting discussion:', error)
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -193,23 +236,39 @@ const DiscussionsPage = () => {
           <>
             <div className="space-y-4">
               {discussions.map((discussion) => (
-                <Link key={discussion.id} href={`/hub/discussions/${discussion.id}`} className={`block p-6 rounded-lg shadow hover:shadow-lg transition border ${getStatusColor(discussion.status)}`}>
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-bold text-gray-900">{discussion.title}</h3>
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getTypeColor(discussion.type)}`}>
-                      {discussion.type}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-center text-sm text-gray-500">
-                    <div className="flex items-center gap-4">
-                      <span>{new Date(discussion.created_at).toLocaleDateString()}</span>
+                <div key={discussion.id} className="relative group">
+                  <Link href={`/hub/discussions/${discussion.id}`} className={`block p-6 rounded-lg shadow hover:shadow-lg transition border ${getStatusColor(discussion.status)}`}>
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-lg font-bold text-gray-900">{discussion.title}</h3>
+                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getTypeColor(discussion.type)}`}>
+                        {discussion.type}
+                      </span>
                     </div>
-                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                      {discussion.status}
-                    </span>
-                  </div>
-                </Link>
+
+                    <div className="flex justify-between items-center text-sm text-gray-500">
+                      <div className="flex items-center gap-4">
+                        <span>{new Date(discussion.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                        {discussion.status}
+                      </span>
+                    </div>
+                  </Link>
+                  {userId === discussion.creator_id && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setDeleteConfirmId(discussion.id)
+                      }}
+                      className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition bg-red-600 text-white p-2 rounded-lg hover:bg-red-700"
+                      title="Delete discussion"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
 
@@ -232,6 +291,32 @@ const DiscussionsPage = () => {
               </button>
             </div>
           </>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirmId && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-sm mx-4 shadow-xl">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Discussion</h3>
+              <p className="text-gray-700 mb-6">Are you sure you want to delete this discussion? This action cannot be undone.</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeleteConfirmId(null)}
+                  disabled={deletingId === deleteConfirmId}
+                  className="flex-1 bg-gray-300 text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-400 font-medium disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDeleteDiscussion(deleteConfirmId)}
+                  disabled={deletingId === deleteConfirmId}
+                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium disabled:opacity-50"
+                >
+                  {deletingId === deleteConfirmId ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </div>
