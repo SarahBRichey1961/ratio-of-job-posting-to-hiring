@@ -45,9 +45,9 @@ const SignupPage = () => {
         throw new Error('Failed to create user')
       }
 
-      // Create sponsor membership if checked
+      // Create sponsor or advertiser placeholder records (payment status: unpaid)
       if (isSponsor) {
-        const response = await fetch('/api/monetization/sponsor', {
+        await fetch('/api/monetization/sponsor', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -55,17 +55,14 @@ const SignupPage = () => {
           },
           body: JSON.stringify({
             user_id: user.id,
-            is_sponsor: true
+            is_sponsor: false,
+            payment_status: 'unpaid'
           })
-        })
-        if (!response.ok) {
-          console.error('Failed to create sponsor record')
-        }
+        }).catch(err => console.error('Failed to create sponsor record:', err))
       }
 
-      // Create advertiser account if checked
       if (isAdvertiser) {
-        const response = await fetch('/api/monetization/advertiser', {
+        await fetch('/api/monetization/advertiser', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -73,16 +70,18 @@ const SignupPage = () => {
           },
           body: JSON.stringify({
             user_id: user.id,
-            company_name: companyName
+            company_name: companyName,
+            payment_status: 'unpaid'
           })
-        })
-        if (!response.ok) {
-          console.error('Failed to create advertiser account')
-        }
+        }).catch(err => console.error('Failed to create advertiser account:', err))
       }
 
-      // After successful signup, go to hub
-      router.push('/hub')
+      // Redirect to pricing if monetization option selected, otherwise go to hub
+      if (isSponsor || isAdvertiser) {
+        router.push('/monetization/pricing')
+      } else {
+        router.push('/hub')
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to sign up')
       setLoading(false)
