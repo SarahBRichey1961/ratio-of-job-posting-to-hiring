@@ -43,8 +43,10 @@ const navItems: NavItem[] = [
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = React.useState(false) // Mobile-first: start closed
+  const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
+    setMounted(true)
     // Open sidebar on larger screens
     const handleResize = () => {
       if (window.innerWidth >= 768) {
@@ -72,6 +74,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Sidebar */}
       <aside
+        suppressHydrationWarning
         className={`fixed md:relative md:flex z-40 flex-col h-screen ${
           sidebarOpen ? 'w-64' : 'w-0'
         } md:w-64 bg-gray-800 transition-all duration-300 overflow-y-auto border-r border-gray-700`}
