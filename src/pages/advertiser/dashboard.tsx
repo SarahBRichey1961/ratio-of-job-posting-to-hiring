@@ -85,7 +85,8 @@ export default function AdvertiserDashboard() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create ad')
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to create ad')
       }
 
       const newAd = await response.json()
@@ -164,12 +165,17 @@ export default function AdvertiserDashboard() {
           <div>
             <h2 className="text-3xl font-bold text-white">Your Advertisements</h2>
             <p className="text-slate-400 mt-1">
-              You have {ads.length} active ad{ads.length !== 1 ? 's' : ''}
+              {ads.length} of 5 active ads
             </p>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg transition"
+            disabled={ads.length >= 5}
+            className={`font-semibold py-2 px-6 rounded-lg transition ${
+              ads.length >= 5
+                ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+            }`}
           >
             {showForm ? 'Cancel' : '+ Create New Ad'}
           </button>
