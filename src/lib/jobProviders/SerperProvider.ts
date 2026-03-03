@@ -70,11 +70,12 @@ export class SerperProvider extends BaseJobProvider {
 
       const payload = {
         q: searchQuery,
-        type: 'jobs',
         gl: 'us',
         hl: 'en',
         num: Math.min(params.limit || 30, 100),
       }
+
+      this.log(`📍 Payload: ${JSON.stringify(payload)}`)
 
       const response = await fetch(this.ENDPOINT, {
         method: 'POST',
@@ -91,8 +92,13 @@ export class SerperProvider extends BaseJobProvider {
       }
 
       const data = await response.json()
+      this.log(`📊 Serper response keys: ${Object.keys(data).join(', ')}`)
 
-      if (!data.jobs || data.jobs.length === 0) {
+      // Serper returns results in 'organic' array for web search
+      // or 'jobs' array if specifically formatted for jobs
+      const results = data.jobs || data.organic || []
+
+      if (!results || results.length === 0) {
         this.log(`📊 No Serper results found for: ${searchQuery}`)
         return {
           success: true,
@@ -102,36 +108,39 @@ export class SerperProvider extends BaseJobProvider {
         }
       }
 
-      this.log(`✅ Found ${data.jobs.length} jobs from Serper`)
+      this.log(`✅ Found ${results.length} results from Serper`)
 
-      // Map Serper job format to our standard format
-      const jobs = (data.jobs || [])
-        .map((job: any) => {
+      // Map Serper response to our standard job format
+      const jobs = results
+        .slice(0, Math.min(results.length, params.limit || 30))
+        .map((result: any) => {
           try {
-            // Serper returns jobs with title, company, location, link
+            // Handle both jobs array and organic search results
+            // Organic results: {title, link, snippet}
+            // Jobs results (if available): {title, company, location, link, snippet}
             return {
-              id: job.link || `serper-${job.title}-${Date.now()}`,
-              title: job.title || 'Untitled Position',
-              company: job.company || 'Unknown Company',
-              location: job.location || 'Remote',
-              url: job.link || '',
-              description: job.snippet || '',
-              postedDate: new Date().toISOString(), // Serper doesn't provide date, use now
-              jobType: this.extractJobType(job),
+              id: result.link || `serper-${result.title}-${Date.now()}`,
+              title: result.title || 'Position Available',
+              company: result.company || this.extractCompanyFromTitle(result.title),
+              location: result.location || this.extractLocationFromSnippet(result.snippet),
+              url: result.link || '',
+              description: result.snippet || '',
+              postedDate: new Date().toISOString(), // Serper doesn't provide dates
+              jobType: this.extractJobType(result),
               source: this.name,
             }
           } catch (mapError) {
-            this.logError('Error mapping Serper job', mapError)
+            this.logError('Error mapping Serper result', mapError)
             return null
           }
         })
-        .filter((job) => job !== null) as any[]
+        .filter((job) => job !== null && job.url) as any[]
 
       return {
         success: true,
         jobs,
         provider: this.name,
-        totalCount: data.searchParameters?.page ? jobs.length : data.jobs.length,
+        totalCount: jobs.length,
       }
     } catch (error) {
       this.logError('Serper search failed', error)
@@ -144,22 +153,30 @@ export class SerperProvider extends BaseJobProvider {
     }
   }
 
-  private extractJobType(
-    job: any
-  ): 'remote' | 'hybrid' | 'onsite' | undefined {
-    const text = `${job.title || ''} ${job.snippet || ''}`.toLowerCase()
+  private extractCompanyFromTitle(title: string): string {
+    // Try to extract company name from title (usually first part before role)
+    const match = title.match(/^.*?(at|@|—|–|-)\s*(.+?)(?:\s+|$)/)
+    return match ? match[2].trim() : 'Unknown Company'
+  }
 
-    if (text.includes('remote')) {
+  private extractLocationFromSnippet(snippet: string = ''): string {
+    // Look for common location indicators in snippet
+    const locationMatch = snippet.match(/(?:in|at|located in|based in)\s+([^,\n]+)/i)
+    return locationMatch ? locationMatch[1].trim() : 'Remote'
+  }
+
+  private extractJobType(
+    result: any
+  ): 'remote' | 'hybrid' | 'onsite' | undefined {
+    const text = `${result.title || ''} ${result.snippet || ''}`.toLowerCase()
+
+    if (text.includes('remote') || text.includes('work from home') || text.includes('wfh')) {
       return 'remote'
     }
     if (text.includes('hybrid')) {
       return 'hybrid'
     }
-    if (
-      text.includes('on-site') ||
-      text.includes('on site') ||
-      text.includes('onsite')
-    ) {
+    if (text.includes('on-site') || text.includes('on site') || text.includes('onsite')) {
       return 'onsite'
     }
 
