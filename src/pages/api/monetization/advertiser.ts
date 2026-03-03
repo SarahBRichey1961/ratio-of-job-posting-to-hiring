@@ -46,7 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Check if advertiser account already exists
       const { data: existing } = await supabase
         .from('advertiser_accounts')
-        .select('id')
+        .select('id, website, contact_email, payment_status, subscription_type')
         .eq('user_id', user.id)
         .single()
 
