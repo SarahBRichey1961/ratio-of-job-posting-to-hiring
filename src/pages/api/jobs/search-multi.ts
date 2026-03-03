@@ -15,11 +15,10 @@ import {
  * Query Parameters:
  * - query: (required) Job title or keyword
  * - jobType: (optional) 'remote' | 'hybrid' | 'onsite'
- * - location: (optional) Job location
+ * - location: (optional) Job location (required if jobType='onsite')
  * - limit: (optional) Max results (default: 25)
  * - providers: (optional) Comma-separated list of providers to use
  * - hoursBack: (optional) Filter to jobs posted within last N hours (default: 0 = all)
- * - industry: (optional) Industry filter
  *
  * Example:
  * GET /api/jobs/search-multi?query=Engineer&jobType=remote&limit=50&hoursBack=72
@@ -41,7 +40,6 @@ export default async function handler(
       limit = 25,
       providers: providerParam,
       hoursBack = 0,
-      industry,
     } = req.query
 
     // Validate required parameters
