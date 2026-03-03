@@ -100,7 +100,7 @@ const DiscussionsPage = () => {
               >
                 <span>←</span> Back
               </button>
-              <h1 className="text-3xl font-bold text-gray-900">Community Discussions</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Collaboration Discussion</h1>
             </div>
             <Link href="/hub/discussions/new" className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
               Start Discussion
