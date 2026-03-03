@@ -260,19 +260,22 @@ const DiscussionDetail = () => {
     setDeletingDiscussionId(discussion.id)
 
     try {
-      await axios.delete(`/api/hub/discussions/${discussion.id}`, {
+      const response = await axios.delete(`/api/hub/discussions/${discussion.id}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       })
 
-      // Redirect to discussions list on success
-      router.push('/hub/discussions')
+      if (response.status === 200) {
+        // Redirect to discussions list on success
+        router.push('/hub/discussions')
+      }
     } catch (err: any) {
       const errorMessage = err.response?.data?.error || err.message || 'Failed to delete discussion'
       setError(errorMessage)
-      setDeletingDiscussionId(null)
       setShowDeleteConfirm(false)
+    } finally {
+      setDeletingDiscussionId(null)
     }
   }
 
@@ -282,20 +285,23 @@ const DiscussionDetail = () => {
     setDeletingCommentId(commentId)
 
     try {
-      await axios.delete(`/api/hub/discussions/${id}/comments?commentId=${commentId}`, {
+      const response = await axios.delete(`/api/hub/discussions/${id}/comments?commentId=${commentId}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       })
 
-      // Remove comment from list
-      setComments(comments.filter((c) => c.id !== commentId))
-      setShowDeleteConfirm(false)
+      if (response.status === 200) {
+        // Remove comment from list
+        setComments(comments.filter((c) => c.id !== commentId))
+        setShowDeleteConfirm(false)
+      }
     } catch (err: any) {
       const errorMessage = err.response?.data?.error || err.message || 'Failed to delete comment'
       setError(errorMessage)
-      setDeletingCommentId(null)
       setShowDeleteConfirm(false)
+    } finally {
+      setDeletingCommentId(null)
     }
   }
 
