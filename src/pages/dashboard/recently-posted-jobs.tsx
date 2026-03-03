@@ -1,8 +1,7 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState } from 'react'
 import type { GetServerSideProps } from 'next'
 import { DashboardLayout } from '@/components/DashboardLayout'
 import { PageHeader, Button, Section } from '@/components/DashboardUI'
-import { FALLBACK_INDUSTRIES } from '@/lib/fallbackBoardsData'
 
 interface JobListing {
   id: string
@@ -268,8 +267,8 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
         </form>
       </Section>
 
-      {/* Search Results */}
-      {showSearchResults && (
+      {/* Search Results - only render after hydration */}
+      {mounted && showSearchResults && (
         <Section title={`Found ${searchResults.length} Jobs`}>
           {searchResults.length === 0 ? (
             <div className="p-6 bg-gray-700 rounded-lg text-center">
