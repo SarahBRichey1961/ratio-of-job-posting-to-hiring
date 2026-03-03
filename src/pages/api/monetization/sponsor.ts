@@ -42,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Check if sponsor record already exists
       const { data: existing, error: checkError } = await supabase
         .from('sponsor_memberships')
-        .select('id')
+        .select('id, sponsor_name, logo_url, payment_status, subscription_type')
         .eq('user_id', user.id)
         .single()
 
