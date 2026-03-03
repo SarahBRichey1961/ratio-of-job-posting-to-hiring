@@ -42,29 +42,29 @@ const navItems: NavItem[] = [
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
-  const [sidebarOpen, setSidebarOpen] = React.useState(false) // Mobile-first: start closed
+  const [sidebarOpen, setSidebarOpen] = React.useState(false)
   const [mounted, setMounted] = React.useState(false)
 
+  // Only set sidebar state AFTER mounted to avoid hydration mismatch
   React.useEffect(() => {
     setMounted(true)
-    // Open sidebar on larger screens
+
+    // Handle window resize
     const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setSidebarOpen(true)
-      } else {
-        setSidebarOpen(false)
-      }
+      setSidebarOpen(window.innerWidth >= 768)
     }
 
     window.addEventListener('resize', handleResize)
+    // Set initial state based on current window size
     handleResize()
+    
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   return (
     <div className="flex h-screen bg-gray-900 flex-col md:flex-row">
-      {/* Mobile Overlay */}
-      {sidebarOpen && (
+      {/* Mobile Overlay - only render after hydration to avoid mismatch */}
+      {mounted && sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 md:hidden z-30"
           onClick={() => setSidebarOpen(false)}
@@ -74,10 +74,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Sidebar */}
       <aside
-        suppressHydrationWarning
-        className={`fixed md:relative md:flex z-40 flex-col h-screen ${
-          sidebarOpen ? 'w-64' : 'w-0'
-        } md:w-64 bg-gray-800 transition-all duration-300 overflow-y-auto border-r border-gray-700`}
+        className={`fixed left-0 top-0 bottom-0 md:relative md:flex z-40 md:z-auto flex-col h-screen bg-gray-800 transition-all duration-300 overflow-y-auto border-r border-gray-700
+          ${!mounted ? 'w-0' : sidebarOpen ? 'w-64' : 'w-0'} 
+          md:w-64`}
         role="navigation"
         aria-label="Main navigation"
       >
@@ -86,7 +85,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <Link href="/dashboard">
             <div className="flex items-center gap-3 cursor-pointer">
               <div className="text-2xl">📊</div>
-              {sidebarOpen && <h1 className="text-xl font-bold text-white">Job Board Score</h1>}
+              {mounted && sidebarOpen && <h1 className="text-xl font-bold text-white">Job Board Score</h1>}
             </div>
           </Link>
         </div>
@@ -98,7 +97,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             className="w-full p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-700 transition-colors"
             title={sidebarOpen ? 'Collapse' : 'Expand'}
           >
-            {sidebarOpen ? '←' : '→'}
+            {mounted ? (sidebarOpen ? '←' : '→') : '→'}
           </button>
         </div>
 
