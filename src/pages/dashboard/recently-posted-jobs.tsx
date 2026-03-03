@@ -29,8 +29,14 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
   const [showSearchResults, setShowSearchResults] = useState(false)
 
   // Only render relative time after hydration to avoid server/client mismatch
+  // Also clear any persisted form state
   React.useEffect(() => {
     setMounted(true)
+    // Reset form to clean state - search nationwide by default
+    setJobTitle('')
+    setJobType('')
+    setLocation('')
+    setShowSearchResults(false)
   }, [])
 
   // Validate the search form
@@ -63,12 +69,14 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
     try {
       let url = `/api/jobs/search-multi?query=${encodeURIComponent(jobTitle)}`
 
-      // Add filters
+      // Add job type filter (but NOT for "All Types" which is empty string)
       if (jobType) {
         url += `&jobType=${encodeURIComponent(jobType)}`
       }
-      if (location && jobType === 'onsite') {
-        url += `&location=${encodeURIComponent(location)}`
+      
+      // Add location ONLY if on-site selected AND location is provided
+      if (jobType === 'onsite' && location && location.trim()) {
+        url += `&location=${encodeURIComponent(location.trim())}`
       }
 
       // Add time range: last 72 hours
@@ -76,8 +84,8 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
 
       console.log('🔍 Searching recently posted jobs:', {
         title: jobTitle,
-        jobType,
-        location: jobType === 'onsite' ? location : 'N/A',
+        jobType: jobType || 'all types',
+        location: jobType === 'onsite' && location && location.trim() ? location.trim() : '(nationwide)',
       })
 
       const response = await fetch(url)

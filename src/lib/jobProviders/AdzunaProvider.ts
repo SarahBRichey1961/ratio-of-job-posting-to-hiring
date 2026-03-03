@@ -63,8 +63,10 @@ export class AdzunaProvider extends BaseJobProvider {
       }
 
       this.log(`🔍 Searching for: ${params.query}`)
+      this.log(`   Location param: ${params.location ? `"${params.location}"` : 'undefined (nationwide search)'}`)
+      this.log(`   Job type: ${params.jobType || 'any'}`)
 
-      // Determine country code from location or default to US
+      // Determine country code from location or default to US for nationwide
       const countryCode = this.getCountryCode(params.location || 'US')
 
       // Adzuna API endpoint format: /search/{country}/{format}
@@ -78,9 +80,13 @@ export class AdzunaProvider extends BaseJobProvider {
         sort_by: 'date',
       })
 
-      // Add location if provided
-      if (params.location && params.location.toLowerCase() !== 'us') {
+      // Add location filter ONLY if a specific location is provided (not nationwide search)
+      // Check both that location exists AND is not "US" (nationwide)
+      if (params.location && params.location.trim() && params.location.toLowerCase() !== 'us') {
         queryParams.append('where', params.location)
+        this.log(`   Adding location filter: "${params.location}"`)
+      } else {
+        this.log(`   No location filter - searching nationwide (all of ${countryCode})`)
       }
 
       const url = `${endpoint}?${queryParams}`

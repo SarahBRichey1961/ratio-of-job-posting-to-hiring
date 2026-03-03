@@ -59,7 +59,7 @@ export default async function handler(
     console.log(`\n🔍 Job Search API called`)
     console.log(`   Query: ${query}`)
     console.log(`   Type: ${jobTypeValue() || 'Any'}`)
-    console.log(`   Location: ${location || 'Any'}`)
+    console.log(`   Location: ${location ? `"${location}"` : 'UNDEFINED - will search nationwide'} `)
     console.log(
       `   Time Range: ${hoursBack ? `Last ${hoursBack} hours` : 'All time'}`
     )
@@ -96,7 +96,8 @@ export default async function handler(
     let result = await orchestrator.search({
       query,
       jobType: jobTypeValue(),
-      location: location ? String(location) : undefined,
+      // Pass undefined if location is empty/whitespace to trigger nationwide search
+      location: location && String(location).trim() ? String(location).trim() : undefined,
       limit: Math.min(parseInt(String(limit)) || 25, 100),
     })
 
