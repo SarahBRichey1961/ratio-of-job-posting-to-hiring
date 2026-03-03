@@ -120,7 +120,7 @@ export default function TakeTheReins() {
             Create a Project
           </Link>
           <Link
-            href="/hub/discussions"
+            href="/hub/projects"
             className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-4 rounded-lg transition text-center"
           >
             Collaborate
