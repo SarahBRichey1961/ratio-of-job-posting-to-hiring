@@ -8,17 +8,51 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'GET') {
     try {
       console.log('=== GET /api/hub/projects ===')
-      const { status, category, difficulty, search, limit, offset } = req.query
+      const { status, category, difficulty, search, limit, offset, creatorId, myProjects } = req.query
       
       // Convert to numbers with defaults
       const limitNum = Math.min(Number(limit) || 20, 100) // Max 100
       const offsetNum = Number(offset) || 0
       
-      console.log('Filters:', { status, category, difficulty, search, limitNum, offsetNum })
+      console.log('Filters:', { status, category, difficulty, search, limitNum, offsetNum, creatorId, myProjects })
 
       let query = supabase
         .from('hub_projects')
         .select('*')
+
+      // Filter by creator if myProjects is true
+      if (myProjects === 'true') {
+        // Get auth token from headers to identify current user
+        const authHeader = req.headers.authorization
+        if (authHeader?.startsWith('Bearer ')) {
+          const token = authHeader.substring(7)
+          const { createClient } = require('@supabase/supabase-js')
+          const authenticatedSupabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+            {
+              global: {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              },
+              auth: {
+                persistSession: false,
+                autoRefreshToken: false,
+                detectSessionInUrl: false,
+              },
+            }
+          )
+          const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
+          if (user) {
+            console.log('Filtering by creator:', user.id)
+            query = query.eq('creator_id', user.id)
+          }
+        }
+      } else if (creatorId) {
+        console.log('Filtering by creatorId:', creatorId)
+        query = query.eq('creator_id', creatorId)
+      }
 
       if (status) {
         console.log('Filtering by status:', status)
