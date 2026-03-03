@@ -217,8 +217,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(403).json({ error: 'Only the project creator or admin can delete this project' })
       }
 
-      // Delete project and related data
-      const { error: deleteError } = await supabase
+      // Delete project and related data using authenticated client (respects RLS)
+      const { error: deleteError } = await authenticatedSupabase
         .from('hub_projects')
         .delete()
         .eq('id', id)

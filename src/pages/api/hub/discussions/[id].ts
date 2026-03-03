@@ -169,32 +169,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const token = authHeader.substring(7)
 
-      // Verify the token and get user ID
-      let userId: string | null = null
-      
-      try {
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-        if (user && !authError) {
-          userId = user.id
+      // Create authenticated Supabase client with the user's token
+      const authenticatedSupabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || supabaseUrl,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        {
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
+          },
         }
-      } catch (err) {
-        console.error('Error verifying token with getUser:', err)
-      }
+      )
 
-      // If that failed, try to decode the JWT for the user ID
-      if (!userId) {
-        try {
-          const parts = token.split('.')
-          if (parts.length === 3) {
-            const decoded = JSON.parse(Buffer.from(parts[1], 'base64').toString())
-            userId = decoded.sub
-          }
-        } catch (err) {
-          console.error('Error decoding token:', err)
-        }
-      }
-
-      if (!userId) {
+      // Get authenticated user
+      const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
+      if (userError || !user) {
         return res.status(401).json({ error: 'Unauthorized' })
       }
 
@@ -210,12 +205,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       // Verify user is the creator
-      if (discussion.creator_id !== userId) {
+      if (discussion.creator_id !== user.id) {
         return res.status(403).json({ error: 'Only the discussion creator can delete' })
       }
 
       // Delete all comments first (cascade would handle this, but doing it explicitly for clarity)
-      const { error: commentsError } = await supabase
+      const { error: commentsError } = await authenticatedSupabase
         .from('hub_discussion_comments')
         .delete()
         .eq('discussion_id', id)
@@ -225,8 +220,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(500).json({ error: 'Failed to delete discussion' })
       }
 
-      // Delete the discussion
-      const { error: deleteError } = await supabase
+      // Delete the discussion using authenticated client (respects RLS)
+      const { error: deleteError } = await authenticatedSupabase
         .from('hub_discussions')
         .delete()
         .eq('id', id)
