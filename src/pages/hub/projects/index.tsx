@@ -13,6 +13,7 @@ interface HubProject {
   category: string
   status: string
   created_at: string
+  creator_id?: string
 }
 
 const ProjectsPage = () => {
@@ -28,6 +29,8 @@ const ProjectsPage = () => {
     search: '',
   })
   const [currentPage, setCurrentPage] = useState(0)
+  const [deleteConfirmProjectId, setDeleteConfirmProjectId] = useState<string | null>(null)
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null)
   const LIMIT = 12
 
   // Get user ID on mount to auto-select "My Projects" if logged in
@@ -88,6 +91,34 @@ const ProjectsPage = () => {
       setProjects([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDeleteProject = async (projectId: string) => {
+    setDeletingProjectId(projectId)
+    try {
+      const supabase = getSupabase()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        setDeletingProjectId(null)
+        return
+      }
+
+      const response = await axios.delete(`/api/hub/projects/${projectId}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (response.data.success) {
+        setProjects(projects.filter((p) => p.id !== projectId))
+        setDeleteConfirmProjectId(null)
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error)
+    } finally {
+      setDeletingProjectId(null)
     }
   }
 
@@ -226,22 +257,38 @@ const ProjectsPage = () => {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {projects.map((project) => (
-                <Link key={project.id} href={`/hub/projects/${project.id}`} className="bg-white rounded-lg shadow hover:shadow-lg transition p-6 block h-full">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
-                    {project.title}
-                  </h3>
-                  <p className="text-gray-600 mb-4 line-clamp-3">{project.description}</p>
-                  <div className="space-y-3">
-                    <div className="flex gap-2 flex-wrap">
-                      <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
-                        {project.difficulty_level}
-                      </span>
-                      <span className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
-                        {project.status}
-                      </span>
+                <div key={project.id} className="relative group">
+                  <Link href={`/hub/projects/${project.id}`} className="bg-white rounded-lg shadow hover:shadow-lg transition p-6 block h-full">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
+                      {project.title}
+                    </h3>
+                    <p className="text-gray-600 mb-4 line-clamp-3">{project.description}</p>
+                    <div className="space-y-3">
+                      <div className="flex gap-2 flex-wrap">
+                        <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
+                          {project.difficulty_level}
+                        </span>
+                        <span className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
+                          {project.status}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                  {showMyProjects && userId === project.creator_id && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setDeleteConfirmProjectId(project.id)
+                      }}
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition bg-red-600 text-white p-2 rounded-lg hover:bg-red-700"
+                      title="Delete project"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
 
@@ -266,6 +313,32 @@ const ProjectsPage = () => {
               </button>
             </div>
           </>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirmProjectId && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-sm mx-4 shadow-xl">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Project</h3>
+              <p className="text-gray-700 mb-6">Are you sure you want to delete this project? This action cannot be undone.</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeleteConfirmProjectId(null)}
+                  disabled={deletingProjectId === deleteConfirmProjectId}
+                  className="flex-1 bg-gray-300 text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-400 font-medium disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDeleteProject(deleteConfirmProjectId)}
+                  disabled={deletingProjectId === deleteConfirmProjectId}
+                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium disabled:opacity-50"
+                >
+                  {deletingProjectId === deleteConfirmProjectId ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </div>
