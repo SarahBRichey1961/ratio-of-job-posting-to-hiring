@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import type { GetServerSideProps } from 'next'
 import { DashboardLayout } from '@/components/DashboardLayout'
+import { AdRotationBanner } from '@/components/AdRotationBanner'
 import { getSupabase } from '@/lib/supabase'
 import {
   PageHeader,
@@ -177,6 +178,7 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
 
   return (
     <DashboardLayout>
+      <AdRotationBanner pageType="comparison" />
       <PageHeader
         title="Board Comparison"
         description="Compare efficiency scores across all job boards"

@@ -13,6 +13,9 @@ const SignupPage = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [isSponsor, setIsSponsor] = useState(false)
+  const [isAdvertiser, setIsAdvertiser] = useState(false)
+  const [companyName, setCompanyName] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,12 +31,58 @@ const SignupPage = () => {
       return
     }
 
+    if (isAdvertiser && !companyName.trim()) {
+      setError('Company name is required for advertisers')
+      return
+    }
+
     setLoading(true)
 
     try {
-      await signUp(email, password)
-      // After successful signup with auto login, go to manifesto builder
-      router.push('/hub/members/new')
+      const { user, session } = await signUp(email, password)
+      
+      if (!user) {
+        throw new Error('Failed to create user')
+      }
+
+      // Create sponsor membership if checked
+      if (isSponsor) {
+        const response = await fetch('/api/monetization/sponsor', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || ''}`
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            is_sponsor: true
+          })
+        })
+        if (!response.ok) {
+          console.error('Failed to create sponsor record')
+        }
+      }
+
+      // Create advertiser account if checked
+      if (isAdvertiser) {
+        const response = await fetch('/api/monetization/advertiser', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || ''}`
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            company_name: companyName
+          })
+        })
+        if (!response.ok) {
+          console.error('Failed to create advertiser account')
+        }
+      }
+
+      // After successful signup, go to hub
+      router.push('/hub')
     } catch (err: any) {
       setError(err.message || 'Failed to sign up')
       setLoading(false)
@@ -147,6 +196,48 @@ const SignupPage = () => {
                 className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                 placeholder="••••••••"
               />
+            </div>
+
+            {/* Monetization Options */}
+            <div className="space-y-3 pt-4 border-t border-slate-600">
+              <p className="text-slate-300 text-sm font-semibold">Interested in:</p>
+              
+              <label className="flex items-center space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={isSponsor}
+                  onChange={(e) => setIsSponsor(e.target.checked)}
+                  className="w-4 h-4 rounded bg-slate-900 border border-slate-600 checked:bg-indigo-600 checked:border-indigo-600 cursor-pointer"
+                />
+                <span className="text-slate-300 group-hover:text-white transition">
+                  Sponsor the platform
+                </span>
+              </label>
+
+              <label className="flex items-center space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={isAdvertiser}
+                  onChange={(e) => setIsAdvertiser(e.target.checked)}
+                  className="w-4 h-4 rounded bg-slate-900 border border-slate-600 checked:bg-indigo-600 checked:border-indigo-600 cursor-pointer"
+                />
+                <span className="text-slate-300 group-hover:text-white transition">
+                  Advertise with us
+                </span>
+              </label>
+
+              {isAdvertiser && (
+                <div className="ml-7 mt-2">
+                  <label className="block text-slate-300 text-sm mb-2">Company Name</label>
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    placeholder="Your company name"
+                  />
+                </div>
+              )}
             </div>
 
             <button
