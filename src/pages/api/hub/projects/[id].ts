@@ -217,14 +217,49 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(403).json({ error: 'Only the project creator or admin can delete this project' })
       }
 
+      console.log('=== DELETE /api/hub/projects/[id] ===')
+      console.log('Project ID:', id)
+      console.log('User ID:', user.id)
+      console.log('Is Creator:', isCreator)
+      console.log('Is Admin:', isAdmin)
+
       // Delete project and related data using authenticated client (respects RLS)
-      const { error: deleteError } = await authenticatedSupabase
+      const { data: deleteData, error: deleteError, count } = await authenticatedSupabase
         .from('hub_projects')
         .delete()
         .eq('id', id)
+        .select()
 
-      if (deleteError) throw deleteError
+      console.log('Delete response:')
+      console.log('  Error:', deleteError)
+      console.log('  Data:', deleteData)
+      console.log('  Count:', count)
 
+      if (deleteError) {
+        console.error('Delete error details:', deleteError)
+        throw deleteError
+      }
+
+      // Verify deletion succeeded
+      if (!deleteData || deleteData.length === 0) {
+        console.warn('Delete returned no data - might be RLS policy issue')
+        // Check if RLS is blocking by trying to fetch the row
+        const { data: stillExists } = await supabase
+          .from('hub_projects')
+          .select('id')
+          .eq('id', id)
+          .single()
+        
+        if (stillExists) {
+          console.error('Project still exists after delete - RLS policy likely blocking deletion')
+          return res.status(500).json({ 
+            error: 'Failed to delete project - permission issue with database policies',
+            details: 'Row-level security policy may be blocking delete operation'
+          })
+        }
+      }
+
+      console.log('Project deleted successfully')
       res.status(200).json({ success: true, message: 'Project deleted successfully' })
     } catch (error) {
       res.status(400).json({ error: (error as Error).message })
