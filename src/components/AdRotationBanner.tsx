@@ -9,6 +9,11 @@ interface Ad {
   banner_height: number
   click_url: string
   alt_text: string
+  impressions: number
+  clicks: number
+  is_active: boolean
+  expires_at: string | null
+  created_at: string
 }
 
 interface AdRotationBannerProps {
@@ -44,7 +49,7 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
         setIsLoading(true)
         const { data, error } = await supabase
           .from('advertisements')
-          .select('id, title, description, banner_image_url, banner_height, click_url, alt_text')
+          .select('id, title, description, banner_image_url, banner_height, click_url, alt_text, impressions, clicks, is_active, expires_at, created_at')
           .eq('is_active', true)
           .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
           .order('created_at', { ascending: false })
