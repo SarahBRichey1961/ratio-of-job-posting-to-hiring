@@ -24,6 +24,19 @@ interface HubProject {
   members?: any[]
 }
 
+const STATUS_OPTIONS = ['Proposed', 'Assigned', 'Committed', 'Completed', 'Deployed in Production']
+
+const getStatusColor = (status: string) => {
+  const statusMap: { [key: string]: string } = {
+    'Proposed': 'bg-yellow-100 text-yellow-800',
+    'Assigned': 'bg-blue-100 text-blue-800',
+    'Committed': 'bg-purple-100 text-purple-800',
+    'Completed': 'bg-green-100 text-green-800',
+    'Deployed in Production': 'bg-indigo-100 text-indigo-800'
+  }
+  return statusMap[status] || 'bg-gray-100 text-gray-800'
+}
+
 const ProjectDetail = () => {
   const router = useRouter()
   const { id } = router.query
@@ -33,6 +46,10 @@ const ProjectDetail = () => {
   const [error, setError] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
   const [isMember, setIsMember] = useState(false)
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   // Get user ID from Supabase on mount
   useEffect(() => {
@@ -70,6 +87,35 @@ const ProjectDetail = () => {
 
     fetchProject()
   }, [id, userId])
+
+  const handleDelete = async () => {
+    if (!id) return
+    
+    setDeleting(true)
+    try {
+      const supabase = getSupabase()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        setError('Authentication token not available. Please log in again.')
+        setDeleting(false)
+        return
+      }
+
+      const response = await axios.delete(`/api/hub/projects/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (response.data.success) {
+        router.push('/hub/projects')
+      }
+    } catch (err) {
+      setError((err as any).response?.data?.error || 'Failed to delete project')
+      setDeleting(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -224,6 +270,14 @@ const ProjectDetail = () => {
                   Edit Project
                 </button>
               )}
+              {isCreator && (
+                <button
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium"
+                >
+                  Delete Project
+                </button>
+              )}
               {!isCreator && userId && (
                 <button className="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium">
                   {isMember ? 'Leave Project' : 'Join Project'}
@@ -241,6 +295,32 @@ const ProjectDetail = () => {
           </div>
         </div>
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm mx-4 shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Project</h3>
+            <p className="text-gray-700 mb-6">Are you sure you want to delete this project? This action cannot be undone.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirmOpen(false)}
+                disabled={deleting}
+                className="flex-1 bg-gray-300 text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-400 font-medium disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium disabled:opacity-50"
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

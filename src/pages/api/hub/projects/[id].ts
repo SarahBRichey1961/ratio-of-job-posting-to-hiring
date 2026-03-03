@@ -162,6 +162,75 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
+  // DELETE: Delete project (creator or admin only)
+  else if (req.method === 'DELETE') {
+    try {
+      // Get auth token from headers
+      const authHeader = req.headers.authorization
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Missing authorization header' })
+      }
+
+      const token = authHeader.substring(7)
+      
+      // Create authenticated Supabase client
+      const { createClient } = require('@supabase/supabase-js')
+      const authenticatedSupabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        {
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
+          },
+        }
+      )
+
+      // Get authenticated user
+      const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
+      if (userError || !user) {
+        return res.status(401).json({ error: 'Unauthorized' })
+      }
+
+      // Fetch the project to check ownership
+      const { data: project, error: projectError } = await supabase
+        .from('hub_projects')
+        .select('creator_id')
+        .eq('id', id)
+        .single()
+
+      if (projectError || !project) {
+        return res.status(404).json({ error: 'Project not found' })
+      }
+
+      // Check if user is creator or admin (Sarah@websepic.com)
+      const isCreator = user.id === project.creator_id
+      const isAdmin = user.email === 'Sarah@websepic.com'
+
+      if (!isCreator && !isAdmin) {
+        return res.status(403).json({ error: 'Only the project creator or admin can delete this project' })
+      }
+
+      // Delete project and related data
+      const { error: deleteError } = await supabase
+        .from('hub_projects')
+        .delete()
+        .eq('id', id)
+
+      if (deleteError) throw deleteError
+
+      res.status(200).json({ success: true, message: 'Project deleted successfully' })
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message })
+    }
+  }
+
   else {
     res.status(405).json({ error: 'Method not allowed' })
   }
