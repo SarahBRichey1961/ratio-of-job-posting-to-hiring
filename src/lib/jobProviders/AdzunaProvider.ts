@@ -116,18 +116,35 @@ export class AdzunaProvider extends BaseJobProvider {
           const jobType = this.extractJobType(job)
           return jobType === params.jobType
         })
-        .map((job: any) => ({
-          id: job.id || `adzuna-${job.title}-${Date.now()}`,
-          title: job.title,
-          company: job.company?.display_name || job.company,
-          location: this.formatLocation(job.location),
-          url: job.redirect_url,
-          salary: this.formatSalary(job),
-          postedDate: new Date(job.created).toISOString(),
-          description: job.description,
-          jobType: this.extractJobType(job),
-          source: this.name,
-        }))
+        .map((job: any) => {
+          try {
+            // Safely parse date - handle missing or invalid dates
+            let postedDate = new Date().toISOString()
+            if (job.created) {
+              const parsedDate = new Date(job.created)
+              if (!isNaN(parsedDate.getTime())) {
+                postedDate = parsedDate.toISOString()
+              }
+            }
+
+            return {
+              id: job.id || `adzuna-${job.title}-${Date.now()}`,
+              title: job.title || 'Untitled Position',
+              company: job.company?.display_name || job.company || 'Unknown Company',
+              location: this.formatLocation(job.location),
+              url: job.redirect_url || '',
+              salary: this.formatSalary(job),
+              postedDate,
+              description: job.description || '',
+              jobType: this.extractJobType(job),
+              source: this.name,
+            }
+          } catch (mapError) {
+            this.logError('Error mapping job result', mapError)
+            return null
+          }
+        })
+        .filter((job) => job !== null) as any[]
 
       this.log(`✅ Found ${jobs.length} matching positions from ${data.count} total`)
 
