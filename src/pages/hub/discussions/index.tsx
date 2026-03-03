@@ -23,6 +23,7 @@ const DiscussionsPage = () => {
   const [token, setToken] = useState<string | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState('')
   const [filters, setFilters] = useState({
     type: '',
     category: '',
@@ -73,23 +74,37 @@ const DiscussionsPage = () => {
   }
 
   const handleDeleteDiscussion = async (discussionId: string) => {
-    if (!token) return
+    if (!token) {
+      setDeleteError('Authentication token not available')
+      return
+    }
     
     setDeletingId(discussionId)
+    setDeleteError('')
+    
     try {
+      console.log('Deleting discussion:', discussionId)
       const response = await axios.delete(`/api/hub/discussions/${discussionId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       })
 
-      if (response.status === 200) {
+      console.log('Delete response status:', response.status)
+      console.log('Delete response data:', response.data)
+
+      if (response.status === 200 && response.data.success) {
+        console.log('Discussion deleted successfully, refetching...')
         setDeleteConfirmId(null)
         // Refetch to ensure consistency
-        fetchDiscussions()
+        await fetchDiscussions()
+      } else {
+        setDeleteError('Failed to delete discussion. Please try again.')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting discussion:', error)
+      const errorMsg = error.response?.data?.error || error.message || 'Failed to delete discussion'
+      setDeleteError(errorMsg)
     } finally {
       setDeletingId(null)
     }
@@ -299,9 +314,17 @@ const DiscussionsPage = () => {
             <div className="bg-white rounded-lg p-6 max-w-sm mx-4 shadow-xl">
               <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Discussion</h3>
               <p className="text-gray-700 mb-6">Are you sure you want to delete this discussion? This action cannot be undone.</p>
+              {deleteError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
+                  {deleteError}
+                </div>
+              )}
               <div className="flex gap-3">
                 <button
-                  onClick={() => setDeleteConfirmId(null)}
+                  onClick={() => {
+                    setDeleteConfirmId(null)
+                    setDeleteError('')
+                  }}
                   disabled={deletingId === deleteConfirmId}
                   className="flex-1 bg-gray-300 text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-400 font-medium disabled:opacity-50"
                 >
