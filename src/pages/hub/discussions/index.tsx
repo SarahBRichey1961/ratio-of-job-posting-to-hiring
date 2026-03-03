@@ -92,16 +92,24 @@ const DiscussionsPage = () => {
 
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/hub')}
-                className="text-gray-600 hover:text-gray-900 font-semibold flex items-center gap-2"
-              >
-                <span>←</span> Back
-              </button>
-              <h1 className="text-3xl font-bold text-gray-900">Collaboration Discussion</h1>
+          <div className="flex justify-between items-center mb-4">
+            <button
+              onClick={() => router.push('/hub')}
+              className="text-gray-600 hover:text-gray-900 font-semibold flex items-center gap-2"
+            >
+              <span>←</span> Back
+            </button>
+            <div className="flex gap-4">
+              <Link href="/hub/projects" className="text-gray-600 hover:text-indigo-600 font-semibold transition">
+                Community Projects
+              </Link>
+              <Link href="/hub/discussions" className="text-indigo-600 font-semibold transition">
+                Discussions
+              </Link>
             </div>
+          </div>
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold text-gray-900">Collaboration Discussion</h1>
             <Link href="/hub/discussions/new" className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
               Start Discussion
             </Link>
