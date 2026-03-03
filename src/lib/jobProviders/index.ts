@@ -20,6 +20,7 @@
 
 export * from './types'
 export * from './BaseJobProvider'
+export * from './SerperProvider'
 export * from './AdzunaProvider'
 export * from './JSearchProvider'
 export * from './IndeedProvider'

@@ -5,12 +5,14 @@ import {
   IndeedProvider,
   LinkedInProvider,
   StackOverflowProvider,
+  SerperProvider,
   JobSearchOrchestrator,
 } from '@/lib/jobProviders'
 
 /**
  * Multi-Provider Job Search API
  * Searches across all configured job APIs simultaneously
+ * Provider Priority Order: Serper (best), Adzuna, JSearch, StackOverflow, Indeed, LinkedIn
  *
  * Query Parameters:
  * - query: (required) Job title or keyword
@@ -66,8 +68,9 @@ export default async function handler(
     console.log(`   Env - ADZUNA_API_KEY: ${process.env.ADZUNA_API_KEY ? '✓' : '✗'}`)
     console.log(`   Env - ADZUNA_API_ID: ${process.env.ADZUNA_API_ID ? '✓' : '✗'}`)
 
-    // Initialize all providers (Adzuna first now!)
+    // Initialize all providers (Serper first for best results!)
     const allProviders = [
+      new SerperProvider(),
       new AdzunaProvider(),
       new JSearchProvider(),
       new StackOverflowProvider(),
