@@ -64,6 +64,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         })
       }
 
+      // Check active ads limit (5 active ads per advertiser)
+      const { data: existingAds, error: countError } = await supabase
+        .from('advertisements')
+        .select('id', { count: 'exact' })
+        .eq('advertiser_id', advertiser.id)
+        .eq('is_active', true)
+
+      if (countError) throw countError
+
+      const activeAdCount = existingAds?.length || 0
+      const AD_LIMIT = 5
+
+      if (activeAdCount >= AD_LIMIT) {
+        return res.status(403).json({
+          error: `You have reached the limit of ${AD_LIMIT} active ads. Please deactivate or delete existing ads to create new ones.`
+        })
+      }
+
       const { data, error } = await supabase
         .from('advertisements')
         .insert({

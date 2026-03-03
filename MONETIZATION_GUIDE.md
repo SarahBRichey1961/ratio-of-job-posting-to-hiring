@@ -7,6 +7,22 @@ The Take The Reins platform now supports two monetization pathways:
 1. **Sponsor Memberships** - Companies or individuals sponsor the platform
 2. **Advertisements** - Companies advertise their products/services with rotating banner ads
 
+## Pricing Structure
+
+Both sponsors and advertisers have the same pricing options:
+
+- **Monthly Subscription:** $199/month (billed monthly)
+- **Annual Subscription:** $1,999/year (billed once, save ~$387)
+- **One-Time Payment:** $499 (perpetual access)
+
+### Advertiser Plan Includes
+
+- Up to **5 active advertisements** at any given time
+- Access to `/advertiser/dashboard` for ad management
+- Real-time analytics (impressions, clicks, CTR)
+- Ad rotation across all platform pages
+- Click tracking and performance metrics
+
 ## How It Works
 
 ### For Sponsors
@@ -15,6 +31,7 @@ The Take The Reins platform now supports two monetization pathways:
 1. Go to `/auth/signup`
 2. Check the "Sponsor the platform" checkbox
 3. Complete the signup
+4. Complete payment (Stripe integration coming soon)
 
 **Profile:**
 - Sponsors can update their information in the sponsor dashboard (coming soon)
@@ -28,10 +45,11 @@ The Take The Reins platform now supports two monetization pathways:
 2. Check the "Advertise with us" checkbox
 3. Enter your company name
 4. Complete the signup
+5. Complete payment (Stripe integration coming soon)
 
 **Create Advertisements:**
 1. Go to `/advertiser/dashboard`
-2. Click "Create New Ad"
+2. Click "Create New Ad" (limited to 5 active ads)
 3. Fill in:
    - **Ad Title** - Your ad campaign name
    - **Banner Image URL** - Image to display (recommended: 1200x80px)
@@ -39,6 +57,13 @@ The Take The Reins platform now supports two monetization pathways:
    - **Click URL** - Where users are directed when clicking
    - **Alt Text** - Accessibility text
    - **Description** (optional) - Internal notes
+4. Submit to create ad (will appear in rotation immediately)
+
+**Manage Advertisements:**
+- View all your ads on the dashboard
+- Monitor impressions, clicks, and CTR
+- Delete ads to free up slots
+- Maximum of **5 active ads per advertiser** at any time
 
 **Track Performance:**
 - View impressions (times ad was displayed)
@@ -53,7 +78,7 @@ The Take The Reins platform now supports two monetization pathways:
   - Job board comparison page
   - Hub community page
 - Ads cycle through all active ads every **2 minutes**
-- Ads can cycle through up to **50 active advertisements**
+- Ads rotate from up to **50 active advertisements** on the platform
 - Dot indicators show current position in rotation
 
 **Clicking Ads:**
@@ -171,7 +196,18 @@ Body: {
   alt_text?: string,
   expires_at?: ISO8601 date
 }
+
+Response Status:
+- 201: Ad created successfully
+- 403: Ad limit reached (maximum 5 active ads per advertiser)
+- 400: Missing required fields
+- 401: Unauthorized
 ```
+
+**Advertiser Ad Limit**
+- Maximum **5 active advertisements** per advertiser account
+- Attempting to create more than 5 active ads returns 403 error
+- Delete or deactivate ads to create new ones
 
 **Get All Ads (for advertiser):**
 ```
@@ -305,7 +341,14 @@ Or Supabase applies migrations automatically on deployment.
 ### Can't Create Ads
 - Make sure you're logged in
 - Verify you signed up with "Advertise with us" checkbox
+- Check that you haven't reached the **5 active ad limit**
+- Delete or deactivate existing ads to create new ones
 - Check browser console for error messages
+
+### Ads Limit Reached
+- Each advertiser account can have a maximum of **5 active advertisements**
+- Delete or deactivate ads to free up slots
+- Delete button available on `/advertiser/dashboard`
 
 ### Analytics Not Updating
 - Impressions and clicks are tracked asynchronously
@@ -322,13 +365,16 @@ Or Supabase applies migrations automatically on deployment.
 2. Check "Advertise with us"
 3. Enter company name
 4. Complete signup
-5. Redirected to /advertiser/dashboard
-6. Click "Create New Ad"
-7. Upload banner image (1200x80px)
-8. Enter ad destination URL
-9. Click "Create Advertisement"
-10. Ad appears in rotation immediately
-11. Monitor analytics as impressions accumulate
+5. Complete payment (choose monthly/annual/one-time)
+6. Redirected to /advertiser/dashboard
+7. Click "Create New Ad"
+8. Upload banner image (1200x80px)
+9. Enter ad destination URL
+10. Click "Create Advertisement"
+11. Ad appears in rotation immediately
+12. Monitor analytics as impressions accumulate
+13. Create up to 5 ads (max limit per account)
+14. Delete ads to add new ones if needed
 
 ### For User
 
