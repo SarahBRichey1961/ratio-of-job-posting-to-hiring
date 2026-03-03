@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { User } from '@supabase/supabase-js'
+import { User, Session } from '@supabase/supabase-js'
 import { getSupabase } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
 
@@ -12,6 +12,7 @@ interface UserProfile {
 
 interface AuthContextType {
   user: User | null
+  session: Session | null
   profile: UserProfile | null
   isLoading: boolean
   isAuthenticated: boolean
@@ -25,6 +26,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -56,9 +58,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           try {
             if (timeoutId) clearTimeout(timeoutId)
 
-            // Update user state
+            // Update user and session state
             if (isMounted) {
               setUser(session?.user || null)
+              setSession(session || null)
             }
 
             if (session?.user) {
@@ -258,6 +261,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await client.auth.signOut()
       if (error) throw error
       setUser(null)
+      setSession(null)
       setProfile(null)
     } catch (error: any) {
       console.error('Sign-out error:', error)
@@ -271,6 +275,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value: AuthContextType = {
     user,
+    session,
     profile,
     isLoading,
     isAuthenticated: !!user,
