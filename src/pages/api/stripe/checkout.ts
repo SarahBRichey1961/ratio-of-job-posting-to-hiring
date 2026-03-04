@@ -11,14 +11,14 @@ interface CheckoutRequestBody {
 
 const PRICING = {
   sponsor: {
-    monthly: { amount: 19900, currency: 'usd', interval: 'month' },
-    annual: { amount: 199900, currency: 'usd', interval: 'year' },
-    onetime: { amount: 49900, currency: 'usd' },
+    monthly: { amount: 19900, currency: 'usd' as const, interval: 'month' as const },
+    annual: { amount: 199900, currency: 'usd' as const, interval: 'year' as const },
+    onetime: { amount: 49900, currency: 'usd' as const },
   },
   advertiser: {
-    monthly: { amount: 19900, currency: 'usd', interval: 'month' },
-    annual: { amount: 199900, currency: 'usd', interval: 'year' },
-    onetime: { amount: 49900, currency: 'usd' },
+    monthly: { amount: 19900, currency: 'usd' as const, interval: 'month' as const },
+    annual: { amount: 199900, currency: 'usd' as const, interval: 'year' as const },
+    onetime: { amount: 49900, currency: 'usd' as const },
   },
 }
 
@@ -94,7 +94,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       sessionConfig.line_items = [
         {
           price_data: {
-            currency: pricing.currency as Stripe.Price.CurrencyParam,
+            currency: pricing.currency,
             product_data: {
               name: `Take The Reins ${userType === 'sponsor' ? 'Sponsor' : 'Advertiser'} - One-Time Payment`,
               description: `One-time fee for ${userType} account`,
@@ -105,17 +105,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         },
       ]
     } else {
+      // Type guard for recurring pricing
+      const recurringPricing = pricing as { amount: number; currency: 'usd'; interval: 'month' | 'year' }
+      
       sessionConfig.line_items = [
         {
           price_data: {
-            currency: pricing.currency as Stripe.Price.CurrencyParam,
+            currency: recurringPricing.currency,
             product_data: {
               name: `Take The Reins ${userType === 'sponsor' ? 'Sponsor' : 'Advertiser'} - ${planType === 'monthly' ? 'Monthly' : 'Annual'} Plan`,
               description: `Recurring subscription for ${userType} account`,
             },
-            unit_amount: pricing.amount,
+            unit_amount: recurringPricing.amount,
             recurring: {
-              interval: pricing.interval as 'month' | 'year',
+              interval: recurringPricing.interval,
             },
           },
           quantity: 1,

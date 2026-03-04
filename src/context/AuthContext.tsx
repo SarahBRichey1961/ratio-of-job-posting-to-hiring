@@ -16,7 +16,7 @@ interface AuthContextType {
   profile: UserProfile | null
   isLoading: boolean
   isAuthenticated: boolean
-  signUp: (email: string, password: string) => Promise<void>
+  signUp: (email: string, password: string) => Promise<{ user: User; session: Session }>
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
   isAdmin: boolean
@@ -215,9 +215,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw signInError
       }
 
+      if (!signInData.session) {
+        throw new Error('Session not created after signup')
+      }
+
       console.log('User auto-signed in, profile creation will be handled by listener')
       // The onAuthStateChange listener will now fire and handle profile creation
       
+      return {
+        user: signInData.user,
+        session: signInData.session,
+      }
     } catch (error: any) {
       console.error('Sign-up error:', error)
       throw error
