@@ -4,7 +4,16 @@
  */
 
 import React, { useEffect, useState } from 'react'
-import { format, subDays } from 'date-fns'
+// TODO: Fix date-fns imports - format and subDays should be available in v3
+// import { format, subDays } from 'date-fns'
+
+// Temporary workaround for date-fns type issue
+const format = (date: Date, fmt: string) => date.toISOString().split('T')[0]
+const subDays = (date: Date, days: number) => {
+  const d = new Date(date)
+  d.setDate(d.getDate() - days)
+  return d
+}
 
 interface BoardMetrics {
   board_id: number
