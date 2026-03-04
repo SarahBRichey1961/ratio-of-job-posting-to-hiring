@@ -288,12 +288,19 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, allBoards, industries,
               Job Board Explorer
             </h2>
 
-            <div className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
-              {new Date().toLocaleDateString('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-              })}
+            <div className="flex items-center gap-4">
+              <div className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
+                {new Date().toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </div>
+              <Link href="/auth/signup">
+                <button className="px-3 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors whitespace-nowrap">
+                  Sign Up
+                </button>
+              </Link>
             </div>
           </header>
 
