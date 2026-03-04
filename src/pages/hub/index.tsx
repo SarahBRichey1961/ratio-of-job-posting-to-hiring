@@ -43,6 +43,12 @@ export default function TakeTheReins() {
             >
               My Account
             </Link>
+            <Link
+              href="/auth/signup"
+              className="text-white bg-indigo-600 hover:bg-indigo-700 transition text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap"
+            >
+              Sign Up
+            </Link>
           </div>
         </div>
       </nav>

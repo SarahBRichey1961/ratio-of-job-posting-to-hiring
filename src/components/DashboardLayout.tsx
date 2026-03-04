@@ -88,8 +88,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-700 flex-shrink-0">
-          <div className="text-xs text-gray-400">
+        <div className="p-4 border-t border-gray-700 flex-shrink-0 space-y-2">
+          <Link href="/auth/signup">
+            <div className="p-3 rounded-lg transition-colors cursor-pointer text-gray-300 hover:bg-gray-700 hover:text-white text-center font-semibold">
+              + Sign Up for Advertising
+            </div>
+          </Link>
+          <div className="text-xs text-gray-400 p-3">
             <p className="font-semibold">Job Board Analytics</p>
             <p className="text-gray-500 mt-1">v1.0.0</p>
           </div>

@@ -143,14 +143,23 @@ export default function AdvertiserDashboard() {
       {/* Navigation */}
       <nav className="bg-slate-800/50 backdrop-blur border-b border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <button
-            onClick={() => router.push('/hub')}
-            className="text-slate-300 hover:text-white transition text-sm font-medium"
-          >
-            ← Back
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.push('/hub')}
+              className="text-slate-300 hover:text-white transition text-sm font-medium"
+            >
+              ← Back to Hub
+            </button>
+          </div>
           <h1 className="text-xl font-bold text-white">Advertiser Dashboard</h1>
-          <div className="w-12"></div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.push('/auth/signup')}
+              className="text-slate-300 hover:text-white transition text-sm font-medium px-3 py-2 rounded-lg hover:bg-slate-700"
+            >
+              + Invite New Advertiser
+            </button>
+          </div>
         </div>
       </nav>
 
