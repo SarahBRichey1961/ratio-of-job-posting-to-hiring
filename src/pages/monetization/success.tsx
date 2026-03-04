@@ -8,19 +8,18 @@ export default function SuccessPage() {
   const router = useRouter()
   const { isAuthenticated, user } = useAuth()
   const [userType, setUserType] = useState<'sponsor' | 'advertiser' | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/auth/login')
-      return
+    // Get user type from query string first
+    if (router.isReady) {
+      const type = router.query.userType as 'sponsor' | 'advertiser' | undefined
+      if (type && ['sponsor', 'advertiser'].includes(type)) {
+        setUserType(type)
+      }
+      setIsLoading(false)
     }
-
-    // Get user type from query string
-    const type = router.query.userType as 'sponsor' | 'advertiser' | undefined
-    if (type) {
-      setUserType(type)
-    }
-  }, [isAuthenticated, router])
+  }, [router.isReady, router.query])
 
   const getDashboardLink = () => {
     switch (userType) {
@@ -31,6 +30,18 @@ export default function SuccessPage() {
       default:
         return '/hub'
     }
+  }
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-indigo-600 mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -68,24 +79,48 @@ export default function SuccessPage() {
           )}
 
           <div className="space-y-3">
-            <Link
-              href={getDashboardLink()}
-              className="w-full inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition"
-            >
-              Go to {userType === 'sponsor' ? 'Sponsor' : 'Advertiser'} Dashboard
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link
+                  href={getDashboardLink()}
+                  className="w-full inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition"
+                >
+                  Go to {userType === 'sponsor' ? 'Sponsor' : 'Advertiser'} Dashboard
+                </Link>
 
-            <Link
-              href="/hub"
-              className="w-full inline-block bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
-            >
-              Back to Hub
-            </Link>
+                <Link
+                  href="/hub"
+                  className="w-full inline-block bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
+                >
+                  Back to Hub
+                </Link>
+
+                <p className="text-slate-500 text-sm mt-6">
+                  A confirmation email has been sent to {user?.email}
+                </p>
+              </>
+            ) : (
+              <>
+                <Link
+                  href={getDashboardLink()}
+                  className="w-full inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition"
+                >
+                  Go to {userType === 'sponsor' ? 'Sponsor' : 'Advertiser'} Dashboard
+                </Link>
+
+                <Link
+                  href="/hub"
+                  className="w-full inline-block bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
+                >
+                  Back to Hub
+                </Link>
+
+                <p className="text-slate-400 text-sm mt-6">
+                  Check your email for a confirmation and login link
+                </p>
+              </>
+            )}
           </div>
-
-          <p className="text-slate-500 text-sm mt-6">
-            A confirmation email has been sent to {user?.email}
-          </p>
         </div>
       </div>
     </div>
