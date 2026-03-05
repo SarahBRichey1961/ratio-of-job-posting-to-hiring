@@ -38,6 +38,7 @@ export default function AdvertiserDashboard() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [imagePreview, setImagePreview] = useState<string>('')
+  const [previewAdIndex, setPreviewAdIndex] = useState(0)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -159,7 +160,12 @@ export default function AdvertiserDashboard() {
     setSuccess('')
     setSubmitting(true)
 
-    console.log('Starting ad creation with form data:', { ...formData, banner_image_url: `[base64...]` })
+    // Validate form data
+    if (!formData.title || !formData.banner_image_url || !formData.click_url) {
+      setError('Please fill in all required fields: Title, Banner Image, and Click URL')
+      setSubmitting(false)
+      return
+    }
 
     try {
       const response = await fetch('/api/monetization/ads', {
@@ -171,14 +177,16 @@ export default function AdvertiserDashboard() {
         body: JSON.stringify(formData)
       })
 
-      console.log('API Response status:', response.status)
       const responseData = await response.json()
-      console.log('API Response data:', responseData)
 
       if (!response.ok) {
-        throw new Error(responseData.error || `Failed to create ad (${response.status})`)
+        const errorMsg = responseData.error || responseData.message || `Failed to create ad (Status: ${response.status})`
+        setError(errorMsg)
+        setSubmitting(false)
+        return
       }
 
+      // Success - ad was created
       const newAd = responseData
       setAds([newAd, ...ads])
       setFormData({
@@ -191,14 +199,13 @@ export default function AdvertiserDashboard() {
       })
       setImagePreview('')
       setShowForm(false)
-      setSuccess('Advertisement created successfully!')
+      setSuccess(`✓ Advertisement "${newAd.title}" created successfully! It will start rotating on your selected pages.`)
       
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(''), 3000)
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccess(''), 5000)
     } catch (err) {
-      const errorMsg = (err as Error).message
-      console.error('Error creating ad:', errorMsg)
-      setError(errorMsg)
+      const errorMsg = (err as Error).message || 'An unexpected error occurred while creating your advertisement'
+      setError(`Error: ${errorMsg}`)
     } finally {
       setSubmitting(false)
     }
@@ -310,7 +317,7 @@ export default function AdvertiserDashboard() {
           <div>
             <h2 className="text-3xl font-bold text-white">Your Advertisements</h2>
             <p className="text-slate-400 mt-1">
-              {ads.length} of 5 active ads
+              {ads.length} of 50 active ads
             </p>
           </div>
           <button
@@ -328,9 +335,9 @@ export default function AdvertiserDashboard() {
                 })
               }
             }}
-            disabled={ads.length >= 5}
+            disabled={ads.length >= 50}
             className={`font-semibold py-2 px-6 rounded-lg transition ${
-              ads.length >= 5
+              ads.length >= 50
                 ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
                 : 'bg-indigo-600 hover:bg-indigo-700 text-white'
             }`}
@@ -513,6 +520,63 @@ export default function AdvertiserDashboard() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Live Ad Preview */}
+        {ads.length > 0 && (
+          <div className="mt-12 border-t border-slate-700 pt-8">
+            <h3 className="text-2xl font-bold text-white mb-6">Live Preview (How Your Ads Appear)</h3>
+            <p className="text-slate-400 mb-4">Ads rotate every 2 minutes. Click to view full size.</p>
+            
+            <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-6 border border-slate-700">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-sm text-slate-400">
+                  Showing ad {previewAdIndex + 1} of {ads.length}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPreviewAdIndex((prev) => (prev - 1 + ads.length) % ads.length)}
+                    className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-sm"
+                  >
+                    ← Previous
+                  </button>
+                  <button
+                    onClick={() => setPreviewAdIndex((prev) => (prev + 1) % ads.length)}
+                    className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-sm"
+                  >
+                    Next →
+                  </button>
+                </div>
+              </div>
+
+              {ads[previewAdIndex] && (
+                <div className="rounded-lg overflow-hidden border border-slate-600 cursor-pointer hover:border-slate-500 transition group bg-slate-900">
+                  <a
+                    href={ads[previewAdIndex].click_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full"
+                  >
+                    <div style={{ height: `${ads[previewAdIndex].banner_height}px`, overflow: 'hidden' }}>
+                      <img
+                        src={ads[previewAdIndex].banner_image_url}
+                        alt={ads[previewAdIndex].alt_text}
+                        className="w-full h-full object-cover group-hover:scale-105 transition"
+                      />
+                    </div>
+                  </a>
+                  <div className="p-3 bg-slate-800">
+                    <p className="text-white font-semibold text-sm">{ads[previewAdIndex].title}</p>
+                    <p className="text-slate-400 text-xs mt-1">Impressions: {ads[previewAdIndex].impressions} | Clicks: {ads[previewAdIndex].clicks}</p>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-slate-500 mt-4 text-center">
+                Preview shows how ads will cycle through on the Hub, Search, and Comparison pages
+              </p>
+            </div>
           </div>
         )}
       </div>
