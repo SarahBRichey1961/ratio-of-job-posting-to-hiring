@@ -17,10 +17,21 @@ interface Ad {
   created_at: string
 }
 
+interface AdvertiserAccount {
+  id: string
+  company_name: string
+  website?: string
+  contact_email?: string
+  payment_status: string
+  subscription_type?: string
+  subscription_end_date?: string
+}
+
 export default function AdvertiserDashboard() {
   const { session, user } = useAuth()
   const router = useRouter()
   const [ads, setAds] = useState<Ad[]>([])
+  const [account, setAccount] = useState<AdvertiserAccount | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [showForm, setShowForm] = useState(false)
@@ -65,12 +76,32 @@ export default function AdvertiserDashboard() {
     ensureAdvertiserAccount()
   }, [session, router])
 
-  // Fetch ads
+  // Fetch ads and account details
   useEffect(() => {
     if (session) {
       fetchAds()
+      fetchAccountDetails()
     }
   }, [session])
+
+  const fetchAccountDetails = async () => {
+    try {
+      const response = await fetch('/api/monetization/advertiser', {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch account details')
+      }
+
+      const data = await response.json()
+      setAccount(data)
+    } catch (err) {
+      console.error('Error fetching account details:', err)
+    }
+  }
 
   const fetchAds = async () => {
     try {
@@ -241,6 +272,37 @@ export default function AdvertiserDashboard() {
         {success && (
           <div className="mb-6 bg-green-600/20 border border-green-600/50 text-green-200 px-4 py-3 rounded-lg">
             {success}
+          </div>
+        )}
+
+        {/* Account Status Card */}
+        {account && (
+          <div className="mb-8 bg-slate-800/50 border border-slate-700 rounded-lg p-6">
+            <h3 className="text-lg font-bold text-white mb-4">Account Status</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-slate-400 text-sm">Company Name</p>
+                <p className="text-white font-medium">{account.company_name || '—'}</p>
+              </div>
+              <div>
+                <p className="text-slate-400 text-sm">Payment Status</p>
+                <p className={`font-medium ${
+                  account.payment_status === 'paid' ? 'text-green-400' : 
+                  account.payment_status === 'pending' ? 'text-yellow-400' : 
+                  'text-gray-400'
+                }`}>
+                  {account.payment_status}
+                </p>
+              </div>
+              <div>
+                <p className="text-slate-400 text-sm">Subscription Type</p>
+                <p className="text-white font-medium">{account.subscription_type || '—'}</p>
+              </div>
+              <div>
+                <p className="text-slate-400 text-sm">Active Ads</p>
+                <p className="text-white font-medium">{ads.filter(a => a.is_active).length}/{ads.length}</p>
+              </div>
+            </div>
           </div>
         )}
 
