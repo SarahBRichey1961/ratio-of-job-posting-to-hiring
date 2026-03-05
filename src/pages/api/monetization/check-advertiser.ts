@@ -56,9 +56,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
     } catch (error) {
       console.error('Error checking advertiser:', error)
-      res.status(500).json({ error: (error as Error).message })
+      return res.status(500).json({ error: (error as Error).message })
     }
   } else {
-    res.status(405).json({ error: 'Method not allowed' })
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 }
