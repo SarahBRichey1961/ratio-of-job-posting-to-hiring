@@ -7,7 +7,7 @@ import { AdRotationBanner } from '@/components/AdRotationBanner'
 
 export default function TakeTheReins() {
   const router = useRouter()
-  const { session, isAuthenticated } = useAuth()
+  const { session, isAuthenticated, isAdmin } = useAuth()
   const [hasAdvertiserAccount, setHasAdvertiserAccount] = useState(false)
 
   useEffect(() => {
@@ -76,6 +76,22 @@ export default function TakeTheReins() {
                 className="text-white bg-orange-600 hover:bg-orange-700 transition text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap"
               >
                 📢 Manage Ads
+              </Link>
+            )}
+            {isAdmin && (
+              <Link
+                href="/admin/advertisers"
+                className="text-white bg-purple-600 hover:bg-purple-700 transition text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap"
+              >
+                👥 Admin
+              </Link>
+            )}
+            {!hasAdvertiserAccount && isAuthenticated && (
+              <Link
+                href="/advertiser/dashboard"
+                className="text-white bg-green-600 hover:bg-green-700 transition text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap"
+              >
+                💰 Become an Advertiser
               </Link>
             )}
             <Link
