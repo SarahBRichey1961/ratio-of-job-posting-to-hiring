@@ -35,24 +35,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
-  // Get advertiser account with payment status
-  const { data: advertiser, error: advertiserError } = await supabase
+  // ADMIN BYPASS: Sarah@websepic.com can create unlimited ads without payment
+  const isAdmin = user.email === 'Sarah@websepic.com'
+
+  // Get or create advertiser account for this user
+  let advertiser: any
+  
+  const { data: existingAdvertiser, error: getError } = await supabase
     .from('advertiser_accounts')
     .select('id, payment_status, user_id')
     .eq('user_id', user.id)
     .single()
 
-  if (advertiserError) {
-    // If no advertiser account exists, create one (auto-create for paid status)
-    // Check if user has admin role or is a known advertiser
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+  if (getError && getError.code !== 'PGRST116') {
+    // Actual error (not "no rows")
+    console.error('Error fetching advertiser:', getError)
+    return res.status(500).json({ error: 'Failed to fetch advertiser account' })
+  }
 
-    // For admin or if explicitly marked, auto-create advertiser account with paid status
-    if (profile?.role === 'admin' || user.email === 'Sarah@websepic.com') {
+  if (existingAdvertiser) {
+    // Account exists
+    advertiser = existingAdvertiser
+    
+    // For non-admins, check payment status
+    if (!isAdmin && advertiser.payment_status !== 'paid') {
+      return res.status(403).json({ 
+        error: `Your advertiser account is ${advertiser.payment_status}. Please complete payment to create ads.` 
+      })
+    }
+  } else {
+    // No advertiser account exists
+    if (isAdmin || user.email === 'Sarah@websepic.com') {
+      // Auto-create for admins with paid status
       const { data: newAdvertiser, error: createError } = await supabase
         .from('advertiser_accounts')
         .insert({
@@ -62,7 +76,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           payment_status: 'paid',
           subscription_type: 'admin'
         })
-        .select('id')
+        .select('id, payment_status, user_id')
         .single()
 
       if (createError) {
@@ -72,38 +86,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         })
       }
 
-      // Continue with the new advertiser account
-      if (!newAdvertiser) {
-        return res.status(403).json({ 
-          error: 'You must be an advertiser to create ads. Contact support to set up your account.' 
-        })
-      }
+      advertiser = newAdvertiser
     } else {
+      // Non-admin without account
       return res.status(403).json({ 
-        error: 'You must be a paid advertiser to create ads. Payment not found.' 
+        error: 'You must be a paid advertiser to create ads. Please purchase an advertising account first.' 
       })
     }
-  } else if (advertiser) {
-    // Account exists - verify payment status or allow for known paid users
-    const isPaidOrKnownUser = advertiser.payment_status === 'paid' || user.email === 'Sarah@websepic.com'
-    
-    if (!isPaidOrKnownUser) {
-      return res.status(403).json({ 
-        error: `Your advertiser account is ${advertiser.payment_status}. Please complete payment to create ads.` 
-      })
-    }
-    
-    // For Sarah, ensure account is marked as paid if it wasn't
-    if (user.email === 'Sarah@websepic.com' && advertiser.payment_status !== 'paid') {
-      try {
-        await supabase
-          .from('advertiser_accounts')
-          .update({ payment_status: 'paid' })
-          .eq('id', advertiser.id)
-      } catch (err) {
-        console.error('Error updating payment status:', err)
-      }
-    }
+  }
+
+  // Verify advertiser account exists at this point
+  if (!advertiser || !advertiser.id) {
+    return res.status(500).json({ error: 'Failed to process advertiser account' })
   }
 
   if (req.method === 'POST') {
