@@ -74,7 +74,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (countError) throw countError
 
       const activeAdCount = existingAds?.length || 0
-      const AD_LIMIT = 5
+      const AD_LIMIT = 50
 
       if (activeAdCount >= AD_LIMIT) {
         return res.status(403).json({
