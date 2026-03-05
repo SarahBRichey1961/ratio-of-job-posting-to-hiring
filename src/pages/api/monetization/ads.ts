@@ -35,15 +35,61 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
-  // Get advertiser account
+  // Get advertiser account with payment status
   const { data: advertiser, error: advertiserError } = await supabase
     .from('advertiser_accounts')
-    .select('id')
+    .select('id, payment_status, user_id')
     .eq('user_id', user.id)
     .single()
 
-  if (advertiserError || !advertiser) {
-    return res.status(403).json({ error: 'You must be an advertiser to create ads' })
+  if (advertiserError) {
+    // If no advertiser account exists, create one (auto-create for paid status)
+    // Check if user has admin role or is a known advertiser
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    // For admin or if explicitly marked, auto-create advertiser account with paid status
+    if (profile?.role === 'admin' || user.email === 'Sarah@websepic.com') {
+      const { data: newAdvertiser, error: createError } = await supabase
+        .from('advertiser_accounts')
+        .insert({
+          user_id: user.id,
+          company_name: user.email?.split('@')[0] || 'Advertiser',
+          contact_email: user.email,
+          payment_status: 'paid',
+          subscription_type: 'admin'
+        })
+        .select('id')
+        .single()
+
+      if (createError) {
+        console.error('Error creating advertiser account:', createError)
+        return res.status(500).json({ 
+          error: 'Failed to create advertiser account. Please contact support.' 
+        })
+      }
+
+      // Continue with the new advertiser account
+      if (!newAdvertiser) {
+        return res.status(403).json({ 
+          error: 'You must be an advertiser to create ads. Contact support to set up your account.' 
+        })
+      }
+    } else {
+      return res.status(403).json({ 
+        error: 'You must be a paid advertiser to create ads. Payment not found.' 
+      })
+    }
+  }
+
+  // If advertiser exists, check payment status
+  if (advertiser && advertiser.payment_status !== 'paid') {
+    return res.status(403).json({ 
+      error: `Your advertiser account is ${advertiser.payment_status}. Please complete payment to create ads.` 
+    })
   }
 
   if (req.method === 'POST') {
