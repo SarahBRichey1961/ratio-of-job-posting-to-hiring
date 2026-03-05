@@ -50,7 +50,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (getError && getError.code !== 'PGRST116') {
     // Actual error (not "no rows")
     console.error('Error fetching advertiser:', getError)
-    return res.status(500).json({ error: 'Failed to fetch advertiser account' })
+    return res.status(500).json({ 
+      error: `Failed to fetch advertiser account: ${getError.message}` 
+    })
   }
 
   if (existingAdvertiser) {
@@ -82,7 +84,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (createError) {
         console.error('Error creating advertiser account:', createError)
         return res.status(500).json({ 
-          error: 'Failed to create advertiser account. Please contact support.' 
+          error: `Failed to create advertiser account: ${createError.message}` 
         })
       }
 

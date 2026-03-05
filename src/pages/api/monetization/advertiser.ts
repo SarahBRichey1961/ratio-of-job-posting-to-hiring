@@ -40,11 +40,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { company_name, website, contact_email } = req.body
 
       // Check if advertiser account already exists
-      const { data: existing } = await supabase
+      const { data: existing, error: checkError } = await supabase
         .from('advertiser_accounts')
         .select('id, website, contact_email, payment_status, subscription_type')
         .eq('user_id', user.id)
         .single()
+
+      // Handle errors from checking for existing account
+      if (checkError && checkError.code !== 'PGRST116') {
+        // PGRST116 means no rows found, which is fine for creation
+        console.error('Error checking for existing advertiser:', checkError)
+        throw new Error(`Failed to check advertiser account: ${checkError.message}`)
+      }
 
       if (existing) {
         // Update existing advertiser account if company_name provided
@@ -61,13 +68,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             .select()
             .single()
 
-          if (error) throw error
+          if (error) {
+            console.error('Error updating advertiser:', error)
+            throw new Error(`Failed to update advertiser: ${error.message}`)
+          }
           return res.status(200).json(data)
         }
         // Just return existing account if no company_name provided
         return res.status(200).json({ id: existing.id, created: false })
       } else {
         // Create new advertiser account (company_name is optional now)
+        if (!user.id) {
+          throw new Error('User ID is missing - cannot create advertiser account')
+        }
+        
         const { data, error } = await supabase
           .from('advertiser_accounts')
           .insert({
@@ -79,7 +93,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .select()
           .single()
 
-        if (error) throw error
+        if (error) {
+          console.error('Error creating advertiser:', error)
+          throw new Error(`Failed to create advertiser account: ${error.message}`)
+        }
         return res.status(201).json({ ...data, created: true })
       }
     } catch (error) {
