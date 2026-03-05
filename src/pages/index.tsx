@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react'
 import { getSupabase } from '@/lib/supabase'
 import { ScoreCard } from '@/components/ScoringDisplay'
 import { EfficiencyScore } from '@/lib/scoringEngine'
+import { useAuth } from '@/context/AuthContext'
 
 interface JobBoard {
   id: number
@@ -26,9 +27,11 @@ interface HomeProps {
 
 const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, allBoards, industries, roles, totalBoards }) => {
   const router = useRouter()
+  const { session, isAuthenticated } = useAuth()
   
   // Sidebar state
   const [sidebarOpen, setSidebarOpen] = React.useState(false)
+  const [hasAdvertiserAccount, setHasAdvertiserAccount] = useState(false)
   
   // Filter state
   const [selectedIndustry, setSelectedIndustry] = useState<string>('')
@@ -51,6 +54,30 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, allBoards, industries,
     handleResize()
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+  
+  // Check if user has an advertiser account
+  useEffect(() => {
+    const checkAdvertiserAccount = async () => {
+      if (!session) return
+
+      try {
+        const response = await fetch('/api/monetization/advertiser', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setHasAdvertiserAccount(!!data)
+        }
+      } catch (err) {
+        console.error('Error checking advertiser account:', err)
+      }
+    }
+
+    checkAdvertiserAccount()
+  }, [session])
   
   // Apply filters
   useEffect(() => {
@@ -296,6 +323,13 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, allBoards, industries,
                   day: 'numeric',
                 })}
               </div>
+              {hasAdvertiserAccount && (
+                <Link href="/advertiser/dashboard">
+                  <button className="px-3 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors whitespace-nowrap">
+                    📢 Manage Ads
+                  </button>
+                </Link>
+              )}
               <Link href="/auth/signup">
                 <button className="px-3 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors whitespace-nowrap">
                   Sign Up

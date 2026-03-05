@@ -1,11 +1,38 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { useAuth } from '@/context/AuthContext'
 import { AdRotationBanner } from '@/components/AdRotationBanner'
 
 export default function TakeTheReins() {
   const router = useRouter()
+  const { session, isAuthenticated } = useAuth()
+  const [hasAdvertiserAccount, setHasAdvertiserAccount] = useState(false)
+
+  useEffect(() => {
+    // Check if user has an advertiser account
+    const checkAdvertiserAccount = async () => {
+      if (!session) return
+
+      try {
+        const response = await fetch('/api/monetization/advertiser', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setHasAdvertiserAccount(!!data)
+        }
+      } catch (err) {
+        console.error('Error checking advertiser account:', err)
+      }
+    }
+
+    checkAdvertiserAccount()
+  }, [session])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -43,6 +70,14 @@ export default function TakeTheReins() {
             >
               My Account
             </Link>
+            {hasAdvertiserAccount && (
+              <Link
+                href="/advertiser/dashboard"
+                className="text-white bg-orange-600 hover:bg-orange-700 transition text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap"
+              >
+                📢 Manage Ads
+              </Link>
+            )}
             <Link
               href="/auth/signup"
               className="text-white bg-indigo-600 hover:bg-indigo-700 transition text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap"
