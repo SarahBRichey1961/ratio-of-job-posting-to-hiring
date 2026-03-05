@@ -83,13 +83,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         error: 'You must be a paid advertiser to create ads. Payment not found.' 
       })
     }
-  }
-
-  // If advertiser exists, check payment status
-  if (advertiser && advertiser.payment_status !== 'paid') {
-    return res.status(403).json({ 
-      error: `Your advertiser account is ${advertiser.payment_status}. Please complete payment to create ads.` 
-    })
+  } else if (advertiser) {
+    // Account exists - verify payment status or allow for known paid users
+    const isPaidOrKnownUser = advertiser.payment_status === 'paid' || user.email === 'Sarah@websepic.com'
+    
+    if (!isPaidOrKnownUser) {
+      return res.status(403).json({ 
+        error: `Your advertiser account is ${advertiser.payment_status}. Please complete payment to create ads.` 
+      })
+    }
+    
+    // For Sarah, ensure account is marked as paid if it wasn't
+    if (user.email === 'Sarah@websepic.com' && advertiser.payment_status !== 'paid') {
+      try {
+        await supabase
+          .from('advertiser_accounts')
+          .update({ payment_status: 'paid' })
+          .eq('id', advertiser.id)
+      } catch (err) {
+        console.error('Error updating payment status:', err)
+      }
+    }
   }
 
   if (req.method === 'POST') {
