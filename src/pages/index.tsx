@@ -330,6 +330,13 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, allBoards, industries,
                   </button>
                 </Link>
               )}
+              {!isAuthenticated && (
+                <Link href="/auth/login">
+                  <button className="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors whitespace-nowrap">
+                    Log In
+                  </button>
+                </Link>
+              )}
               <Link href="/auth/signup">
                 <button className="px-3 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors whitespace-nowrap">
                   Sign Up
