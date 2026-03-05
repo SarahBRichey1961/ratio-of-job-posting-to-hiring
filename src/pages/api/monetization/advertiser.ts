@@ -39,10 +39,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const { company_name, website, contact_email } = req.body
 
-      if (!company_name) {
-        return res.status(400).json({ error: 'Company name is required' })
-      }
-
       // Check if advertiser account already exists
       const { data: existing } = await supabase
         .from('advertiser_accounts')
@@ -51,36 +47,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .single()
 
       if (existing) {
-        // Update existing advertiser account
-        const { data, error } = await supabase
-          .from('advertiser_accounts')
-          .update({
-            company_name,
-            website: website || existing.website,
-            contact_email: contact_email || user.email,
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id)
-          .select()
-          .single()
+        // Update existing advertiser account if company_name provided
+        if (company_name) {
+          const { data, error } = await supabase
+            .from('advertiser_accounts')
+            .update({
+              company_name,
+              website: website || existing.website,
+              contact_email: contact_email || user.email,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', user.id)
+            .select()
+            .single()
 
-        if (error) throw error
-        return res.status(200).json(data)
+          if (error) throw error
+          return res.status(200).json(data)
+        }
+        // Just return existing account if no company_name provided
+        return res.status(200).json({ id: existing.id, created: false })
       } else {
-        // Create new advertiser account
+        // Create new advertiser account (company_name is optional now)
         const { data, error } = await supabase
           .from('advertiser_accounts')
           .insert({
             user_id: user.id,
-            company_name,
-            website,
+            company_name: company_name || null,
+            website: website || null,
             contact_email: contact_email || user.email
           })
           .select()
           .single()
 
         if (error) throw error
-        return res.status(201).json(data)
+        return res.status(201).json({ ...data, created: true })
       }
     } catch (error) {
       console.error('Error creating advertiser:', error)

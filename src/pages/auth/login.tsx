@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
@@ -6,11 +6,48 @@ import { useAuth } from '@/context/AuthContext'
 
 const LoginPage = () => {
   const router = useRouter()
-  const { signIn } = useAuth()
+  const { signIn, session } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [checkingAdvertiser, setCheckingAdvertiser] = useState(false)
+
+  // Check advertiser status after successful login
+  useEffect(() => {
+    const checkAdvertiserAndRedirect = async () => {
+      if (!session || checkingAdvertiser) return
+
+      setCheckingAdvertiser(true)
+      try {
+        const checkResponse = await fetch('/api/monetization/check-advertiser', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        })
+
+        let redirectUrl = (router.query.redirect as string) || '/hub/my-manifestos'
+
+        if (checkResponse.ok) {
+          const advertiserData = await checkResponse.json()
+          if (advertiserData.hasPaidAccount) {
+            // Advertiser with paid account - go to advertiser dashboard
+            redirectUrl = '/advertiser/dashboard'
+          }
+        }
+
+        router.push(redirectUrl)
+      } catch (err) {
+        console.error('Error checking advertiser status:', err)
+        // Still redirect even if check fails
+        router.push((router.query.redirect as string) || '/hub/my-manifestos')
+      } finally {
+        setCheckingAdvertiser(false)
+      }
+    }
+
+    checkAdvertiserAndRedirect()
+  }, [session])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -19,10 +56,9 @@ const LoginPage = () => {
 
     try {
       await signIn(email, password)
-      router.push('/hub/my-manifestos')
+      // The useEffect above will handle the advertiser check and redirect
     } catch (err: any) {
       setError(err.message || 'Failed to sign in')
-    } finally {
       setLoading(false)
     }
   }

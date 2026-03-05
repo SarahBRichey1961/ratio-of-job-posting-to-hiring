@@ -22,8 +22,11 @@ export default function AdvertiserDashboard() {
   const router = useRouter()
   const [ads, setAds] = useState<Ad[]>([])
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [imagePreview, setImagePreview] = useState<string>('')
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -33,11 +36,33 @@ export default function AdvertiserDashboard() {
     alt_text: ''
   })
 
-  // Redirect if not logged in
+  // Redirect if not logged in or create advertiser account if needed
   useEffect(() => {
     if (!session) {
       router.push('/auth/login?redirect=/advertiser/dashboard')
+      return
     }
+
+    // Ensure advertiser account exists
+    const ensureAdvertiserAccount = async () => {
+      try {
+        const response = await fetch('/api/monetization/advertiser', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (!response.ok) {
+          console.error('Failed to ensure advertiser account:', response.status)
+        }
+      } catch (err) {
+        console.error('Error ensuring advertiser account:', err)
+      }
+    }
+
+    ensureAdvertiserAccount()
   }, [session, router])
 
   // Fetch ads
@@ -70,9 +95,40 @@ export default function AdvertiserDashboard() {
     }
   }
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file is an image
+    if (!file.type.startsWith('image/')) {
+      setError('Please select a valid image file')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image must be smaller than 5MB')
+      return
+    }
+
+    // Convert to base64
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const base64String = event.target?.result as string
+      setImagePreview(base64String)
+      setFormData({ ...formData, banner_image_url: base64String })
+      setError('')
+    }
+    reader.readAsDataURL(file)
+  }
+
   const handleCreateAd = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setSuccess('')
+    setSubmitting(true)
+
+    console.log('Starting ad creation with form data:', { ...formData, banner_image_url: `[base64...]` })
 
     try {
       const response = await fetch('/api/monetization/ads', {
@@ -84,12 +140,15 @@ export default function AdvertiserDashboard() {
         body: JSON.stringify(formData)
       })
 
+      console.log('API Response status:', response.status)
+      const responseData = await response.json()
+      console.log('API Response data:', responseData)
+
       if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to create ad')
+        throw new Error(responseData.error || `Failed to create ad (${response.status})`)
       }
 
-      const newAd = await response.json()
+      const newAd = responseData
       setAds([newAd, ...ads])
       setFormData({
         title: '',
@@ -99,9 +158,18 @@ export default function AdvertiserDashboard() {
         click_url: '',
         alt_text: ''
       })
+      setImagePreview('')
       setShowForm(false)
+      setSuccess('Advertisement created successfully!')
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
-      setError((err as Error).message)
+      const errorMsg = (err as Error).message
+      console.error('Error creating ad:', errorMsg)
+      setError(errorMsg)
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -170,6 +238,12 @@ export default function AdvertiserDashboard() {
           </div>
         )}
 
+        {success && (
+          <div className="mb-6 bg-green-600/20 border border-green-600/50 text-green-200 px-4 py-3 rounded-lg">
+            {success}
+          </div>
+        )}
+
         <div className="flex justify-between items-center mb-8">
           <div>
             <h2 className="text-3xl font-bold text-white">Your Advertisements</h2>
@@ -178,7 +252,20 @@ export default function AdvertiserDashboard() {
             </p>
           </div>
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              setShowForm(!showForm)
+              if (showForm) {
+                setImagePreview('')
+                setFormData({
+                  title: '',
+                  description: '',
+                  banner_image_url: '',
+                  banner_height: 80,
+                  click_url: '',
+                  alt_text: ''
+                })
+              }
+            }}
             disabled={ads.length >= 5}
             className={`font-semibold py-2 px-6 rounded-lg transition ${
               ads.length >= 5
@@ -222,17 +309,29 @@ export default function AdvertiserDashboard() {
               </div>
 
               <div>
-                <label className="block text-white font-semibold mb-2">Banner Image URL</label>
+                <label className="block text-white font-semibold mb-2">Banner Image (JPEG/PNG)</label>
                 <input
-                  type="url"
+                  type="file"
                   required
-                  value={formData.banner_image_url}
-                  onChange={(e) => setFormData({ ...formData, banner_image_url: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-indigo-500"
-                  placeholder="https://example.com/banner.jpg"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  onChange={handleImageUpload}
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-indigo-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700"
                 />
-                <p className="text-slate-400 text-xs mt-1">Recommended: 1200x80px or similar aspect ratio</p>
+                <p className="text-slate-400 text-xs mt-1">Recommended: 1200x80px • Max 5MB</p>
               </div>
+
+              {imagePreview && (
+                <div>
+                  <label className="block text-white font-semibold mb-2">Image Preview</label>
+                  <div className="rounded-lg overflow-hidden border border-slate-600 bg-slate-900" style={{ maxHeight: '200px' }}>
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
@@ -272,9 +371,14 @@ export default function AdvertiserDashboard() {
 
               <button
                 type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition"
+                disabled={submitting || !formData.title || !formData.banner_image_url || !formData.click_url}
+                className={`w-full font-semibold py-3 px-6 rounded-lg transition ${
+                  submitting || !formData.title || !formData.banner_image_url || !formData.click_url
+                    ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                }`}
               >
-                Create Advertisement
+                {submitting ? 'Creating Advertisement...' : 'Create Advertisement'}
               </button>
             </form>
           </div>

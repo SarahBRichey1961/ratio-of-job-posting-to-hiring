@@ -85,20 +85,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             throw error
           }
         } else if (userType === 'advertiser') {
-          const { error } = await supabase
+          // First, try to create the advertiser account if it doesn't exist
+          const { data: existing } = await supabase
             .from('advertiser_accounts')
-            .update({
-              payment_status: 'paid',
-              subscription_type: planType,
-              stripe_session_id: session.id,
-              subscription_end_date: subscriptionEndDate?.toISOString() || null,
-              updated_at: new Date().toISOString(),
-            })
+            .select('id')
             .eq('user_id', userId)
+            .single()
 
-          if (error) {
-            console.error('Error updating advertiser:', error)
-            throw error
+          if (!existing) {
+            // Create new advertiser account
+            const { error: createError } = await supabase
+              .from('advertiser_accounts')
+              .insert({
+                user_id: userId,
+                payment_status: 'paid',
+                subscription_type: planType,
+                stripe_session_id: session.id,
+                subscription_end_date: subscriptionEndDate?.toISOString() || null,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+
+            if (createError) {
+              console.error('Error creating advertiser account:', createError)
+              throw createError
+            }
+          } else {
+            // Update existing advertiser account
+            const { error: updateError } = await supabase
+              .from('advertiser_accounts')
+              .update({
+                payment_status: 'paid',
+                subscription_type: planType,
+                stripe_session_id: session.id,
+                subscription_end_date: subscriptionEndDate?.toISOString() || null,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('user_id', userId)
+
+            if (updateError) {
+              console.error('Error updating advertiser:', updateError)
+              throw updateError
+            }
           }
         }
 
