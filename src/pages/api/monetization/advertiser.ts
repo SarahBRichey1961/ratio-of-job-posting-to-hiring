@@ -123,7 +123,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         throw error
       }
 
-      res.status(200).json(data || null)
+      return res.status(200).json(data || null)
     } catch (error) {
       console.error('Error fetching advertiser:', error)
       return res.status(500).json({ error: (error as Error).message })
