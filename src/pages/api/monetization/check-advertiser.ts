@@ -38,14 +38,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const supabase = createClient(supabaseUrl, supabaseKey)
 
       // Check if advertiser account exists and has paid status
-      const { data: advertiser, error } = await supabase
+      const { data: advertiser, error: advertiserError } = await supabase
         .from('advertiser_accounts')
         .select('id, payment_status, subscription_type')
         .eq('user_id', user.id)
         .single()
 
-      if (error && error.code !== 'PGRST116') {
-        throw error
+      if (advertiserError && advertiserError.code !== 'PGRST116') {
+        console.error('Error checking advertiser status:', advertiserError)
+        throw new Error(`Failed to check advertiser status: ${advertiserError.message}`)
       }
 
       const hasPaidAccount = !!advertiser && advertiser.payment_status === 'paid'
@@ -56,7 +57,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
     } catch (error) {
       console.error('Error checking advertiser:', error)
-      return res.status(500).json({ error: (error as Error).message })
+      return res.status(500).json({ 
+        error: (error as Error).message || 'Failed to check advertiser account'
+      })
     }
   } else {
     return res.status(405).json({ error: 'Method not allowed' })
