@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS advertiser_accounts (
   company_name VARCHAR(255) NOT NULL,
   website VARCHAR(255),
   contact_email VARCHAR(255),
+  payment_status VARCHAR(50) DEFAULT 'unpaid',
+  subscription_type VARCHAR(50) DEFAULT 'basic',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
