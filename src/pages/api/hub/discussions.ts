@@ -2,6 +2,15 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { getSupabase, getAuthenticatedSupabase } from '@/lib/supabase'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Ensure request body is parsed as JSON
+  if (req.method !== 'GET' && typeof req.body === 'string') {
+    try {
+      req.body = JSON.parse(req.body)
+    } catch (e) {
+      return res.status(400).json({ error: 'Invalid JSON in request body' })
+    }
+  }
+
   const supabase = getSupabase()
 
   // GET: Fetch discussions
