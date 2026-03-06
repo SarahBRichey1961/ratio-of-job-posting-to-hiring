@@ -97,6 +97,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // POST: Create new project
   else if (req.method === 'POST') {
     try {
+      // CRITICAL: Parse body if it's a string BEFORE doing anything else
+      let body = req.body
+      if (typeof body === 'string') {
+        console.log('⚠️  Request body is a string, parsing...')
+        try {
+          body = JSON.parse(body)
+        } catch (parseError) {
+          console.error('Failed to parse body:', parseError)
+          return res.status(400).json({ error: 'Invalid JSON in request body', details: parseError })
+        }
+      }
+
+      console.log('✅ Parsed body:', body)
+      console.log('Body type:', typeof body)
+      console.log('Body keys:', Object.keys(body))
+
       // Get auth token from request headers
       const authHeader = req.headers.authorization
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -127,7 +143,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         technologies_used,
         start_date,
         target_completion_date,
-      } = req.body
+      } = body
 
       // CRITICAL: Validate required fields
       if (!title || !description) {
@@ -135,9 +151,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       console.log('=== POST /api/hub/projects ===')
-      console.log('Raw request body:', req.body)
-      console.log('Extracted title:', title)
-      console.log('Extracted learning_goals:', learning_goals)
+      console.log('✅ Received fields: title, description, category, difficulty_level')
+      console.log('Title:', title)
+      console.log('Description:', description)
+      console.log('Category:', category)
       console.log('---')
 
       // Parse arrays if they come as strings (form data issue)
@@ -171,21 +188,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('Final learning_goals:', finalLearningGoals)
       console.log('Final technologies_used:', finalTechnologies)
 
-      const insertData = {
-        title,
-        description,
-        problem_statement,
-        category,
-        difficulty_level,
+      // Build insert data - only include defined fields
+      const insertData: any = {
+        title: title || '',
+        description: description || '',
+        category: category || 'general',
+        difficulty_level: difficulty_level || 'beginner',
         creator_id: user.id,
-        learning_goals: finalLearningGoals,
-        technologies_used: finalTechnologies,
-        start_date,
-        target_completion_date,
         status: 'active',
       }
 
-      console.log('Inserting data:', JSON.stringify(insertData, null, 2))
+      // Only add optional fields if they have values
+      if (problem_statement) insertData.problem_statement = problem_statement
+      if (start_date) insertData.start_date = start_date
+      if (target_completion_date) insertData.target_completion_date = target_completion_date
+      if (finalLearningGoals.length > 0) insertData.learning_goals = finalLearningGoals
+      if (finalTechnologies.length > 0) insertData.technologies_used = finalTechnologies
+
+      console.log('✅ Building insert object...')
+      console.log('Insert data structure:', insertData)
+      console.log('Insert data JSON:', JSON.stringify(insertData, null, 2))
+      console.log('About to execute: authenticatedSupabase.from("hub_projects").insert(insertData)')
 
       const { data, error } = await authenticatedSupabase
         .from('hub_projects')
@@ -193,7 +216,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .select()
 
       if (error) {
-        console.error('Database error:', error)
+        console.error('❌ Database error:', error)
+        console.error('Error code:', (error as any).code)
+        console.error('Error message:', error.message)
         throw error
       }
 
