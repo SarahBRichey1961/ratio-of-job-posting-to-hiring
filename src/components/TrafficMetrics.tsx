@@ -29,63 +29,25 @@ export function TrafficMetrics() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Simulate traffic data - in production, this would fetch from an analytics service
-    const mockTrafficData: TrafficData = {
-      totalVisitors: 12847,
-      totalPageviews: 45623,
-      uniqueVisitors: 8934,
-      avgSessionDuration: 284, // seconds
-      bounceRate: 34.2,
-      trafficTrend: 'up',
-      trendValue: 12.5,
-      topPages: [
-        {
-          page: 'Comparison',
-          views: 18234,
-          visitors: 4562,
-          avgTime: 312,
-        },
-        {
-          page: 'Insights',
-          views: 12456,
-          visitors: 3145,
-          avgTime: 428,
-        },
-        {
-          page: 'Recently Posted',
-          views: 8934,
-          visitors: 2301,
-          avgTime: 156,
-        },
-        {
-          page: 'Hub',
-          views: 5234,
-          visitors: 1562,
-          avgTime: 523,
-        },
-        {
-          page: 'Advertiser Dashboard',
-          views: 765,
-          visitors: 364,
-          avgTime: 634,
-        },
-      ],
-      pageStats: {
-        comparison: { views: 18234, visitors: 4562 },
-        insights: { views: 12456, visitors: 3145 },
-        recentlyPosted: { views: 8934, visitors: 2301 },
-        hub: { views: 5234, visitors: 1562 },
-        advertiser: { views: 765, visitors: 364 },
-      },
+    // Fetch real traffic data from Google Analytics API
+    const fetchTrafficData = async () => {
+      try {
+        const response = await fetch('/api/analytics/metrics')
+        if (!response.ok) {
+          throw new Error('Failed to fetch analytics data')
+        }
+        const data = await response.json()
+        setTrafficData(data)
+      } catch (error) {
+        console.error('Error fetching traffic data:', error)
+        // If GA data unavailable, show empty state
+        setTrafficData(null)
+      } finally {
+        setLoading(false)
+      }
     }
 
-    // Simulate API delay
-    const timer = setTimeout(() => {
-      setTrafficData(mockTrafficData)
-      setLoading(false)
-    }, 500)
-
-    return () => clearTimeout(timer)
+    fetchTrafficData()
   }, [])
 
   if (loading) {
@@ -97,7 +59,16 @@ export function TrafficMetrics() {
   }
 
   if (!trafficData) {
-    return null
+    return (
+      <Card className="mb-8">
+        <div className="text-center py-8">
+          <p className="text-gray-400 mb-2">📊 Google Analytics data not available</p>
+          <p className="text-gray-500 text-sm">
+            Make sure your GA Measurement ID is configured and tracking data is being sent.
+          </p>
+        </div>
+      </Card>
+    )
   }
 
   const getTrendColor = (trend: string) => {
