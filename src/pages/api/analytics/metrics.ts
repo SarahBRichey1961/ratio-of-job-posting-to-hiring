@@ -79,7 +79,7 @@ export default async function handler(
     const startDate = thirtyDaysAgo.toISOString().split('T')[0]
 
     // Fetch overview metrics
-    const overviewResponse = await client.runReport({
+    const [overviewResponse] = await client.runReport({
       property: `properties/${propertyId}`,
       dateRanges: [{ startDate, endDate }],
       metrics: [
@@ -91,7 +91,7 @@ export default async function handler(
     })
 
     // Fetch top pages
-    const pagesResponse = await client.runReport({
+    const [pagesResponse] = await client.runReport({
       property: `properties/${propertyId}`,
       dateRanges: [{ startDate, endDate }],
       dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
@@ -159,7 +159,7 @@ export default async function handler(
       .split('T')[0]
     const prevEndDate = thirtyDaysAgo.toISOString().split('T')[0]
 
-    const prevResponse = await client.runReport({
+    const [prevResponse] = await client.runReport({
       property: `properties/${propertyId}`,
       dateRanges: [{ startDate: prevStartDate, endDate: prevEndDate }],
       metrics: [{ name: 'activeUsers' }],
