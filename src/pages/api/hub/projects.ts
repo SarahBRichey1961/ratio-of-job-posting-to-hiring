@@ -2,6 +2,15 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { getSupabase, getAuthenticatedSupabase } from '@/lib/supabase'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Ensure request body is parsed as JSON
+  if (req.method !== 'GET' && typeof req.body === 'string') {
+    try {
+      req.body = JSON.parse(req.body)
+    } catch (e) {
+      return res.status(400).json({ error: 'Invalid JSON in request body' })
+    }
+  }
+
   const supabase = getSupabase()
 
   // GET: Fetch projects
@@ -120,26 +129,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         target_completion_date,
       } = req.body
 
+      // CRITICAL: Validate required fields
+      if (!title || !description) {
+        return res.status(400).json({ error: 'Title and description are required' })
+      }
+
       console.log('=== POST /api/hub/projects ===')
-      console.log('FULL Raw body:', JSON.stringify(req.body, null, 2))
-      console.log('---')
-      console.log('Raw learning_goals value:', learning_goals)
-      console.log('Raw learning_goals type:', typeof learning_goals)
-      console.log('Is learning_goals array?', Array.isArray(learning_goals))
-      console.log('learning_goals length:', Array.isArray(learning_goals) ? learning_goals.length : 'N/A')
-      console.log('---')
-      console.log('Raw technologies_used value:', technologies_used)
-      console.log('Raw technologies_used type:', typeof technologies_used)
-      console.log('Is technologies_used array?', Array.isArray(technologies_used))
-      console.log('technologies_used length:', Array.isArray(technologies_used) ? technologies_used.length : 'N/A')
+      console.log('Raw request body:', req.body)
+      console.log('Extracted title:', title)
+      console.log('Extracted learning_goals:', learning_goals)
       console.log('---')
 
-      // Ensure arrays are properly formatted - VERY EXPLICIT
-      let finalLearningGoals: string[] = Array.isArray(learning_goals) ? learning_goals : []
-      let finalTechnologies: string[] = Array.isArray(technologies_used) ? technologies_used : []
+      // Parse arrays if they come as strings (form data issue)
+      let finalLearningGoals: string[] = []
+      let finalTechnologies: string[] = []
 
-      console.log('Final learning_goals to save:', finalLearningGoals)
-      console.log('Final technologies_used to save:', finalTechnologies)
+      if (learning_goals) {
+        if (typeof learning_goals === 'string') {
+          try {
+            finalLearningGoals = JSON.parse(learning_goals)
+          } catch {
+            finalLearningGoals = [learning_goals]
+          }
+        } else if (Array.isArray(learning_goals)) {
+          finalLearningGoals = learning_goals
+        }
+      }
+
+      if (technologies_used) {
+        if (typeof technologies_used === 'string') {
+          try {
+            finalTechnologies = JSON.parse(technologies_used)
+          } catch {
+            finalTechnologies = [technologies_used]
+          }
+        } else if (Array.isArray(technologies_used)) {
+          finalTechnologies = technologies_used
+        }
+      }
+
+      console.log('Final learning_goals:', finalLearningGoals)
+      console.log('Final technologies_used:', finalTechnologies)
 
       const insertData = {
         title,
