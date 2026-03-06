@@ -248,7 +248,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
       })
 
-      if (error) throw error
+      if (error) {
+        if (error.message?.toLowerCase().includes('rate limit') || error.message?.toLowerCase().includes('too many')) {
+          throw new Error('Tried too many times to log in, wait 15 minutes and try again')
+        }
+        throw error
+      }
     } catch (error: any) {
       console.error('Sign-in error:', error)
       throw error

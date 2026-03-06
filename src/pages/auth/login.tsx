@@ -58,7 +58,12 @@ const LoginPage = () => {
       await signIn(email, password)
       // The useEffect above will handle the advertiser check and redirect
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in')
+      const errorMessage = err.message || 'Failed to sign in'
+      if (errorMessage.toLowerCase().includes('rate limit') || errorMessage.toLowerCase().includes('too many')) {
+        setError('Tried too many times to log in, wait 15 minutes and try again')
+      } else {
+        setError(errorMessage)
+      }
       setLoading(false)
     }
   }

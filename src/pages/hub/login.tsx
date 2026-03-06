@@ -52,7 +52,12 @@ const HubLogin = () => {
       }
     } catch (err) {
       console.error('Auth error:', err)
-      setError((err as Error).message || 'Authentication failed')
+      const errorMessage = (err as Error).message || 'Authentication failed'
+      if (errorMessage.toLowerCase().includes('rate limit') || errorMessage.toLowerCase().includes('too many')) {
+        setError('Tried too many times to log in, wait 15 minutes and try again')
+      } else {
+        setError(errorMessage)
+      }
     } finally {
       setLoading(false)
     }
