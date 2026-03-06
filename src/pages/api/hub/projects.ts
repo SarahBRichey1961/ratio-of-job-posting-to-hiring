@@ -210,6 +210,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('Insert data JSON:', JSON.stringify(insertData, null, 2))
       console.log('About to execute: authenticatedSupabase.from("hub_projects").insert(insertData)')
 
+      // SAFETY CHECK: Ensure we're not sending stringified data
+      if (typeof insertData !== 'object' || insertData === null) {
+        console.error('❌ insertData is not an object!', typeof insertData)
+        return res.status(500).json({ error: 'Internal error: insertData is not an object' })
+      }
+
+      // Verify field types before insert
+      console.log('Field types:')
+      console.log('  title:', typeof insertData.title, '=', insertData.title)
+      console.log('  description:', typeof insertData.description, '=', insertData.description)
+      console.log('  category:', typeof insertData.category, '=', insertData.category)
+      console.log('  learning_goals:', Array.isArray(insertData.learning_goals), insertData.learning_goals)
+      console.log('  technologies_used:', Array.isArray(insertData.technologies_used), insertData.technologies_used)
+
       const { data, error } = await authenticatedSupabase
         .from('hub_projects')
         .insert(insertData)
