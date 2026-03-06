@@ -66,6 +66,40 @@ export const getSupabase = () => {
   }
 }
 
+/**
+ * Create an authenticated Supabase client with a user's JWT token
+ * Used by API routes to access Supabase with user context
+ * Fixes "Cannot find module @supabase/supabase-js" by using proper imports
+ */
+export const getAuthenticatedSupabase = (token: string) => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Missing Supabase environment variables')
+    return null
+  }
+
+  try {
+    const authenticatedClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    })
+    return authenticatedClient
+  } catch (error) {
+    console.error('Failed to create authenticated Supabase client:', error)
+    return null
+  }
+}
+
 // Safe mock object that returns proper responses even when Supabase is not initialized
 const createMockQueryBuilder = () => ({
   select: (columns?: string) => Promise.resolve({ data: null, error: null }),

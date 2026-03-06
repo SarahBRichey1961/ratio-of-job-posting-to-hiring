@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabase, getAuthenticatedSupabase } from '@/lib/supabase'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const supabase = getSupabase()
@@ -56,23 +56,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const token = authHeader.substring(7)
 
       // Create authenticated Supabase client with the user's token
-      const { createClient } = require('@supabase/supabase-js')
-      const authenticatedSupabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        {
-          global: {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-          auth: {
-            persistSession: false,
-            autoRefreshToken: false,
-            detectSessionInUrl: false,
-          },
-        }
-      )
+      const authenticatedSupabase = getAuthenticatedSupabase(token)
+      if (!authenticatedSupabase) {
+        return res.status(500).json({ error: 'Failed to initialize Supabase client' })
+      }
 
       // Get authenticated user
       const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
@@ -174,23 +161,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const token = authHeader.substring(7)
       
       // Create authenticated Supabase client
-      const { createClient } = require('@supabase/supabase-js')
-      const authenticatedSupabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        {
-          global: {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-          auth: {
-            persistSession: false,
-            autoRefreshToken: false,
-            detectSessionInUrl: false,
-          },
-        }
-      )
+      const authenticatedSupabase = getAuthenticatedSupabase(token)
+      if (!authenticatedSupabase) {
+        return res.status(500).json({ error: 'Failed to initialize Supabase client' })
+      }
 
       // Get authenticated user
       const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
