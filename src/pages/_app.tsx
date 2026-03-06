@@ -1,7 +1,9 @@
 import '@/styles/globals.css'
 import type { AppProps } from 'next/app'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
 import { AuthProvider } from '@/context/AuthContext'
+import { initializeGA, trackPageView } from '@/lib/googleAnalytics'
 
 // Error boundary component to catch and handle errors gracefully
 function ErrorFallback({ error }: { error: Error }) {
@@ -19,6 +21,24 @@ function ErrorFallback({ error }: { error: Error }) {
 
 export default function App({ Component, pageProps }: AppProps) {
   const [error, setError] = useState<Error | null>(null)
+  const router = useRouter()
+
+  // Initialize Google Analytics
+  useEffect(() => {
+    initializeGA()
+  }, [])
+
+  // Track page views when route changes
+  useEffect(() => {
+    const handleRouteChange = (url: string) => {
+      trackPageView(url, document.title)
+    }
+
+    router.events.on('routeChangeComplete', handleRouteChange)
+    return () => {
+      router.events.off('routeChangeComplete', handleRouteChange)
+    }
+  }, [router.events])
 
   useEffect(() => {
     // Global error handler for uncaught errors
