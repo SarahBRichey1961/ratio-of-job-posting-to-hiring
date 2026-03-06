@@ -96,7 +96,7 @@ export default async function handler(
       dateRanges: [{ startDate, endDate }],
       dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
       metrics: [{ name: 'screenPageViews' }, { name: 'activeUsers' }, { name: 'averageSessionDuration' }],
-      orderBys: [{ metric: { name: 'screenPageViews' }, descending: true }],
+      orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
       limit: 10,
     })
 
