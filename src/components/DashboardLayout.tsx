@@ -1,6 +1,7 @@
-import React, { ReactNode } from 'react'
+import React, { ReactNode, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { useAuth } from '@/context/AuthContext'
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -46,6 +47,52 @@ const navItems: NavItem[] = [
  */
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
+  const { session } = useAuth()
+  const [isLoadingManageAds, setIsLoadingManageAds] = useState(false)
+
+  const handleManageAds = async () => {
+    setIsLoadingManageAds(true)
+    
+    try {
+      // If not authenticated, redirect to signin
+      if (!session?.user) {
+        await router.push('/auth/login?redirect=/advertiser/dashboard')
+        return
+      }
+
+      // If authenticated, check advertiser status
+      const checkResponse = await fetch('/api/monetization/check-advertiser', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
+
+      if (checkResponse.ok) {
+        const advertiserData = await checkResponse.json()
+        if (advertiserData.hasPaidAccount) {
+          // Has paid ad account - go to manage ads
+          await router.push('/advertiser/dashboard')
+        } else {
+          // No paid account - redirect to advertiser area/signup
+          await router.push('/auth/signup?type=advertiser')
+        }
+      } else {
+        // Error checking status - go to advertiser area
+        await router.push('/advertiser/dashboard')
+      }
+    } catch (err) {
+      console.error('Error handling manage ads:', err)
+      await router.push('/advertiser/dashboard')
+    } finally {
+      setIsLoadingManageAds(false)
+    }
+  }
+
+  const manageAdsItem = {
+    label: 'Manage Ads',
+    icon: '📢',
+    description: 'Create & manage ads',
+  }
 
   return (
     <div className="flex h-screen bg-gray-900">
@@ -85,6 +132,25 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </Link>
             )
           })}
+
+          {/* Manage Ads - Special handling for auth/payment checks */}
+          <div
+            onClick={handleManageAds}
+            className={`p-3 rounded-lg transition-colors cursor-pointer ${
+              isLoadingManageAds
+                ? 'bg-gray-600 text-gray-400 opacity-50 cursor-not-allowed'
+                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xl flex-shrink-0">{manageAdsItem.icon}</span>
+              <div className="min-w-0">
+                <p className="font-semibold text-sm">{manageAdsItem.label}</p>
+                <p className="text-xs text-gray-400">{manageAdsItem.description}</p>
+              </div>
+              {isLoadingManageAds && <span className="text-xs ml-auto animate-pulse">...</span>}
+            </div>
+          </div>
         </nav>
 
         {/* Footer */}
