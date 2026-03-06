@@ -30,7 +30,12 @@ export default function LoginPage() {
       // Auth state change listener will handle redirect
       router.push('/dashboard')
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in. Please check your email and password.')
+      const errorMessage = err.message || 'Failed to sign in. Please check your email and password.'
+      if (errorMessage.toLowerCase().includes('rate limit') || errorMessage.toLowerCase().includes('too many')) {
+        setError('Tried too many times to log in, wait 15 minutes and try again')
+      } else {
+        setError(errorMessage)
+      }
     } finally {
       setIsLoading(false)
     }
