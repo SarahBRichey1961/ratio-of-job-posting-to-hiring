@@ -306,9 +306,6 @@ export default function InsightsPage() {
           description="Hiring trends, job board momentum, and role-specific analysis"
         />
 
-        {/* Traffic Metrics - Now at the top */}
-        <TrafficMetrics />
-
         {/* Tab Switcher */}
         <div className="flex gap-4 mb-8 border-b border-gray-700">
         <button
@@ -772,6 +769,9 @@ export default function InsightsPage() {
           </Section>
         </>
       )}
+
+      {/* Traffic Metrics - Now at the bottom */}
+      <TrafficMetrics />
       </div>
     </DashboardLayout>
   )
