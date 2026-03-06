@@ -170,9 +170,8 @@ export function TrafficMetrics() {
       </StatsSection>
 
       {/* Top Pages Section */}
-      <Section>
+      <Section title="🔥 Top Pages by Traffic">
         <div className="mb-6">
-          <h3 className="text-xl font-bold text-white mb-2">🔥 Top Pages by Traffic</h3>
           <p className="text-gray-400">Pages driving the most visitor engagement</p>
         </div>
 
