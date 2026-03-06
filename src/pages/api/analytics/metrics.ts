@@ -116,11 +116,17 @@ export default async function handler(
         { value: '0' },
       ]
 
+      // Normalize dimension/metric values that can be string or object
+      const normalize = (val: string | any): string => {
+        if (typeof val === 'string') return val
+        return val?.value ?? ''
+      }
+
       return {
-        page: title?.value || path?.value || 'Unknown',
-        views: parseInt(views?.value || '0', 10),
-        visitors: parseInt(visitors?.value || '0', 10),
-        avgTime: Math.round(parseFloat(avgTime?.value || '0')),
+        page: normalize(title) || normalize(path) || 'Unknown',
+        views: parseInt(normalize(views) || '0', 10),
+        visitors: parseInt(normalize(visitors) || '0', 10),
+        avgTime: Math.round(parseFloat(normalize(avgTime) || '0')),
       }
     })
 
