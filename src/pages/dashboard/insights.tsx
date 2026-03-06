@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/DashboardLayout'
+import { TrafficMetrics } from '@/components/TrafficMetrics'
 import {
   PageHeader,
   Card,
@@ -265,10 +266,12 @@ export default function InsightsPage() {
   if (loading || !insights) {
     return (
       <DashboardLayout>
-        <PageHeader title="Market Insights" description="Loading..." />
-        <Card>
-          <p className="text-gray-400">Loading insights...</p>
-        </Card>
+        <div className="px-6 py-8 space-y-8">
+          <PageHeader title="Market Insights" description="Loading..." />
+          <Card>
+            <p className="text-gray-400">Loading insights...</p>
+          </Card>
+        </div>
       </DashboardLayout>
     )
   }
@@ -297,13 +300,17 @@ export default function InsightsPage() {
 
   return (
     <DashboardLayout>
-      <PageHeader
-        title="Market Insights"
-        description="Hiring trends, job board momentum, and role-specific analysis"
-      />
+      <div className="px-6 py-8 space-y-8">
+        <PageHeader
+          title="Market Insights"
+          description="Hiring trends, job board momentum, and role-specific analysis"
+        />
 
-      {/* Tab Switcher */}
-      <div className="flex gap-4 mb-8 border-b border-gray-700">
+        {/* Traffic Metrics - Now at the top */}
+        <TrafficMetrics />
+
+        {/* Tab Switcher */}
+        <div className="flex gap-4 mb-8 border-b border-gray-700">
         <button
           onClick={() => setActiveTab('metrics')}
           className={`pb-3 px-4 font-semibold transition-colors ${
@@ -765,6 +772,7 @@ export default function InsightsPage() {
           </Section>
         </>
       )}
+      </div>
     </DashboardLayout>
   )
 }
