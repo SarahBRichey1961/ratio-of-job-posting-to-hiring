@@ -155,7 +155,24 @@ const NewProject = () => {
       console.log('SENDING TO API - formData payload:')
       console.log(JSON.stringify(formData, null, 2))
       
-      const response = await axios.post('/api/hub/projects', formData, {
+      // Explicitly ensure we're sending JSON, not stringified JSON
+      const requestData = {
+        title: formData.title,
+        description: formData.description,
+        problem_statement: formData.problem_statement,
+        category: formData.category,
+        difficulty_level: formData.difficulty_level,
+        learning_goals: formData.learning_goals,
+        technologies_used: formData.technologies_used,
+        start_date: formData.start_date,
+        target_completion_date: formData.target_completion_date,
+      }
+
+      console.log('Request data (before axios):', requestData)
+      console.log('Request data type:', typeof requestData)
+      console.log('Is requestData an object?', requestData !== null && typeof requestData === 'object')
+      
+      const response = await axios.post('/api/hub/projects', requestData, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
