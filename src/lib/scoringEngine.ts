@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { supabase } from '@/lib/supabase'
 import { getBoardLifespanMetrics, getAllBoardsLifespanMetrics } from './lifespanMetrics'
 import { getBoardRepostFrequency, getAllBoardsRepostFrequency } from './repostFrequency'

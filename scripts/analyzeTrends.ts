@@ -175,9 +175,13 @@ async function analyzeTrends() {
     console.log('📊 KEY METRICS')
     console.log('-'.repeat(80))
 
-    const totalSnapshots = await supabase.from('trend_snapshots').select('*', { count: 'exact' })
+    const totalSnapshots = await supabase
+      .from('trend_snapshots')
+      .select('*', { count: 'exact', head: true })
+    const snapshotCount =
+      'count' in totalSnapshots ? totalSnapshots.count ?? 0 : 0
     console.log(`\n✅ Snapshot accumulation:`)
-    console.log(`   • Total snapshots: ${totalSnapshots.count || 0}`)
+    console.log(`   • Total snapshots: ${snapshotCount}`)
     console.log(`   • Boards tracked: ${boards.length}`)
     console.log(`   • Suggested frequency: Daily (each board gets 1 snapshot/day)`)
 
