@@ -70,6 +70,12 @@ export default function TakeTheReins() {
             >
               My Account
             </Link>
+            <Link
+              href="/marketing/launcher"
+              className="text-slate-300 hover:text-white transition text-sm font-medium px-3 py-2 rounded hover:bg-slate-700/20 flex items-center gap-2"
+            >
+              📧 Marketing
+            </Link>
             {hasAdvertiserAccount && (
               <Link
                 href="/advertiser/dashboard"
@@ -167,7 +173,7 @@ export default function TakeTheReins() {
         </div>
 
         {/* CTA Buttons */}
-        <div className="grid md:grid-cols-4 gap-6 mb-16">
+        <div className="grid md:grid-cols-5 gap-6 mb-16">
           <Link
             href="/hub/recent"
             className="bg-slate-700 hover:bg-slate-600 text-white font-semibold px-8 py-4 rounded-lg transition text-center"
@@ -191,6 +197,12 @@ export default function TakeTheReins() {
             className="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-8 py-4 rounded-lg transition text-center"
           >
             Build Your Manifesto
+          </Link>
+          <Link
+            href="/marketing/launcher"
+            className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-8 py-4 rounded-lg transition text-center"
+          >
+            📧 Launch Campaign
           </Link>
         </div>
 
