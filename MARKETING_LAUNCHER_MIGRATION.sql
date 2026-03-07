@@ -62,19 +62,24 @@ ALTER TABLE campaign_recipients ENABLE ROW LEVEL SECURITY;
 ALTER TABLE campaign_analytics ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for marketing_campaigns
+DROP POLICY IF EXISTS "Users can view own campaigns" ON marketing_campaigns;
 CREATE POLICY "Users can view own campaigns" ON marketing_campaigns
   FOR SELECT USING (creator_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can create campaigns" ON marketing_campaigns;
 CREATE POLICY "Users can create campaigns" ON marketing_campaigns
   FOR INSERT WITH CHECK (creator_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can update own campaigns" ON marketing_campaigns;
 CREATE POLICY "Users can update own campaigns" ON marketing_campaigns
   FOR UPDATE USING (creator_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can delete own campaigns" ON marketing_campaigns;
 CREATE POLICY "Users can delete own campaigns" ON marketing_campaigns
   FOR DELETE USING (creator_id = auth.uid());
 
 -- RLS Policies for campaign_recipients
+DROP POLICY IF EXISTS "Users can view recipients of own campaigns" ON campaign_recipients;
 CREATE POLICY "Users can view recipients of own campaigns" ON campaign_recipients
   FOR SELECT USING (
     EXISTS (
@@ -85,6 +90,7 @@ CREATE POLICY "Users can view recipients of own campaigns" ON campaign_recipient
   );
 
 -- RLS Policies for campaign_analytics
+DROP POLICY IF EXISTS "Users can view analytics of own campaigns" ON campaign_analytics;
 CREATE POLICY "Users can view analytics of own campaigns" ON campaign_analytics
   FOR SELECT USING (
     EXISTS (
@@ -95,8 +101,13 @@ CREATE POLICY "Users can view analytics of own campaigns" ON campaign_analytics
   );
 
 -- Create indexes for better query performance
+DROP INDEX IF EXISTS idx_marketing_campaigns_creator;
 CREATE INDEX idx_marketing_campaigns_creator ON marketing_campaigns(creator_id);
+DROP INDEX IF EXISTS idx_marketing_campaigns_status;
 CREATE INDEX idx_marketing_campaigns_status ON marketing_campaigns(status);
+DROP INDEX IF EXISTS idx_campaign_recipients_campaign;
 CREATE INDEX idx_campaign_recipients_campaign ON campaign_recipients(campaign_id);
+DROP INDEX IF EXISTS idx_campaign_recipients_status;
 CREATE INDEX idx_campaign_recipients_status ON campaign_recipients(status);
+DROP INDEX IF EXISTS idx_campaign_analytics_campaign;
 CREATE INDEX idx_campaign_analytics_campaign ON campaign_analytics(campaign_id);
