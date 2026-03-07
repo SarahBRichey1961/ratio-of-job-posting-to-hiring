@@ -89,34 +89,69 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .filter(
           (r: any) => r.email && typeof r.email === 'string' && r.email.includes('@')
         )
-        .map((r: any) => ({
-          campaign_id: id,
-          email: r.email.toLowerCase(),
-          name: r.name || '',
-          status: 'pending',
-          created_at: new Date().toISOString(),
-        }))
+        .map((r: any) => {
+          // Split name into first_name and last_name if provided
+          const fullName = r.name ? r.name.trim() : ''
+          const nameParts = fullName.split(' ')
+          const firstName = nameParts[0] || ''
+          const lastName = nameParts.slice(1).join(' ') || ''
+
+          return {
+            campaign_id: id,
+            email: r.email.toLowerCase().trim(),
+            first_name: firstName,
+            last_name: lastName,
+            status: 'pending',
+            created_at: new Date().toISOString(),
+          }
+        })
 
       if (validatedRecipients.length === 0) {
         return res.status(400).json({ error: 'No valid recipients provided' })
       }
 
-      // Insert recipients (skip duplicates)
-      const { data, error } = await supabase
-        .from('campaign_recipients')
-        .insert(validatedRecipients)
-        .select()
+      try {
+        // Insert recipients (skip duplicates)
+        const { data, error } = await supabase
+          .from('campaign_recipients')
+          .insert(validatedRecipients)
+          .select()
 
-      if (error && error.code !== '23505') {
-        // 23505 is unique constraint violation (duplicate)
-        throw error
+        if (error) {
+          // 23505 is unique constraint violation (duplicate)
+          if (error.code === '23505') {
+            return res.status(201).json({
+              success: true,
+              added: validatedRecipients.length,
+              message: `Added ${validatedRecipients.length} recipients to campaign (some may have been duplicates)`,
+            })
+          }
+          // Log actual error for debugging
+          console.error('Supabase insert error:', {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+          })
+          throw error
+        }
+
+        res.status(201).json({
+          success: true,
+          added: data?.length || validatedRecipients.length,
+          message: `Added ${validatedRecipients.length} recipients to campaign`,
+        })
+      } catch (insertError: any) {
+        console.error('Error inserting recipients:', {
+          error: insertError.message,
+          status: insertError.status,
+          details: insertError.details,
+        })
+        return res.status(500).json({
+          error: 'Failed to add recipients',
+          details: insertError.message,
+        })
       }
-
-      res.status(201).json({
-        success: true,
-        added: data?.length || validatedRecipients.length,
-        message: `Added ${validatedRecipients.length} recipients to campaign`,
-      })
     } else if (req.method === 'DELETE') {
       // Delete all recipients for campaign
       const { error } = await supabase
