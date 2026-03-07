@@ -1,0 +1,152 @@
+import { NextApiRequest, NextApiResponse } from 'next'
+import { getSupabase, getAuthenticatedSupabase } from '@/lib/supabase'
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const supabase = getSupabase()
+  const { id } = req.query
+
+  if (!id || typeof id !== 'string') {
+    return res.status(400).json({ error: 'Campaign ID is required' })
+  }
+
+  // GET: Fetch single campaign
+  if (req.method === 'GET') {
+    try {
+      const authHeader = req.headers.authorization
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Missing authorization header' })
+      }
+
+      const token = authHeader.substring(7)
+      const authenticatedSupabase = getAuthenticatedSupabase(token)
+      if (!authenticatedSupabase) {
+        return res.status(500).json({ error: 'Failed to initialize Supabase client' })
+      }
+
+      const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
+      if (userError || !user) {
+        return res.status(401).json({ error: 'Unauthorized' })
+      }
+
+      const { data, error } = await authenticatedSupabase
+        .from('marketing_campaigns')
+        .select('*')
+        .eq('id', id)
+        .eq('creator_id', user.id)
+        .single()
+
+      if (error) {
+        return res.status(404).json({ error: 'Campaign not found' })
+      }
+
+      res.status(200).json(data)
+    } catch (error) {
+      console.error('Error:', error)
+      res.status(400).json({ error: (error as Error).message })
+    }
+  }
+
+  // PUT: Update campaign
+  else if (req.method === 'PUT') {
+    try {
+      const authHeader = req.headers.authorization
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Missing authorization header' })
+      }
+
+      const token = authHeader.substring(7)
+      const authenticatedSupabase = getAuthenticatedSupabase(token)
+      if (!authenticatedSupabase) {
+        return res.status(500).json({ error: 'Failed to initialize Supabase client' })
+      }
+
+      const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
+      if (userError || !user) {
+        return res.status(401).json({ error: 'Unauthorized' })
+      }
+
+      // Verify ownership
+      const { data: campaign, error: fetchError } = await authenticatedSupabase
+        .from('marketing_campaigns')
+        .select('creator_id')
+        .eq('id', id)
+        .single()
+
+      if (fetchError || !campaign || campaign.creator_id !== user.id) {
+        return res.status(403).json({ error: 'Unauthorized to update this campaign' })
+      }
+
+      const updateData = {
+        ...req.body,
+        updated_at: new Date().toISOString(),
+      }
+
+      const { data, error } = await authenticatedSupabase
+        .from('marketing_campaigns')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+
+      if (error) {
+        console.error('Database error:', error)
+        return res.status(400).json({ error: error.message })
+      }
+
+      res.status(200).json(data?.[0])
+    } catch (error) {
+      console.error('Error:', error)
+      res.status(400).json({ error: (error as Error).message })
+    }
+  }
+
+  // DELETE: Delete campaign
+  else if (req.method === 'DELETE') {
+    try {
+      const authHeader = req.headers.authorization
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Missing authorization header' })
+      }
+
+      const token = authHeader.substring(7)
+      const authenticatedSupabase = getAuthenticatedSupabase(token)
+      if (!authenticatedSupabase) {
+        return res.status(500).json({ error: 'Failed to initialize Supabase client' })
+      }
+
+      const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
+      if (userError || !user) {
+        return res.status(401).json({ error: 'Unauthorized' })
+      }
+
+      // Verify ownership
+      const { data: campaign, error: fetchError } = await authenticatedSupabase
+        .from('marketing_campaigns')
+        .select('creator_id')
+        .eq('id', id)
+        .single()
+
+      if (fetchError || !campaign || campaign.creator_id !== user.id) {
+        return res.status(403).json({ error: 'Unauthorized to delete this campaign' })
+      }
+
+      const { error } = await authenticatedSupabase
+        .from('marketing_campaigns')
+        .delete()
+        .eq('id', id)
+
+      if (error) {
+        console.error('Database error:', error)
+        return res.status(400).json({ error: error.message })
+      }
+
+      res.status(200).json({ success: true, id })
+    } catch (error) {
+      console.error('Error:', error)
+      res.status(400).json({ error: (error as Error).message })
+    }
+  }
+
+  else {
+    res.status(405).json({ error: 'Method not allowed' })
+  }
+}
