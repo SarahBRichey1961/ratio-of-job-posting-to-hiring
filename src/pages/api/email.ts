@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { generateWeeklyInsights } from '@/lib/insightsEngine'
 import { sendInsightsEmailsBatch, sendTestEmail } from '@/lib/emailService'

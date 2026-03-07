@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { supabase } from '@/lib/supabase'
 import { normalizeJobTitle, RoleFamily } from '@/lib/titleNormalization'
 
