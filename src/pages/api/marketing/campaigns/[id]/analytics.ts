@@ -23,8 +23,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'Invalid token' })
     }
 
+    // Use authenticated client for all queries so RLS policies work
+    const supabase = authenticatedSupabase
+
     // Verify campaign ownership
-    const supabase = getSupabase()
     const { data: campaign, error: campaignError } = await supabase
       .from('marketing_campaigns')
       .select('id, creator_id')

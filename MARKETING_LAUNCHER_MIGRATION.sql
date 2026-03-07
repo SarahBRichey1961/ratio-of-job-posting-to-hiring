@@ -89,6 +89,26 @@ CREATE POLICY "Users can view recipients of own campaigns" ON campaign_recipient
     )
   );
 
+DROP POLICY IF EXISTS "Users can add recipients to own campaigns" ON campaign_recipients;
+CREATE POLICY "Users can add recipients to own campaigns" ON campaign_recipients
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM marketing_campaigns
+      WHERE marketing_campaigns.id = campaign_recipients.campaign_id
+      AND marketing_campaigns.creator_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can delete recipients from own campaigns" ON campaign_recipients;
+CREATE POLICY "Users can delete recipients from own campaigns" ON campaign_recipients
+  FOR DELETE USING (
+    EXISTS (
+      SELECT 1 FROM marketing_campaigns
+      WHERE marketing_campaigns.id = campaign_recipients.campaign_id
+      AND marketing_campaigns.creator_id = auth.uid()
+    )
+  );
+
 -- RLS Policies for campaign_analytics
 DROP POLICY IF EXISTS "Users can view analytics of own campaigns" ON campaign_analytics;
 CREATE POLICY "Users can view analytics of own campaigns" ON campaign_analytics
