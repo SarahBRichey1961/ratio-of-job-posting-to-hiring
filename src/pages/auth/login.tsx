@@ -11,43 +11,16 @@ const LoginPage = () => {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [checkingAdvertiser, setCheckingAdvertiser] = useState(false)
 
-  // Check advertiser status after successful login
+  // Redirect after successful login
   useEffect(() => {
-    const checkAdvertiserAndRedirect = async () => {
-      if (!session || checkingAdvertiser) return
+    if (!session) return
 
-      setCheckingAdvertiser(true)
-      try {
-        const checkResponse = await fetch('/api/monetization/check-advertiser', {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`
-          }
-        })
-
-        let redirectUrl = (router.query.redirect as string) || '/hub/my-manifestos'
-
-        if (checkResponse.ok) {
-          const advertiserData = await checkResponse.json()
-          if (advertiserData.hasPaidAccount) {
-            // Advertiser with paid account - go to advertiser dashboard
-            redirectUrl = '/advertiser/dashboard'
-          }
-        }
-
-        router.push(redirectUrl)
-      } catch (err) {
-        console.error('Error checking advertiser status:', err)
-        // Still redirect even if check fails
-        router.push((router.query.redirect as string) || '/hub/my-manifestos')
-      } finally {
-        setCheckingAdvertiser(false)
-      }
-    }
-
-    checkAdvertiserAndRedirect()
-  }, [session])
+    // Check if there's a redirect parameter
+    const redirectUrl = (router.query.redirect as string) || '/hub'
+    
+    router.push(redirectUrl)
+  }, [session, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

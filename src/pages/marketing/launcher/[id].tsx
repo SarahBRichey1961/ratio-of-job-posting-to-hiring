@@ -3,6 +3,7 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import axios from 'axios'
 import { getSupabase } from '@/lib/supabase'
+import RecipientUploader from '@/components/RecipientUploader'
 
 interface Campaign {
   id: string
@@ -42,6 +43,7 @@ export default function CampaignDetail() {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [accessToken, setAccessToken] = useState('')
 
   const [editData, setEditData] = useState({
     name: '',
@@ -65,6 +67,8 @@ export default function CampaignDetail() {
           router.push('/hub/login?redirect=/marketing/launcher')
           return
         }
+
+        setAccessToken(session.access_token)
 
         const response = await axios.get(`/api/marketing/campaigns/${id}`, {
           headers: {
@@ -455,6 +459,18 @@ export default function CampaignDetail() {
                 />
               </div>
             </div>
+
+            {/* Recipients Management */}
+            {campaign.status === 'draft' && (
+              <RecipientUploader
+                campaignId={campaign.id}
+                accessToken={accessToken}
+                onSuccess={() => {
+                  // Refresh analytics
+                  window.location.reload()
+                }}
+              />
+            )}
 
             {/* Analytics */}
             {analytics && (
