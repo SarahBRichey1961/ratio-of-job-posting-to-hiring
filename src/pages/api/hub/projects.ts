@@ -26,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const authHeader = req.headers.authorization
         if (authHeader?.startsWith('Bearer ')) {
           const token = authHeader.substring(7)
-          const authenticatedSupabase = getAuthenticatedSupabase(token)
+          const authenticatedSupabase = await getAuthenticatedSupabase(token)
           if (authenticatedSupabase) {
             const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
             if (user) {
@@ -113,7 +113,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const token = authHeader.substring(7)
       
       // Create authenticated Supabase client with the user's token
-      const authenticatedSupabase = getAuthenticatedSupabase(token)
+      const authenticatedSupabase = await getAuthenticatedSupabase(token)
       if (!authenticatedSupabase) {
         return res.status(500).json({ error: 'Failed to initialize Supabase client' })
       }
