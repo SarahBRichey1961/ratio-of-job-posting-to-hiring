@@ -42,6 +42,7 @@ export default function CampaignDetail() {
   const [editMode, setEditMode] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [sending, setSending] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [accessToken, setAccessToken] = useState('')
 
@@ -179,6 +180,60 @@ export default function CampaignDetail() {
     } finally {
       setDeleting(false)
       setShowDeleteConfirm(false)
+    }
+  }
+
+  const handleSendCampaign = async () => {
+    if (!id) return
+
+    setSending(true)
+    setError('')
+
+    try {
+      const supabase = getSupabase()
+      const { data: { session } } = await supabase?.auth.getSession() || {}
+
+      if (!session?.access_token) {
+        setError('Session expired. Please log in again.')
+        return
+      }
+
+      const response = await axios.post(
+        `/api/marketing/campaigns/${id}/send`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+
+      // Update campaign status to 'sent'
+      setCampaign((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: 'sent' as const,
+              sent_at: new Date().toISOString(),
+            }
+          : null
+      )
+
+      // Show success message
+      setError('')
+      alert(
+        `Campaign sent successfully!\n\n📧 Emails sent: ${response.data.sent}\n❌ Failed: ${response.data.failed}`
+      )
+    } catch (err) {
+      console.error('Error sending campaign:', err)
+      const errorMessage =
+        (err as any).response?.data?.error ||
+        (err as any).response?.data?.message ||
+        'Failed to send campaign'
+      setError(errorMessage)
+    } finally {
+      setSending(false)
     }
   }
 
@@ -524,13 +579,11 @@ export default function CampaignDetail() {
                       ✎ Edit Campaign
                     </button>
                     <button
-                      onClick={() => {
-                        // TODO: Send campaign
-                        alert('Send campaign - coming soon')
-                      }}
-                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition"
+                      onClick={handleSendCampaign}
+                      disabled={sending || !analytics || analytics.total_recipients === 0}
+                      className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-semibold transition"
                     >
-                      ✓ Send Campaign
+                      {sending ? '⏳ Sending...' : '✓ Send Campaign'}
                     </button>
                   </>
                 )}
