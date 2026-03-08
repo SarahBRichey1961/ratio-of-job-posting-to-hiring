@@ -110,6 +110,21 @@ export default function CampaignDetail() {
     fetchCampaign()
   }, [id, router])
 
+  const refreshAnalytics = async () => {
+    if (!id || !accessToken) return
+
+    try {
+      const analyticsResponse = await axios.get(`/api/marketing/campaigns/${id}/analytics`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      })
+      setAnalytics(analyticsResponse.data)
+    } catch (err) {
+      console.error('Error refreshing analytics:', err)
+    }
+  }
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -520,10 +535,7 @@ export default function CampaignDetail() {
               <RecipientUploader
                 campaignId={campaign.id}
                 accessToken={accessToken}
-                onSuccess={() => {
-                  // Refresh analytics
-                  window.location.reload()
-                }}
+                onSuccess={refreshAnalytics}
               />
             )}
 

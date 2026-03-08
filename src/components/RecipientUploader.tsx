@@ -4,7 +4,7 @@ import axios from 'axios'
 interface RecipientUploaderProps {
   campaignId: string
   accessToken: string
-  onSuccess: () => void
+  onSuccess: () => void | Promise<void>
 }
 
 export default function RecipientUploader({ campaignId, accessToken, onSuccess }: RecipientUploaderProps) {
@@ -12,6 +12,7 @@ export default function RecipientUploader({ campaignId, accessToken, onSuccess }
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const successTimeoutRef = useRef<NodeJS.Timeout>()
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -63,7 +64,12 @@ export default function RecipientUploader({ campaignId, accessToken, onSuccess }
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
-      onSuccess()
+
+      // Wait a moment for database to update, then call onSuccess
+      if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current)
+      successTimeoutRef.current = setTimeout(async () => {
+        await onSuccess()
+      }, 1000)
     } catch (err) {
       console.error('Error uploading recipients:', err)
       setError((err as any).response?.data?.error || 'Failed to add recipients')
