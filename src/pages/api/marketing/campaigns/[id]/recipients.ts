@@ -117,6 +117,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .insert(validatedRecipients)
           .select()
 
+        console.log('Recipients insert attempt:', {
+          campaignId: id,
+          attemptedCount: validatedRecipients.length,
+          insertedCount: data?.length || 0,
+          error: { code: error?.code, message: error?.message },
+        })
+
         if (error) {
           // 23505 is unique constraint violation (duplicate)
           if (error.code === '23505') {
