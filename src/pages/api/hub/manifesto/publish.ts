@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabase, getAuthenticatedSupabase } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 
@@ -47,25 +47,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const token = authHeader.substring(7) // Remove 'Bearer ' prefix
       
       try {
-        // Verify the token and get user
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-        if (!authError && user) {
-          authenticatedUserId = user.id
-          userEmail = user.email || null
-          
-          // Create a new client with the user's access token for RLS queries
-          authenticatedClient = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-              global: {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              },
-            }
-          )
-          console.log('Created authenticated client with user token')
+        // Create authenticated Supabase client with token in headers
+        const tokenScopedSupabase = await getAuthenticatedSupabase(token)
+        if (tokenScopedSupabase) {
+          // Verify the token and get user
+          const { data: { user }, error: authError } = await tokenScopedSupabase.auth.getUser()
+          if (!authError && user) {
+            authenticatedUserId = user.id
+            userEmail = user.email || null
+            authenticatedClient = tokenScopedSupabase
+            console.log('User authenticated with token')
+          }
         }
       } catch (err) {
         console.error('Error verifying token:', err)

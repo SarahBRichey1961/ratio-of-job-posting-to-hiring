@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabase, getAuthenticatedSupabase } from '@/lib/supabase'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -18,13 +18,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'Unauthorized' })
     }
 
-    const { data: { user }, error: userError } = await authSupabase.auth.getUser(token)
+    // Create authenticated Supabase client with token in headers
+    const authenticatedSupabase = await getAuthenticatedSupabase(token)
+    if (!authenticatedSupabase) {
+      return res.status(500).json({ error: 'Failed to initialize Supabase client' })
+    }
+
+    const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
     if (userError || !user) {
       return res.status(401).json({ error: 'Invalid token' })
     }
 
     // Check if user is admin by querying user_profiles table
-    const { data: profile, error: profileError } = await authSupabase
+    const { data: profile, error: profileError } = await authenticatedSupabase
       .from('user_profiles')
       .select('role')
       .eq('id', user.id)
@@ -35,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Get all advertisers with their account details
-    const { data: advertisers, error: listError } = await authSupabase
+    const { data: advertisers, error: listError } = await authenticatedSupabase
       .from('advertiser_accounts')
       .select(`
         id,

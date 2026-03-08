@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabase, getAuthenticatedSupabase } from '@/lib/supabase'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!['GET', 'PUT'].includes(req.method || '')) {
@@ -24,13 +24,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'Unauthorized' })
     }
 
-    const { data: { user }, error: userError } = await authSupabase.auth.getUser(token)
+    // Create authenticated Supabase client with token in headers
+    const authenticatedSupabase = await getAuthenticatedSupabase(token)
+    if (!authenticatedSupabase) {
+      return res.status(500).json({ error: 'Failed to initialize Supabase client' })
+    }
+
+    const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
     if (userError || !user) {
       return res.status(401).json({ error: 'Invalid token' })
     }
 
     // Check if user is admin
-    const { data: profile, error: profileError } = await authSupabase
+    const { data: profile, error: profileError } = await authenticatedSupabase
       .from('user_profiles')
       .select('role')
       .eq('id', user.id)
@@ -41,7 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Get advertiser details
-    const { data: advertiser, error: getError } = await authSupabase
+    const { data: advertiser, error: getError } = await authenticatedSupabase
       .from('advertiser_accounts')
       .select(`
         id,
@@ -63,11 +69,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Get user email from auth
-    const { data: { users }, error: usersError } = await authSupabase.auth.admin.listUsers()
+    const { data: { users }, error: usersError } = await authenticatedSupabase.auth.admin.listUsers()
     const advertiserUser = users?.find(u => u.id === advertiser.user_id)
 
     // Get ads for this advertiser
-    const { data: ads, error: adsError } = await authSupabase
+    const { data: ads, error: adsError } = await authenticatedSupabase
       .from('advertisements')
       .select('id, title, is_active, impressions, clicks, created_at')
       .eq('advertiser_id', id)
