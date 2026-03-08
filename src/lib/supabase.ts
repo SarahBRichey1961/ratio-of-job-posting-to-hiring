@@ -1,17 +1,41 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Single global Supabase client instance - created only once
-let supabaseClient: any = null
+// Browser client - single instance for client-side auth
+let browserClient: any = null
 
 export const getSupabase = () => {
-  // Read environment variables at runtime (not at module load time)
-  const supabaseUrl = typeof window !== 'undefined' 
-    ? process.env.NEXT_PUBLIC_SUPABASE_URL 
-    : process.env.NEXT_PUBLIC_SUPABASE_URL
+  // Browser-side: use persistent session for auth state tracking
+  if (typeof window !== 'undefined') {
+    if (browserClient) {
+      return browserClient
+    }
 
-  const supabaseAnonKey = typeof window !== 'undefined'
-    ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Missing Supabase environment variables')
+      return null
+    }
+
+    try {
+      browserClient = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: true, // Enable session persistence for login/logout
+          autoRefreshToken: true,
+          detectSessionInUrl: true, // Required for email confirmation links to work
+        },
+      })
+      return browserClient
+    } catch (error) {
+      console.error('Failed to initialize browser Supabase client:', error)
+      return null
+    }
+  }
+
+  // Server-side: create fresh client for each request (no persistence needed)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl) {
     console.error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable')
@@ -24,18 +48,16 @@ export const getSupabase = () => {
   }
 
   try {
-    // Create new client for server-side to avoid MemoryStorage concurrency issues
-    // On server, no persistent session needed anyway
     const client = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        persistSession: false,
+        persistSession: false, // Server shouldn't persist sessions
         autoRefreshToken: false,
         detectSessionInUrl: false,
       },
     })
     return client
   } catch (error) {
-    console.error('Failed to initialize Supabase:', error)
+    console.error('Failed to initialize server Supabase client:', error)
     return null
   }
 }
