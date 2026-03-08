@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabase, getAuthenticatedSupabase } from '@/lib/supabase'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const supabase = getSupabase()
@@ -16,8 +16,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const token = authHeader.substring(7) // Remove 'Bearer ' prefix
     
+    // Create authenticated Supabase client with token in headers
+    const authenticatedSupabase = await getAuthenticatedSupabase(token)
+    if (!authenticatedSupabase) {
+      return res.status(500).json({ error: 'Failed to initialize Supabase client' })
+    }
+    
     // Verify the token and get user
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    const { data: { user }, error: authError } = await authenticatedSupabase.auth.getUser()
     if (authError || !user) {
       return res.status(401).json({ error: 'Not authenticated' })
     }
@@ -26,7 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (req.method === 'GET') {
       // Get all user's manifestos
-      const { data, error } = await supabase
+      const { data, error } = await authenticatedSupabase
         .from('manifestos')
         .select('id, title, slug, content, published, created_at, updated_at')
         .eq('user_id', userId)
@@ -52,7 +58,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const generatedSlug =
         slug || title?.toLowerCase().replace(/\s+/g, '-').slice(0, 50) || `manifesto-${Date.now()}`
 
-      const { data, error } = await supabase
+      const { data, error } = await authenticatedSupabase
         .from('manifestos')
         .insert({
           user_id: userId,
@@ -83,7 +89,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       // Verify ownership
-      const { data: existing, error: fetchError } = await supabase
+      const { data: existing, error: fetchError } = await authenticatedSupabase
         .from('manifestos')
         .select('id')
         .eq('id', id)
@@ -94,7 +100,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(403).json({ error: 'Not authorized' })
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await authenticatedSupabase
         .from('manifestos')
         .update({
           title: title,

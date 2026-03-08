@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
+import { getSupabase, getAuthenticatedSupabase } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -46,34 +47,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const token = authHeader.substring(7)
 
-      // Verify the token and get user ID
-      let userId: string | null = null
-      
-      try {
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-        if (user && !authError) {
-          userId = user.id
-        }
-      } catch (err) {
-        console.error('Error verifying token with getUser:', err)
+      // Create authenticated Supabase client with token in headers
+      const authenticatedSupabase = await getAuthenticatedSupabase(token)
+      if (!authenticatedSupabase) {
+        return res.status(500).json({ error: 'Failed to initialize Supabase client' })
       }
 
-      // If that failed, try to decode the JWT for the user ID
-      if (!userId) {
-        try {
-          const parts = token.split('.')
-          if (parts.length === 3) {
-            const decoded = JSON.parse(Buffer.from(parts[1], 'base64').toString())
-            userId = decoded.sub
-          }
-        } catch (err) {
-          console.error('Error decoding token:', err)
-        }
-      }
-
-      if (!userId) {
+      // Verify the token and get user
+      const { data: { user }, error: authError } = await authenticatedSupabase.auth.getUser()
+      if (authError || !user) {
         return res.status(401).json({ error: 'Unauthorized' })
       }
+
+      const userId = user.id
 
       // Get discussion to verify creator
       const { data: discussion, error: getError } = await supabase
