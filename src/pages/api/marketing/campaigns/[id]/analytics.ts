@@ -34,14 +34,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .single()
 
     if (campaignError || !campaign || campaign.creator_id !== user.id) {
+      console.error('Campaign access denied:', { campaignError, campaign, userId: user.id })
       return res.status(403).json({ error: 'Access denied' })
     }
 
-    // Count recipients FIRST - this is the source of truth
-    const { count: recipientCount } = await supabase
+    // Count recipients - fetch all to manually count (more reliable than count parameter)
+    const { data: recipientsList, error: recipientsError } = await supabase
       .from('campaign_recipients')
-      .select('id', { count: 'exact', head: true })
+      .select('id', { head: false })
       .eq('campaign_id', id)
+
+    const recipientCount = recipientsList?.length || 0
+    console.log('Analytics - Recipients count:', { campaignId: id, count: recipientCount, error: recipientsError })
 
     // Get analytics data (may not exist yet)
     const { data: analytics, error: analyticsError } = await supabase
@@ -49,6 +53,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .select('*')
       .eq('campaign_id', id)
       .single()
+
+    console.log('Analytics - Analytics record:', { campaignId: id, analytics, error: analyticsError?.code })
 
     // Calculate rates
     const sent = analytics?.sent || 0
@@ -62,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const conversionRate = sent > 0 ? (converted / sent) * 100 : 0
 
     res.status(200).json({
-      total_recipients: recipientCount || 0,
+      total_recipients: recipientCount,
       sent,
       bounced,
       opened,
@@ -73,7 +79,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       conversion_rate: conversionRate,
     })
   } catch (error) {
-    console.error('Error fetching analytics:', error)
-    res.status(500).json({ error: 'Internal server error' })
+    console.error('Error fetching analytics:', { error: (error as any).message, details: error })
+    res.status(500).json({ error: 'Internal server error', details: (error as any).message })
   }
 }
