@@ -119,6 +119,7 @@ export default function CampaignDetail() {
           'Authorization': `Bearer ${accessToken}`,
         },
       })
+      console.log('Analytics refreshed:', analyticsResponse.data)
       setAnalytics(analyticsResponse.data)
     } catch (err) {
       console.error('Error refreshing analytics:', err)
@@ -159,6 +160,9 @@ export default function CampaignDetail() {
 
       setCampaign(response.data)
       setEditMode(false)
+      
+      // Refresh analytics after saving campaign
+      setTimeout(() => refreshAnalytics(), 500)
     } catch (err) {
       console.error('Error saving campaign:', err)
       setError((err as any).response?.data?.error || 'Failed to save campaign')
@@ -580,6 +584,21 @@ export default function CampaignDetail() {
             {/* Actions */}
             <div className="bg-white rounded-lg shadow-lg p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Actions</h2>
+
+              {/* Debug Info */}
+              <div className="mb-6 p-3 bg-gray-100 rounded text-xs text-gray-600 font-mono">
+                <div>Status: <span className="font-bold">{campaign.status}</span></div>
+                <div>Analytics: <span className="font-bold">{analytics ? `loaded (${analytics.total_recipients} recipients)` : 'null'}</span></div>
+                <div>Sending: <span className="font-bold">{sending ? 'true' : 'false'}</span></div>
+                {campaign.status === 'draft' && (
+                  <div className="mt-2 text-orange-700">
+                    {sending && 'Button disabled: sending in progress'}
+                    {!analytics && 'Button disabled: analytics not loaded'}
+                    {analytics && analytics.total_recipients === 0 && 'Button disabled: no recipients (0)'}
+                    {analytics && analytics.total_recipients > 0 && !sending && '✓ Button should be ENABLED'}
+                  </div>
+                )}
+              </div>
 
               <div className="grid md:grid-cols-2 gap-4">
                 {campaign.status === 'draft' && (
