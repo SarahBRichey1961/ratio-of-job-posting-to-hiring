@@ -78,24 +78,17 @@ export const getAuthenticatedSupabase = async (token: string) => {
 
   try {
     const authenticatedClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
       auth: {
         persistSession: false,
         autoRefreshToken: false,
         detectSessionInUrl: false,
       },
     })
-
-    // Set the user's session using the JWT token
-    // This allows auth.getUser() to work and RLS policies to recognize the user
-    const { error: setSessionError } = await authenticatedClient.auth.setSession({
-      access_token: token,
-      refresh_token: '', // Not needed for server-side use
-    })
-
-    if (setSessionError) {
-      console.error('Failed to set session:', setSessionError)
-      return null
-    }
 
     return authenticatedClient
   } catch (error) {
