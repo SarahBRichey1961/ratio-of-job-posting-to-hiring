@@ -37,49 +37,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(403).json({ error: 'Access denied' })
     }
 
-    // Get analytics data
+    // Count recipients FIRST - this is the source of truth
+    const { count: recipientCount } = await supabase
+      .from('campaign_recipients')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', id)
+
+    // Get analytics data (may not exist yet)
     const { data: analytics, error: analyticsError } = await supabase
       .from('campaign_analytics')
       .select('*')
       .eq('campaign_id', id)
       .single()
 
-    if (analyticsError) {
-      // If no analytics yet, return zeros
-      if (analyticsError.code === 'PGRST116') {
-        return res.status(200).json({
-          total_recipients: 0,
-          sent: 0,
-          bounced: 0,
-          opened: 0,
-          clicked: 0,
-          converted: 0,
-          open_rate: 0,
-          click_through_rate: 0,
-          conversion_rate: 0,
-        })
-      }
-      throw analyticsError
-    }
-
-    // Count recipients
-    const { count: recipientCount } = await supabase
-      .from('campaign_recipients')
-      .select('id', { count: 'exact', head: true })
-      .eq('campaign_id', id)
-
     // Calculate rates
-    const openRate = analytics.sent > 0 ? (analytics.opened / analytics.sent) * 100 : 0
-    const clickThroughRate = analytics.opened > 0 ? (analytics.clicked / analytics.opened) * 100 : 0
-    const conversionRate = analytics.sent > 0 ? (analytics.converted / analytics.sent) * 100 : 0
+    const sent = analytics?.sent || 0
+    const opened = analytics?.opened || 0
+    const clicked = analytics?.clicked || 0
+    const converted = analytics?.converted || 0
+    const bounced = analytics?.bounced || 0
+
+    const openRate = sent > 0 ? (opened / sent) * 100 : 0
+    const clickThroughRate = opened > 0 ? (clicked / opened) * 100 : 0
+    const conversionRate = sent > 0 ? (converted / sent) * 100 : 0
 
     res.status(200).json({
       total_recipients: recipientCount || 0,
-      sent: analytics.sent || 0,
-      bounced: analytics.bounced || 0,
-      opened: analytics.opened || 0,
-      clicked: analytics.clicked || 0,
-      converted: analytics.converted || 0,
+      sent,
+      bounced,
+      opened,
+      clicked,
+      converted,
       open_rate: openRate,
       click_through_rate: clickThroughRate,
       conversion_rate: conversionRate,
