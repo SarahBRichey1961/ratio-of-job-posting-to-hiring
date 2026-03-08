@@ -7,27 +7,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // GET: Fetch campaigns for authenticated user
   if (req.method === 'GET') {
     try {
+      console.log('=== GET /api/marketing/campaigns ===')
+      
       // Get auth token from request headers
       const authHeader = req.headers.authorization
+      console.log('Authorization header present:', !!authHeader)
+      
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        console.error('❌ Missing or invalid authorization header')
         return res.status(401).json({ error: 'Missing authorization header' })
       }
 
       const token = authHeader.substring(7)
-      const authenticatedSupabase = getAuthenticatedSupabase(token)
+      console.log('Token extracted, length:', token.length)
+      
+      const authenticatedSupabase = await getAuthenticatedSupabase(token)
       if (!authenticatedSupabase) {
+        console.error('❌ Failed to initialize Supabase client')
         return res.status(500).json({ error: 'Failed to initialize Supabase client' })
       }
+      console.log('✓ Supabase client initialized')
 
-      const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
+      const { data, error: userError } = await authenticatedSupabase.auth.getUser()
+      const user = data?.user
+      
+      console.log('Auth getUser result:', { 
+        error: userError?.message, 
+        userId: user?.id,
+        email: user?.email 
+      })
+      
       if (userError || !user) {
-        console.error('Auth error:', userError)
-        return res.status(401).json({ error: 'Unauthorized' })
+        console.error('❌ Auth error:', userError?.message)
+        return res.status(401).json({ error: 'Unauthorized', details: userError?.message })
       }
+      console.log('✓ User authenticated:', user.id)
 
       const { status, limit = '20', offset = '0' } = req.query
       const limitNum = Math.min(Number(limit), 100)
       const offsetNum = Number(offset)
+      console.log('Query params:', { status, limit: limitNum, offset: offsetNum })
 
       let query = authenticatedSupabase
         .from('marketing_campaigns')
@@ -38,18 +57,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         query = query.eq('status', status)
       }
 
-      const { data, error, count } = await query
+      const { data: campaigns, error, count } = await query
         .order('created_at', { ascending: false })
         .range(offsetNum, offsetNum + limitNum - 1)
 
+      console.log('Query result:', { 
+        error: error?.message, 
+        campaignCount: campaigns?.length, 
+        totalCount: count 
+      })
+
       if (error) {
-        console.error('Query error:', error)
-        return res.status(400).json({ error: error.message })
+        console.error('❌ Query error:', error.message, error.details, error.hint)
+        return res.status(400).json({ 
+          error: error.message, 
+          details: error.details,
+          hint: error.hint 
+        })
       }
 
-      res.status(200).json({ data, count, limit: limitNum, offset: offsetNum })
+      console.log('✓ Campaigns fetched successfully')
+      res.status(200).json({ data: campaigns, count, limit: limitNum, offset: offsetNum })
     } catch (error) {
-      console.error('Error:', error)
+      console.error('❌ Unexpected error:', error)
       res.status(400).json({ error: (error as Error).message })
     }
   }
@@ -63,7 +93,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const token = authHeader.substring(7)
-      const authenticatedSupabase = getAuthenticatedSupabase(token)
+      const authenticatedSupabase = await getAuthenticatedSupabase(token)
       if (!authenticatedSupabase) {
         return res.status(500).json({ error: 'Failed to initialize Supabase client' })
       }
