@@ -76,11 +76,12 @@ const SignupPage = () => {
         }).catch(err => console.error('Failed to create advertiser account:', err))
       }
 
-      // Redirect to pricing if monetization option selected, otherwise go to hub
+      // Redirect to pricing if monetization option selected, otherwise go to redirect param or hub
       if (isSponsor || isAdvertiser) {
         router.push('/monetization/pricing')
       } else {
-        router.push('/hub')
+        const redirectUrl = (router.query.redirect as string) || '/hub'
+        router.push(redirectUrl)
       }
     } catch (err: any) {
       setError(err.message || 'Failed to sign up')
