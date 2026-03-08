@@ -23,7 +23,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const authenticatedSupabase = getAuthenticatedSupabase(token)
+    const authenticatedSupabase = await getAuthenticatedSupabase(token)
+    if (!authenticatedSupabase) {
+      return res.status(401).json({ error: 'Failed to authenticate' })
+    }
+
     const { data: { user } } = await authenticatedSupabase.auth.getUser()
 
     if (!user) {
