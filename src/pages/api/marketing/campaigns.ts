@@ -14,9 +14,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const token = authHeader.substring(7)
-      const authenticatedSupabase = await getAuthenticatedSupabase(token)
+      const authenticatedSupabase = getAuthenticatedSupabase(token)
       if (!authenticatedSupabase) {
-        return res.status(401).json({ error: 'Failed to authenticate' })
+        return res.status(500).json({ error: 'Failed to initialize Supabase client' })
       }
 
       const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
@@ -63,9 +63,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const token = authHeader.substring(7)
-      const authenticatedSupabase = await getAuthenticatedSupabase(token)
+      const authenticatedSupabase = getAuthenticatedSupabase(token)
       if (!authenticatedSupabase) {
-        return res.status(401).json({ error: 'Failed to authenticate' })
+        return res.status(500).json({ error: 'Failed to initialize Supabase client' })
       }
 
       const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
