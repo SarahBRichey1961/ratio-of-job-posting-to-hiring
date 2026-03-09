@@ -590,14 +590,10 @@ export default function CampaignDetail() {
               {/* Debug Info */}
               <div className="mb-6 p-3 bg-gray-100 rounded text-xs text-gray-600 font-mono">
                 <div>Status: <span className="font-bold">{campaign.status}</span></div>
-                <div>Analytics: <span className="font-bold">{analytics ? `loaded (${analytics.total_recipients} recipients)` : 'null'}</span></div>
                 <div>Sending: <span className="font-bold">{sending ? 'true' : 'false'}</span></div>
                 {campaign.status === 'draft' && (
-                  <div className="mt-2 text-orange-700">
-                    {sending && 'Button disabled: sending in progress'}
-                    {!analytics && 'Button disabled: analytics not loaded'}
-                    {analytics && analytics.total_recipients === 0 && 'Button disabled: no recipients (0)'}
-                    {analytics && analytics.total_recipients > 0 && !sending && '✓ Button should be ENABLED'}
+                  <div className="mt-2 text-blue-700">
+                    ✓ Send button enabled (error validation happens on send)
                   </div>
                 )}
               </div>
@@ -613,7 +609,7 @@ export default function CampaignDetail() {
                     </button>
                     <button
                       onClick={handleSendCampaign}
-                      disabled={sending || !analytics || analytics.total_recipients === 0}
+                      disabled={sending}
                       className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-semibold transition"
                     >
                       {sending ? '⏳ Sending...' : '✓ Send Campaign'}
