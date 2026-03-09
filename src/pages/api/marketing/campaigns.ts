@@ -149,6 +149,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .from('campaign_analytics')
           .insert({
             campaign_id: campaign.id,
+            total_recipients: 0,
             total_sent: 0,
             total_bounced: 0,
             total_opened: 0,

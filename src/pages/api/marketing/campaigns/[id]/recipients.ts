@@ -171,6 +171,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           verifyError: verifyError ? { code: verifyError.code, message: verifyError.message } : null,
         })
 
+        // Update analytics total_recipients count
+        if (verifyCount !== null && verifyCount !== undefined) {
+          const { error: updateError } = await supabase
+            .from('campaign_analytics')
+            .update({ 
+              total_recipients: verifyCount,
+              updated_at: new Date().toISOString()
+            })
+            .eq('campaign_id', id)
+
+          console.log('Recipients POST - Analytics update:', {
+            campaignId: id,
+            newTotalRecipients: verifyCount,
+            updateError: updateError ? { code: updateError.code, message: updateError.message } : null,
+          })
+        }
+
         res.status(201).json({
           success: true,
           added: data?.length || validatedRecipients.length,
@@ -195,6 +212,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .eq('campaign_id', id)
 
       if (error) throw error
+
+      // Update analytics total_recipients to 0
+      const { error: updateError } = await supabase
+        .from('campaign_analytics')
+        .update({ 
+          total_recipients: 0,
+          updated_at: new Date().toISOString()
+        })
+        .eq('campaign_id', id)
+
+      if (updateError) {
+        console.error('Failed to update analytics after deletion:', updateError)
+        // Don't fail the delete operation
+      }
 
       res.status(200).json({
         success: true,
