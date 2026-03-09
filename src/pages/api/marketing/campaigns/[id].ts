@@ -12,21 +12,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // GET: Fetch single campaign
   if (req.method === 'GET') {
     try {
+      console.log('GET /api/marketing/campaigns/[id] - Start:', { id })
+      
       const authHeader = req.headers.authorization
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        console.error('GET - No authorization header')
         return res.status(401).json({ error: 'Missing authorization header' })
       }
 
       const token = authHeader.substring(7)
+      console.log('GET - Token received, length:', token.length)
+      
       const authenticatedSupabase = await getAuthenticatedSupabase(token)
       if (!authenticatedSupabase) {
+        console.error('GET - Failed to create authenticated Supabase client')
         return res.status(500).json({ error: 'Failed to initialize Supabase client' })
       }
 
+      console.log('GET - Authenticated client ready, fetching user...')
       const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
-      if (userError || !user) {
+      if (userError) {
+        console.error('GET - getUser() failed:', {
+          code: userError.code,
+          message: userError.message,
+          status: userError.status,
+        })
+      }
+      if (!user) {
+        console.error('GET - No user returned from getUser()')
         return res.status(401).json({ error: 'Unauthorized' })
       }
+
+      console.log('GET - User authenticated:', user.id)
 
       const { data, error } = await authenticatedSupabase
         .from('marketing_campaigns')
@@ -36,12 +53,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .single()
 
       if (error) {
+        console.error('GET - Query error:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+        })
         return res.status(404).json({ error: 'Campaign not found' })
       }
 
+      console.log('GET - Campaign found successfully')
       res.status(200).json(data)
     } catch (error) {
-      console.error('Error:', error)
+      console.error('GET - Unexpected error:', {
+        error: (error as any).message,
+        stack: (error as any).stack,
+      })
       res.status(400).json({ error: (error as Error).message })
     }
   }
