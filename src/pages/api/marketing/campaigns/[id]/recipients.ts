@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getSupabase, getAuthenticatedSupabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query
@@ -171,7 +172,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           verifyError: verifyError ? { code: verifyError.code, message: verifyError.message } : null,
         })
 
-        // Update analytics total_recipients count
+        // Update analytics total_recipients count using SERVICE_ROLE to bypass RLS
         if (verifyCount !== null && verifyCount !== undefined) {
           console.log('Recipients POST - Attempting to update analytics:', {
             campaignId: id,
@@ -180,46 +181,68 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             timestamp: new Date().toISOString(),
           })
 
-          const { data: updateData, error: updateError } = await supabase
-            .from('campaign_analytics')
-            .update({ 
-              total_recipients: verifyCount,
-              updated_at: new Date().toISOString()
-            })
-            .eq('campaign_id', id)
-            .select()
+          try {
+            // Use SERVICE_ROLE to update analytics - this bypasses RLS for internal operations
+            // This is necessary because auth.uid() doesn't work properly with Bearer tokens on the server
+            const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+            if (!serviceRoleKey) {
+              throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured')
+            }
 
-          console.log('Recipients POST - Analytics update result:', {
-            campaignId: id,
-            userId: user.id,
-            newCount: verifyCount,
-            updateSuccess: !updateError,
-            updateData: updateData,
-            updateError: updateError ? { 
-              code: updateError.code, 
-              message: updateError.message,
-              details: updateError.details,
-              hint: updateError.hint
-            } : null,
-          })
+            const serviceRoleClient = createClient(
+              process.env.NEXT_PUBLIC_SUPABASE_URL!,
+              serviceRoleKey,
+              {
+                auth: {
+                  persistSession: false,
+                  autoRefreshToken: false,
+                },
+              }
+            )
 
-          if (updateError) {
-            console.error('Recipients POST - FAILED to update analytics - RLS or other error:', {
-              campaignId: id,
-              error: updateError,
-            })
-            // Log additional diagnostic info
-            console.log('Recipients POST - Diagnostic: Attempting to read analytics record')
-            const { data: analyticsRecord, error: readError } = await supabase
+            const { data: updateData, error: updateError } = await serviceRoleClient
               .from('campaign_analytics')
-              .select('id, campaign_id, total_recipients')
+              .update({ 
+                total_recipients: verifyCount,
+                updated_at: new Date().toISOString()
+              })
               .eq('campaign_id', id)
-              .single()
-            console.log('Recipients POST - Analytics record check:', {
-              recordExists: !!analyticsRecord,
-              recordId: analyticsRecord?.id,
-              readError: readError ? { code: readError.code, message: readError.message } : null,
+              .select()
+
+            console.log('Recipients POST - Analytics update result:', {
+              campaignId: id,
+              userId: user.id,
+              newCount: verifyCount,
+              updateSuccess: !updateError,
+              recordsUpdated: updateData?.length,
+              updateError: updateError ? { 
+                code: updateError.code, 
+                message: updateError.message,
+                details: updateError.details,
+              } : null,
             })
+
+            if (updateError) {
+              console.error('Recipients POST - FAILED to update analytics:', {
+                campaignId: id,
+                error: updateError,
+              })
+            } else if (updateData && updateData.length > 0) {
+              console.log('Recipients POST - Analytics successfully updated:', {
+                campaignId: id,
+                newTotal: updateData[0].total_recipients,
+              })
+            } else {
+              console.warn('Recipients POST - Analytics update returned no rows:', {
+                campaignId: id,
+              })
+            }
+          } catch (err) {
+            console.error('Recipients POST - Exception updating analytics:', {
+              error: (err as any).message,
+              campaignId: id,
+            })
+            // Don't fail the request, log and continue
           }
         }
 
@@ -248,17 +271,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (error) throw error
 
-      // Update analytics total_recipients to 0
-      const { error: updateError } = await supabase
-        .from('campaign_analytics')
-        .update({ 
-          total_recipients: 0,
-          updated_at: new Date().toISOString()
-        })
-        .eq('campaign_id', id)
+      // Update analytics total_recipients to 0 using SERVICE_ROLE
+      try {
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+        if (serviceRoleKey) {
+          const serviceRoleClient = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            serviceRoleKey,
+            {
+              auth: {
+                persistSession: false,
+                autoRefreshToken: false,
+              },
+            }
+          )
 
-      if (updateError) {
-        console.error('Failed to update analytics after deletion:', updateError)
+          await serviceRoleClient
+            .from('campaign_analytics')
+            .update({ 
+              total_recipients: 0,
+              updated_at: new Date().toISOString()
+            })
+            .eq('campaign_id', id)
+        }
+      } catch (err) {
+        console.error('Failed to update analytics after deletion:', err)
         // Don't fail the delete operation
       }
 
