@@ -121,6 +121,26 @@ CREATE POLICY "Users can view analytics of own campaigns" ON campaign_analytics
     )
   );
 
+DROP POLICY IF EXISTS "Users can create analytics for own campaigns" ON campaign_analytics;
+CREATE POLICY "Users can create analytics for own campaigns" ON campaign_analytics
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM marketing_campaigns
+      WHERE marketing_campaigns.id = campaign_analytics.campaign_id
+      AND marketing_campaigns.creator_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can update analytics of own campaigns" ON campaign_analytics;
+CREATE POLICY "Users can update analytics of own campaigns" ON campaign_analytics
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM marketing_campaigns
+      WHERE marketing_campaigns.id = campaign_analytics.campaign_id
+      AND marketing_campaigns.creator_id = auth.uid()
+    )
+  );
+
 -- Create indexes for better query performance
 DROP INDEX IF EXISTS idx_marketing_campaigns_creator;
 CREATE INDEX idx_marketing_campaigns_creator ON marketing_campaigns(creator_id);

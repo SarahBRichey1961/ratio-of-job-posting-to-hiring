@@ -173,19 +173,54 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // Update analytics total_recipients count
         if (verifyCount !== null && verifyCount !== undefined) {
-          const { error: updateError } = await supabase
+          console.log('Recipients POST - Attempting to update analytics:', {
+            campaignId: id,
+            userId: user.id,
+            newCount: verifyCount,
+            timestamp: new Date().toISOString(),
+          })
+
+          const { data: updateData, error: updateError } = await supabase
             .from('campaign_analytics')
             .update({ 
               total_recipients: verifyCount,
               updated_at: new Date().toISOString()
             })
             .eq('campaign_id', id)
+            .select()
 
-          console.log('Recipients POST - Analytics update:', {
+          console.log('Recipients POST - Analytics update result:', {
             campaignId: id,
-            newTotalRecipients: verifyCount,
-            updateError: updateError ? { code: updateError.code, message: updateError.message } : null,
+            userId: user.id,
+            newCount: verifyCount,
+            updateSuccess: !updateError,
+            updateData: updateData,
+            updateError: updateError ? { 
+              code: updateError.code, 
+              message: updateError.message,
+              details: updateError.details,
+              hint: updateError.hint
+            } : null,
           })
+
+          if (updateError) {
+            console.error('Recipients POST - FAILED to update analytics - RLS or other error:', {
+              campaignId: id,
+              error: updateError,
+            })
+            // Log additional diagnostic info
+            console.log('Recipients POST - Diagnostic: Attempting to read analytics record')
+            const { data: analyticsRecord, error: readError } = await supabase
+              .from('campaign_analytics')
+              .select('id, campaign_id, total_recipients')
+              .eq('campaign_id', id)
+              .single()
+            console.log('Recipients POST - Analytics record check:', {
+              recordExists: !!analyticsRecord,
+              recordId: analyticsRecord?.id,
+              readError: readError ? { code: readError.code, message: readError.message } : null,
+            })
+          }
         }
 
         res.status(201).json({
