@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getSupabase, getAuthenticatedSupabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const supabase = getSupabase()
@@ -143,32 +144,54 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const campaign = data?.[0]
 
-      // Create analytics record for new campaign
+      // Create analytics record for new campaign using SERVICE_ROLE
       if (campaign?.id) {
-        const { error: analyticsError } = await authenticatedSupabase
-          .from('campaign_analytics')
-          .insert({
-            campaign_id: campaign.id,
-            total_recipients: 0,
-            total_sent: 0,
-            total_bounced: 0,
-            total_opened: 0,
-            total_clicked: 0,
-            total_conversions: 0,
-            conversion_rate: 0,
-            click_through_rate: 0,
-            open_rate: 0,
-          })
+        try {
+          const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+          if (serviceRoleKey) {
+            const serviceRoleClient = createClient(
+              process.env.NEXT_PUBLIC_SUPABASE_URL!,
+              serviceRoleKey,
+              {
+                auth: {
+                  persistSession: false,
+                  autoRefreshToken: false,
+                },
+              }
+            )
 
-        if (analyticsError) {
-          console.error('Failed to create analytics record:', {
+            const { error: analyticsError } = await serviceRoleClient
+              .from('campaign_analytics')
+              .insert({
+                campaign_id: campaign.id,
+                total_recipients: 0,
+                total_sent: 0,
+                total_bounced: 0,
+                total_opened: 0,
+                total_clicked: 0,
+                total_conversions: 0,
+                conversion_rate: 0,
+                click_through_rate: 0,
+                open_rate: 0,
+              })
+
+            if (analyticsError) {
+              console.error('Failed to create analytics record:', {
+                campaignId: campaign.id,
+                error: analyticsError.message,
+                code: analyticsError.code,
+              })
+              // Don't fail the campaign creation if analytics record creation fails
+            } else {
+              console.log('Analytics record created for campaign:', campaign.id)
+            }
+          }
+        } catch (err) {
+          console.error('Exception creating analytics record:', {
             campaignId: campaign.id,
-            error: analyticsError.message,
-            code: analyticsError.code,
+            error: (err as any).message,
           })
-          // Don't fail the campaign creation if analytics record creation fails
-        } else {
-          console.log('Analytics record created for campaign:', campaign.id)
+          // Don't fail campaign creation
         }
       }
 
