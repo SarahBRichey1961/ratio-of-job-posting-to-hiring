@@ -90,6 +90,18 @@ export const getAuthenticatedSupabase = async (token: string) => {
       },
     })
 
+    // Verify the token is valid by calling getUser
+    const { data: { user }, error: userError } = await authenticatedClient.auth.getUser()
+    
+    if (userError || !user) {
+      console.error('Failed to get user from token:', {
+        error: userError?.message,
+        hasUser: !!user,
+      })
+      return null
+    }
+
+    console.log('Authenticated client created successfully for user:', user.id)
     return authenticatedClient
   } catch (error) {
     console.error('Failed to create authenticated Supabase client:', error)
