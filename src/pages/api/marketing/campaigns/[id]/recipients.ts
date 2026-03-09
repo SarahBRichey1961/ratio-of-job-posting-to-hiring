@@ -152,7 +152,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         console.log('Recipients POST - Insert successful:', { 
           campaignId: id,
-          insertedCount: data?.length 
+          userId: user.id,
+          insertedCount: data?.length,
+          insertedEmails: data?.slice(0, 3)?.map((r: any) => r.email),
+        })
+
+        // Verify recipients were actually inserted by querying them back
+        const { count: verifyCount, error: verifyError } = await supabase
+          .from('campaign_recipients')
+          .select('*', { count: 'exact', head: true })
+          .eq('campaign_id', id)
+
+        console.log('Recipients POST - Verification count:', {
+          campaignId: id,
+          userId: user.id,
+          expectedCount: data?.length || validatedRecipients.length,
+          verifiedCount: verifyCount,
+          verifyError: verifyError ? { code: verifyError.code, message: verifyError.message } : null,
         })
 
         res.status(201).json({
