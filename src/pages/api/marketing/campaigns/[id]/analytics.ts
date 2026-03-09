@@ -48,8 +48,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .select('id', { head: false })
       .eq('campaign_id', id)
 
-    const recipientCount = recipientsList?.length || 0
-    console.log('Analytics - Recipients count:', { campaignId: id, count: recipientCount, error: recipientsError })
+    let recipientCount = recipientsList?.length || 0
+    
+    // Debug: Log full query result
+    console.log('Analytics - Recipients query result:', { 
+      campaignId: id, 
+      userId: user.id,
+      recipientsCount: recipientCount,
+      dataLength: recipientsList?.length,
+      hasError: !!recipientsError,
+      rlsError: recipientsError ? { code: recipientsError.code, message: recipientsError.message, hint: recipientsError.hint } : null,
+      recipientSample: recipientsList?.slice(0, 3),
+    })
+
+    // If query returned 0 because RLS might be blocking, try alternate count
+    if (recipientCount === 0 && !recipientsError) {
+      // Try using count() function as fallback
+      const { count: countResult, error: countError } = await supabase
+        .from('campaign_recipients')
+        .select('*', { count: 'exact', head: true })
+        .eq('campaign_id', id)
+      
+      console.log('Analytics - Fallback count result:', {
+        campaignId: id,
+        countResult,
+        countError: countError ? { code: countError.code, message: countError.message } : null,
+      })
+      
+      if (countResult !== null && !countError) {
+        recipientCount = countResult
+      }
+    }
 
     // Get analytics data (may not exist yet)
     const { data: analytics, error: analyticsError } = await supabase
@@ -71,7 +100,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const clickThroughRate = opened > 0 ? (clicked / opened) * 100 : 0
     const conversionRate = sent > 0 ? (converted / sent) * 100 : 0
 
-    res.status(200).json({
+    const responseData = {
       total_recipients: recipientCount,
       sent,
       bounced,
@@ -81,7 +110,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       open_rate: openRate,
       click_through_rate: clickThroughRate,
       conversion_rate: conversionRate,
-    })
+    }
+
+    console.log('Analytics - Returning data:', { 
+      campaignId: id,
+      userId: user.id,
+      totalRecipients: recipientCount,
+      analyticsRecord: analytics ? 'exists' : 'not-found'
+    }, responseData)
+
+    res.status(200).json(responseData)
   } catch (error) {
     console.error('Error fetching analytics:', { error: (error as any).message, details: error })
     res.status(500).json({ error: 'Internal server error', details: (error as any).message })
