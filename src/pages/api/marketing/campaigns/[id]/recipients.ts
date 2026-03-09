@@ -121,16 +121,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .insert(validatedRecipients)
           .select()
 
-        console.log('Recipients insert attempt:', {
+        console.log('Recipients POST - Insert attempt:', {
           campaignId: id,
+          userId: user.id,
           attemptedCount: validatedRecipients.length,
           insertedCount: data?.length || 0,
-          error: { code: error?.code, message: error?.message },
+          successfulInsert: !error && data && data.length > 0,
+          error: error ? { code: error.code, message: error.message } : null,
         })
 
         if (error) {
           // 23505 is unique constraint violation (duplicate)
           if (error.code === '23505') {
+            console.log('Recipients POST - Duplicate error (expected):', { campaignId: id })
             return res.status(201).json({
               success: true,
               added: validatedRecipients.length,
@@ -146,6 +149,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           })
           throw error
         }
+
+        console.log('Recipients POST - Insert successful:', { 
+          campaignId: id,
+          insertedCount: data?.length 
+        })
 
         res.status(201).json({
           success: true,

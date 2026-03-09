@@ -90,14 +90,19 @@ export default function CampaignDetail() {
 
         // Fetch analytics
         try {
+          console.log('Initial fetch - Loading analytics for campaign:', id)
           const analyticsResponse = await axios.get(`/api/marketing/campaigns/${id}/analytics`, {
             headers: {
               'Authorization': `Bearer ${session.access_token}`,
             },
           })
+          console.log('Initial fetch - Analytics loaded:', analyticsResponse.data)
           setAnalytics(analyticsResponse.data)
         } catch (err) {
-          console.log('Analytics not yet available')
+          console.log('Initial fetch - Analytics not available:', {
+            status: (err as any).response?.status,
+            error: (err as any)?.message
+          })
         }
       } catch (err) {
         console.error('Error fetching campaign:', err)
@@ -111,18 +116,39 @@ export default function CampaignDetail() {
   }, [id, router])
 
   const refreshAnalytics = async () => {
-    if (!id || !accessToken) return
+    if (!id || !accessToken) {
+      console.warn('refreshAnalytics - Missing id or accessToken:', { id, hasAccessToken: !!accessToken })
+      return
+    }
 
     try {
-      const analyticsResponse = await axios.get(`/api/marketing/campaigns/${id}/analytics`, {
+      console.log('refreshAnalytics - Fetching analytics for campaign:', { id })
+      
+      // Force bypass cache with timestamp
+      const analyticsResponse = await axios.get(`/api/marketing/campaigns/${id}/analytics?t=${Date.now()}`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
+          'Cache-Control': 'no-cache',
         },
       })
-      console.log('Analytics refreshed:', analyticsResponse.data)
+      
+      console.log('refreshAnalytics - Analytics refreshed successfully:', {
+        totalRecipients: analyticsResponse.data.total_recipients,
+        sent: analyticsResponse.data.sent,
+      })
+      
       setAnalytics(analyticsResponse.data)
+      
+      // Validate that recipients count is > 0
+      if (analyticsResponse.data.total_recipients === 0) {
+        console.warn('refreshAnalytics - Analytics returned 0 recipients, this might indicate an RLS or query issue')
+      }
     } catch (err) {
-      console.error('Error refreshing analytics:', err)
+      console.error('refreshAnalytics - Error refreshing analytics:', {
+        error: (err as any).message,
+        status: (err as any).response?.status,
+        data: (err as any).response?.data,
+      })
     }
   }
 

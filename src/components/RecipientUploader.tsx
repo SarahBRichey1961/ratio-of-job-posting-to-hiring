@@ -60,16 +60,41 @@ export default function RecipientUploader({ campaignId, accessToken, onSuccess }
         }
       )
 
-      setSuccess(`✓ Added ${recipients.length} recipients to campaign`)
+      console.log('RecipientUploader - Upload successful:', {
+        campaignId,
+        uploadedCount: recipients.length,
+        response: response.data,
+      })
+
+      setSuccess(`✓ Added ${response.data.added || recipients.length} recipients to campaign`)
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
 
-      // Wait a moment for database to update, then call onSuccess
-      if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current)
-      successTimeoutRef.current = setTimeout(async () => {
-        await onSuccess()
-      }, 1000)
+      // Verify upload succeeded before triggering refresh
+      if (response.data.success || response.status === 201) {
+        // Wait a moment for database to update, then call onSuccess with retries
+        if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current)
+        successTimeoutRef.current = setTimeout(async () => {
+          console.log('RecipientUploader - Calling onSuccess callback to refresh analytics')
+          let retries = 0
+          while (retries < 3) {
+            try {
+              await onSuccess()
+              console.log('RecipientUploader - onSuccess completed successfully')
+              break
+            } catch (err) {
+              retries++
+              console.warn(`RecipientUploader - onSuccess failed (attempt ${retries}/3):`, err)
+              if (retries < 3) {
+                await new Promise(resolve => setTimeout(resolve, 500))
+              }
+            }
+          }
+        }, 1000)
+      } else {
+        setError('Upload returned unexpected response')
+      }
     } catch (err) {
       console.error('Error uploading recipients:', err)
       setError((err as any).response?.data?.error || 'Failed to add recipients')
