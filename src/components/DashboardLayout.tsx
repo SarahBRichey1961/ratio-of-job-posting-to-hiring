@@ -47,7 +47,7 @@ const navItems: NavItem[] = [
  */
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
-  const { session } = useAuth()
+  const { session, isAuthenticated } = useAuth()
   const [isLoadingManageAds, setIsLoadingManageAds] = useState(false)
 
   const handleManageAds = async () => {
@@ -168,7 +168,34 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top Header - Shows auth buttons when not logged in */}
+        {!isAuthenticated && (
+          <header className="bg-gradient-to-r from-blue-600 to-indigo-600 border-b border-blue-700 px-6 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h2 className="text-white font-semibold">Ready to get started?</h2>
+                <p className="text-blue-100 text-sm">Sign in to save your preferences and create campaigns</p>
+              </div>
+              <div className="flex gap-3 flex-shrink-0">
+                <Link href={`/auth/login?redirect=${encodeURIComponent(router.asPath)}`}>
+                  <button className="px-4 py-2 bg-white text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-colors">
+                    Sign In
+                  </button>
+                </Link>
+                <Link href={`/auth/signup?redirect=${encodeURIComponent(router.asPath)}`}>
+                  <button className="px-4 py-2 bg-blue-700 text-white font-medium rounded-lg hover:bg-blue-800 transition-colors border border-blue-600">
+                    Sign Up
+                  </button>
+                </Link>
+              </div>
+            </div>
+          </header>
+        )}
+        
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-y-auto">{children}</main>
+      </div>
     </div>
   )
 }
