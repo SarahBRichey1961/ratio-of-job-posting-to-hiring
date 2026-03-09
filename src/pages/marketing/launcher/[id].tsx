@@ -163,23 +163,15 @@ export default function CampaignDetail() {
   }
 
   const handleSave = async () => {
-    if (!id) return
+    if (!id || !accessToken) return
 
     setSaving(true)
     setError('')
 
     try {
-      const supabase = getSupabase()
-      const { data: { session } } = await supabase?.auth.getSession() || {}
-
-      if (!session?.access_token) {
-        setError('Session expired. Please log in again.')
-        return
-      }
-
       const response = await axios.put(`/api/marketing/campaigns/${id}`, editData, {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
       })
@@ -198,23 +190,15 @@ export default function CampaignDetail() {
   }
 
   const handleDelete = async () => {
-    if (!id) return
+    if (!id || !accessToken) return
 
     setDeleting(true)
     setError('')
 
     try {
-      const supabase = getSupabase()
-      const { data: { session } } = await supabase?.auth.getSession() || {}
-
-      if (!session?.access_token) {
-        setError('Session expired. Please log in again.')
-        return
-      }
-
       await axios.delete(`/api/marketing/campaigns/${id}`, {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
       })
 
@@ -229,26 +213,18 @@ export default function CampaignDetail() {
   }
 
   const handleSendCampaign = async () => {
-    if (!id) return
+    if (!id || !accessToken) return
 
     setSending(true)
     setError('')
 
     try {
-      const supabase = getSupabase()
-      const { data: { session } } = await supabase?.auth.getSession() || {}
-
-      if (!session?.access_token) {
-        setError('Session expired. Please log in again.')
-        return
-      }
-
       const response = await axios.post(
         `/api/marketing/campaigns/${id}/send`,
         {},
         {
           headers: {
-            'Authorization': `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
         }
