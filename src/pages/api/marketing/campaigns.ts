@@ -141,7 +141,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: error.message })
       }
 
-      res.status(201).json(data?.[0])
+      const campaign = data?.[0]
+
+      // Create analytics record for new campaign
+      if (campaign?.id) {
+        const { error: analyticsError } = await authenticatedSupabase
+          .from('campaign_analytics')
+          .insert({
+            campaign_id: campaign.id,
+            total_sent: 0,
+            total_bounced: 0,
+            total_opened: 0,
+            total_clicked: 0,
+            total_conversions: 0,
+            conversion_rate: 0,
+            click_through_rate: 0,
+            open_rate: 0,
+          })
+
+        if (analyticsError) {
+          console.error('Failed to create analytics record:', {
+            campaignId: campaign.id,
+            error: analyticsError.message,
+            code: analyticsError.code,
+          })
+          // Don't fail the campaign creation if analytics record creation fails
+        } else {
+          console.log('Analytics record created for campaign:', campaign.id)
+        }
+      }
+
+      res.status(201).json(campaign)
     } catch (error) {
       console.error('Error:', error)
       res.status(400).json({ error: (error as Error).message })
