@@ -1,4 +1,4 @@
-import React, { ReactNode, useState } from 'react'
+import React, { ReactNode, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useAuth } from '@/context/AuthContext'
@@ -48,7 +48,13 @@ const navItems: NavItem[] = [
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
   const { session, isAuthenticated } = useAuth()
+  const [mounted, setMounted] = useState(false)
   const [isLoadingManageAds, setIsLoadingManageAds] = useState(false)
+
+  // Prevent hydration mismatch - only render auth-dependent UI after mount
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleManageAds = async () => {
     setIsLoadingManageAds(true)
@@ -170,7 +176,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header - Shows auth buttons when not logged in */}
-        {!isAuthenticated && (
+        {mounted && !isAuthenticated && (
           <header className="bg-gradient-to-r from-blue-600 to-indigo-600 border-b border-blue-700 px-6 py-3">
             <div className="flex items-center justify-between">
               <div className="flex-1">
