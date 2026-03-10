@@ -49,11 +49,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
   const { session, isAuthenticated } = useAuth()
   const [mounted, setMounted] = useState(false)
+  const [showBanner, setShowBanner] = useState(false)
   const [isLoadingManageAds, setIsLoadingManageAds] = useState(false)
 
   // Prevent hydration mismatch - only render auth-dependent UI after mount
+  // Banner shows if user is NOT authenticated at mount time and stays visible
   useEffect(() => {
     setMounted(true)
+    // Only show banner if currently not authenticated. Lock this decision at mount.
+    setShowBanner(!isAuthenticated)
   }, [])
 
   const handleManageAds = async () => {
@@ -176,7 +180,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header - Shows auth buttons when not logged in */}
-        {mounted && !isAuthenticated && (
+        {mounted && showBanner && (
           <header className="bg-gradient-to-r from-blue-600 to-indigo-600 border-b border-blue-700 px-6 py-3">
             <div className="flex items-center justify-between">
               <div className="flex-1">
