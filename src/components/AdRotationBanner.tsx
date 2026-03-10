@@ -47,11 +47,13 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
     const fetchAds = async () => {
       try {
         setIsLoading(true)
+        const now = new Date().toISOString()
+        
+        // Fetch all active ads (ignoring expiry for now to debug)
         const { data, error } = await supabase
           .from('advertisements')
           .select('id, title, description, banner_image_url, banner_height, click_url, alt_text, impressions, clicks, is_active, expires_at, created_at')
           .eq('is_active', true)
-          .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
           .order('created_at', { ascending: false })
           .limit(maxAds)
 
@@ -59,7 +61,12 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
           console.error('Error fetching ads:', error)
           setAds([])
         } else {
-          setAds(data || [])
+          // Filter expired ads client-side
+          const activeAds = (data || []).filter(ad => 
+            !ad.expires_at || new Date(ad.expires_at) > new Date(now)
+          )
+          console.log(`Fetched ${data?.length || 0} ads, ${activeAds.length} are active and not expired`)
+          setAds(activeAds)
         }
       } catch (err) {
         console.error('Failed to fetch ads:', err)
