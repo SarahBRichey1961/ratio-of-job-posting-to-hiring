@@ -323,13 +323,6 @@ const Home: NextPage<HomeProps> = ({ jobBoardsByCategory, allBoards, industries,
                   day: 'numeric',
                 })}
               </div>
-              {hasAdvertiserAccount && (
-                <Link href="/advertiser/dashboard">
-                  <button className="px-3 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors whitespace-nowrap">
-                    📢 Manage Ads
-                  </button>
-                </Link>
-              )}
               {!isAuthenticated && (
                 <Link href="/auth/login">
                   <button className="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors whitespace-nowrap">
