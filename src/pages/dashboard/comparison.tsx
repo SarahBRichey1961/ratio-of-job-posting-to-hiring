@@ -190,33 +190,6 @@ const ComparisonPage: React.FC<ComparisonProps> = ({
         description="Compare efficiency scores across all job boards"
       />
 
-      {!isAuthenticated && (
-        <Section title="">
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                Sign in to save your preferences and create campaigns
-              </h3>
-              <p className="text-gray-600 text-sm">
-                Track your favorite boards, build targeted email campaigns, and more.
-              </p>
-            </div>
-            <div className="flex gap-3 flex-shrink-0">
-              <Link href={`/auth/login?redirect=/dashboard/comparison`}>
-                <button className="px-4 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors">
-                  Sign In
-                </button>
-              </Link>
-              <Link href={`/auth/signup?redirect=/dashboard/comparison`}>
-                <button className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
-                  Sign Up
-                </button>
-              </Link>
-            </div>
-          </div>
-        </Section>
-      )}
-
       <Section title="Filters">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
