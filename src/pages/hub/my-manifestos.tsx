@@ -4,7 +4,6 @@ import { useRouter } from 'next/router'
 import Link from 'next/link'
 import axios from 'axios'
 import { useAuth } from '@/context/AuthContext'
-import { getSupabase } from '@/lib/supabase'
 
 interface Manifesto {
   id: string
@@ -18,7 +17,7 @@ interface Manifesto {
 
 const MyManifestosPage = () => {
   const router = useRouter()
-  const { user, signOut, isLoading: authLoading, isAuthenticated } = useAuth()
+  const { user, session, signOut, isLoading: authLoading, isAuthenticated } = useAuth()
   const [manifestos, setManifestos] = useState<Manifesto[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -38,10 +37,6 @@ const MyManifestosPage = () => {
   const loadManifestos = async () => {
     setLoading(true)
     try {
-      // Get the auth token to pass to API
-      const client = getSupabase()
-      const { data: { session } } = await client?.auth.getSession() || { data: { session: null } }
-      
       const config: any = {}
       if (session?.access_token) {
         config.headers = {
@@ -65,10 +60,6 @@ const MyManifestosPage = () => {
 
     setDeletingId(id)
     try {
-      // Get the auth token to pass to API
-      const client = getSupabase()
-      const { data: { session } } = await client?.auth.getSession() || { data: { session: null } }
-      
       const config: any = {}
       if (session?.access_token) {
         config.headers = {

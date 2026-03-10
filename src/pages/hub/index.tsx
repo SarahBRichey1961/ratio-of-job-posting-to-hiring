@@ -76,14 +76,6 @@ export default function TakeTheReins() {
             >
               📧 Marketing
             </Link>
-            {hasAdvertiserAccount && (
-              <Link
-                href="/advertiser/dashboard"
-                className="text-white bg-orange-600 hover:bg-orange-700 transition text-sm font-medium px-4 py-2 rounded-lg whitespace-nowrap"
-              >
-                📢 Manage Ads
-              </Link>
-            )}
             {isAdmin && (
               <Link
                 href="/admin/advertisers"
