@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getSupabase, getAuthenticatedSupabase } from '@/lib/supabase'
+import { getSupabase, getAuthenticatedSupabase, getUserIdFromToken } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -22,27 +22,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const token = authHeader.substring(7)
       console.log('Token extracted, length:', token.length)
       
+      // Extract user ID from JWT token
+      const userId = getUserIdFromToken(token)
+      if (!userId) {
+        console.error('❌ Failed to extract user ID from token')
+        return res.status(401).json({ error: 'Invalid token' })
+      }
+      console.log('✓ User authenticated:', userId)
+
       const authenticatedSupabase = await getAuthenticatedSupabase(token)
       if (!authenticatedSupabase) {
         console.error('❌ Failed to initialize Supabase client')
         return res.status(500).json({ error: 'Failed to initialize Supabase client' })
       }
       console.log('✓ Supabase client initialized')
-
-      const { data, error: userError } = await authenticatedSupabase.auth.getUser()
-      const user = data?.user
-      
-      console.log('Auth getUser result:', { 
-        error: userError?.message, 
-        userId: user?.id,
-        email: user?.email 
-      })
-      
-      if (userError || !user) {
-        console.error('❌ Auth error:', userError?.message)
-        return res.status(401).json({ error: 'Unauthorized', details: userError?.message })
-      }
-      console.log('✓ User authenticated:', user.id)
 
       const { status, limit = '20', offset = '0' } = req.query
       const limitNum = Math.min(Number(limit), 100)
@@ -52,7 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       let query = authenticatedSupabase
         .from('marketing_campaigns')
         .select('*')
-        .eq('creator_id', user.id)
+        .eq('creator_id', userId)
 
       if (status) {
         query = query.eq('status', status)
