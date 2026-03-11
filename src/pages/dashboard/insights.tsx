@@ -74,10 +74,12 @@ export default function InsightsPage() {
   }, [])
 
   useEffect(() => {
-    // Only fetch data after component is mounted and auth is initialized
+    // Only fetch data after component is mounted
+    // Auth loading doesn't block insights - this is public data
     console.log(`📍 InsightsPage useEffect: mounted=${mounted}, authLoading=${authLoading}, fetchRef=${fetchRef.current}`)
-    if (!mounted || authLoading) {
-      console.log('⏳ Skipping fetch - not mounted or auth still loading')
+    
+    if (!mounted) {
+      console.log('⏳ Skipping fetch - component not mounted yet')
       return
     }
 
@@ -298,7 +300,7 @@ export default function InsightsPage() {
 
     console.log('🚀 Calling fetchData()...')
     fetchData()
-  }, [mounted, authLoading])
+  }, [mounted])
 
   if (loading || !insights) {
     console.log(`🔄 Rendering loading state: loading=${loading}, insights=${!!insights}`, insights)

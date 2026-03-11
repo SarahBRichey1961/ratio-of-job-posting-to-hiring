@@ -30,32 +30,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    console.log('🔄 AuthProvider: Initializing auth...')
     const client = getSupabase()
     if (!client) {
+      console.warn('⚠️ Supabase client not available')
       setIsLoading(false)
       return
     }
+
+    console.log('✅ Supabase client obtained, setting up auth listener...')
 
     let isMounted = true
     let timeoutId: NodeJS.Timeout | null = null
     let subscription: any = null
 
-    // Set a timeout for auth initialization
+    // Set a timeout for auth initialization (increased to 5 seconds)
     timeoutId = setTimeout(() => {
-      console.warn('Auth initialization timeout - proceeding without session')
+      console.warn('⏱️ Auth initialization timeout (5s) - proceeding without full session')
       if (isMounted) {
         setIsLoading(false)
       }
-    }, 3000)
+    }, 5000)
 
     // Check active sessions and subscribe to auth changes with error handling
     try {
       const { data } = client.auth.onAuthStateChange(
         async (_event, session) => {
+          console.log(`🔐 Auth state changed: event=${_event}, hasSession=${!!session}`)
           if (!isMounted) return
 
           try {
-            if (timeoutId) clearTimeout(timeoutId)
+            if (timeoutId) {
+              clearTimeout(timeoutId)
+              console.log('✅ Auth timeout cleared - onAuthStateChange fired')
+            }
 
             // Update user and session state
             if (isMounted) {
@@ -137,11 +145,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (isMounted) {
               setIsLoading(false)
+              console.log('✅ Auth isLoading set to false')
             }
           } catch (err) {
-            console.error('Error in auth state change handler:', err)
+            console.error('❌ Error in auth state change handler:', err)
             if (isMounted) {
               setIsLoading(false)
+              console.log('✅ Auth isLoading set to false (via error catch)')
             }
           }
         }
@@ -157,13 +167,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err: any) {
       // Handle lock timeout or other auth initialization errors
       if (err?.message?.includes('Navigator LockManager') || err?.message?.includes('timed out')) {
-        console.warn('Auth lock timeout - using fallback auth mode', err.message)
+        console.warn('⚠️ Auth lock timeout - using fallback auth mode', err.message)
         clearTimeout(timeoutId)
         setIsLoading(false)
+        console.log('✅ Auth isLoading set to false (lock timeout)')
       } else {
-        console.error('Failed to initialize auth:', err)
+        console.error('❌ Failed to initialize auth:', err)
         clearTimeout(timeoutId)
         setIsLoading(false)
+        console.log('✅ Auth isLoading set to false (init error)')
       }
     }
   }, [])
