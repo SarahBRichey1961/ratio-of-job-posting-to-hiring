@@ -109,7 +109,7 @@ const HubLogin = () => {
             disabled={loading}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg transition disabled:opacity-50"
           >
-            {loading ? 'Loading...' : isSignup ? 'Sign Up' : 'Sign In'}
+            {loading ? 'Loading...' : isSignup ? 'Sign Up' : 'Login'}
           </button>
         </form>
 
@@ -121,7 +121,7 @@ const HubLogin = () => {
             }}
             className="text-indigo-600 hover:text-indigo-700 font-medium text-sm"
           >
-            {isSignup ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+            {isSignup ? 'Already have an account? Login' : "Don't have an account? Sign Up"}
           </button>
         </div>
       </div>

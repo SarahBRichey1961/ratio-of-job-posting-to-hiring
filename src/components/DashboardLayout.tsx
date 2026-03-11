@@ -190,7 +190,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="flex gap-3 flex-shrink-0">
                 <Link href={`/auth/login?redirect=${encodeURIComponent(router.asPath)}`}>
                   <button className="px-4 py-2 bg-white text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-colors">
-                    Sign In
+                    Login
                   </button>
                 </Link>
                 <Link href={`/auth/signup?redirect=${encodeURIComponent(router.asPath)}`}>

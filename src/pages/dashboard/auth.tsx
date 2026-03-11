@@ -8,7 +8,7 @@ export default function AuthPage() {
 
   return (
     <DashboardLayout>
-      <PageHeader title="Authentication" description="Sign in to your Job Board Score account" />
+      <PageHeader title="Authentication" description="Login to your Job Board Score account" />
 
       <div className="max-w-md mx-auto">
         <Card>
@@ -49,7 +49,7 @@ export default function AuthPage() {
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg px-4 py-2 transition-colors"
               >
-                Sign In
+                Login
               </button>
             </div>
           </form>
