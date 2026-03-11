@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { getSupabase } from '@/lib/supabase'
-import { createClient } from '@supabase/supabase-js'
 
 interface UserProfile {
   id: string
@@ -65,23 +64,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
             if (session?.user) {
-              // Create an authenticated client with the user's session token
-              let dbClient = client
-              if (session.access_token) {
-                dbClient = createClient(
-                  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-                  {
-                    global: {
-                      headers: {
-                        Authorization: `Bearer ${session.access_token}`,
-                      },
-                    },
-                  }
-                )
-              }
+              // Use the main client - Supabase handles auth automatically
+              // No need to create a new client instance
+              const dbClient = client
 
-              // Fetch user profile with authenticated client
+              // Fetch user profile
               const { data: profileData, error: fetchError } = await dbClient
                 .from('user_profiles')
                 .select('*')
