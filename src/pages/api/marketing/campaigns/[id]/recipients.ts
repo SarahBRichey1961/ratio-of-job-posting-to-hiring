@@ -186,7 +186,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             // This is necessary because auth.uid() doesn't work properly with Bearer tokens on the server
             const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
             if (!serviceRoleKey) {
-              throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured')
+              console.warn('Recipients POST - SUPABASE_SERVICE_ROLE_KEY not configured, skipping analytics update')
+              // Don't fail - recipients were saved successfully
+              return res.status(201).json({
+                success: true,
+                added: data?.length || validatedRecipients.length,
+                message: `Added ${validatedRecipients.length} recipients to campaign`,
+              })
             }
 
             const serviceRoleClient = createClient(
@@ -241,8 +247,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             console.error('Recipients POST - Exception updating analytics:', {
               error: (err as any).message,
               campaignId: id,
+              verifyCount,
             })
-            // Don't fail the request, log and continue
+            // Don't fail the request - recipients were saved, just analytics update failed
+            // The frontend will query back and see the updated count
+            return res.status(201).json({
+              success: true,
+              added: data?.length || validatedRecipients.length,
+              message: `Added ${validatedRecipients.length} recipients to campaign`,
+            })
           }
         }
 
@@ -252,14 +265,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           message: `Added ${validatedRecipients.length} recipients to campaign`,
         })
       } catch (insertError: any) {
-        console.error('Error inserting recipients:', {
+        console.error('❌ Recipients POST - Error inserting recipients:', {
           error: insertError.message,
           status: insertError.status,
+          code: insertError.code,
           details: insertError.details,
+          hint: insertError.hint,
         })
         return res.status(500).json({
           error: 'Failed to add recipients',
-          details: insertError.message,
+          details: insertError.message || insertError.code,
         })
       }
     } else if (req.method === 'DELETE') {
