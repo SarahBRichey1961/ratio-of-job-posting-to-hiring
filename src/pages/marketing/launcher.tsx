@@ -21,39 +21,69 @@ export default function MarketingLauncher() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    console.log('🚀 MarketingLauncher: Component mounted, session=', !!session)
+    console.log('🚀 MarketingLauncher useEffect: session=', !!session, 'authLoading=', authLoading)
     
-    // Wait for auth to be ready
+    // If we already have a session with access token, fetch immediately
+    // Don't wait for authLoading - the presence of session means auth is complete
+    if (session?.access_token) {
+      console.log('✅ Session with access_token available, fetching campaigns immediately')
+      fetchCampaigns(session.access_token)
+      return
+    }
+
+    // If still loading auth and no session yet, wait
     if (authLoading) {
-      console.log('⏳ Auth still loading, waiting...')
+      console.log('⏳ Auth loading and no session yet, waiting...')
       return
     }
 
-    // Check if authenticated
-    if (!session?.access_token) {
-      console.error('❌ No session or access token available')
-      setError('Authentication required')
-      setLoading(false)
-      return
-    }
-
-    console.log('✅ Session available, fetching campaigns...')
-    fetchCampaigns(session.access_token)
+    // No session and auth finished loading
+    console.error('❌ No session after auth complete')
+    setError('Authentication required')
+    setLoading(false)
   }, [session, authLoading])
 
   const fetchCampaigns = async (token: string) => {
     try {
       console.log('📨 Fetching campaigns with token...')
+      console.log('🔐 Token length:', token.length)
+      console.log('📝 API endpoint: /api/marketing/campaigns')
+      
       setLoading(true)
       const response = await axios.get('/api/marketing/campaigns', {
         headers: { Authorization: `Bearer ${token}` },
+        timeout: 10000 // 10 second timeout
       })
+      
       const campaignsList = response.data.data || []
+      console.log(`✅ Campaigns API response status: ${response.status}`)
       console.log(`✅ Campaigns fetched: ${campaignsList.length} campaigns`)
+      console.log('📊 Campaign data:', campaignsList)
+      
       setCampaigns(campaignsList)
-    } catch (err) {
-      console.error('❌ Error fetching campaigns:', err)
-      setError('Failed to load campaigns')
+      setError('')
+    } catch (err: any) {
+      console.error('❌ Error fetching campaigns:')
+      console.error('   - Error type:', err?.code)
+      console.error('   - Status:', err?.response?.status)
+      console.error('   - Status text:', err?.response?.statusText)
+      console.error('   - Response data:', err?.response?.data)
+      console.error('   - Full error:', err)
+      
+      // Provide meaningful error messages
+      if (err?.response?.status === 401) {
+        setError('Authentication failed - please log in again')
+      } else if (err?.response?.status === 403) {
+        setError('You do not have permission to access campaigns')
+      } else if (err?.response?.status === 404) {
+        setError('Campaigns endpoint not found')
+      } else if (err?.code === 'ECONNABORTED') {
+        setError('Request timed out - please try again')
+      } else {
+        setError(`Failed to load campaigns: ${err?.message || 'Unknown error'}`)
+      }
+      
+      setCampaigns([])
     } finally {
       setLoading(false)
     }
