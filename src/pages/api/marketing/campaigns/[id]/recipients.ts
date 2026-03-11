@@ -130,14 +130,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       try {
-        console.log('🟦 Recipients POST - Attempting insert to campaign_recipients...')
+        console.log('🔐 Recipients POST - Using SERVICE_ROLE_KEY to bypass RLS...')
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+        
+        if (!serviceRoleKey) {
+          console.error('❌ Recipients POST - SUPABASE_SERVICE_ROLE_KEY not configured!')
+          return res.status(500).json({ 
+            error: 'Server not configured for recipient uploads', 
+            details: 'Missing SUPABASE_SERVICE_ROLE_KEY'
+          })
+        }
+
+        // Use SERVICE_ROLE_KEY to bypass RLS - we've already verified ownership above
+        const serviceRoleClient = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          serviceRoleKey,
+          {
+            auth: {
+              persistSession: false,
+              autoRefreshToken: false,
+            },
+          }
+        )
+
+        console.log('🔐 Recipients POST - Attempting insert with SERVICE_ROLE_KEY...')
         // Insert recipients (skip duplicates)
-        const { data, error } = await supabase
+        const { data, error } = await serviceRoleClient
           .from('campaign_recipients')
           .insert(validatedRecipients)
           .select()
 
-        console.log('🟦 Recipients POST - Insert result:', {
+        console.log('🔐 Recipients POST - Insert result:', {
           campaignId: id,
           userId: userId,
           attemptedCount: validatedRecipients.length,
@@ -181,7 +204,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // Verify recipients were actually inserted by querying them back
         console.log('🟦 Recipients POST - Verifying insert by querying back...')
-        const { count: verifyCount, error: verifyError } = await supabase
+        const { count: verifyCount, error: verifyError } = await serviceRoleClient
           .from('campaign_recipients')
           .select('*', { count: 'exact', head: true })
           .eq('campaign_id', id)
