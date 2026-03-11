@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getSupabase, getAuthenticatedSupabase } from '@/lib/supabase'
+import { getSupabase, getAuthenticatedSupabase, getUserIdFromToken } from '@/lib/supabase'
 
 // Resend email service - add your API key to environment variables
 const RESEND_API_KEY = process.env.RESEND_API_KEY
@@ -23,15 +23,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    console.log('📨 Send endpoint - Extracting user ID from JWT token...')
+    const userId = getUserIdFromToken(token)
+    if (!userId) {
+      console.error('📨 Send endpoint - Failed to extract user ID from token')
+      return res.status(401).json({ error: 'Invalid token' })
+    }
+    console.log('📨 Send endpoint - User authenticated:', userId)
+
     const authenticatedSupabase = await getAuthenticatedSupabase(token)
     if (!authenticatedSupabase) {
       return res.status(500).json({ error: 'Failed to initialize Supabase client' })
-    }
-
-    const { data: { user } } = await authenticatedSupabase.auth.getUser()
-
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid token' })
     }
 
     // Use authenticated client for all queries so RLS policies work
@@ -44,13 +46,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .eq('id', id)
       .single()
 
-    if (campaignError || !campaign || campaign.creator_id !== user.id) {
+    if (campaignError || !campaign || campaign.creator_id !== userId) {
       return res.status(403).json({ error: 'Access denied' })
     }
 
     if (campaign.status !== 'draft') {
+      console.warn('📨 Send endpoint - Campaign not in draft status:', { id, status: campaign.status })
       return res.status(400).json({ error: 'Campaign must be in draft status to send' })
     }
+
+    console.log('📨 Send endpoint - Campaign found, fetching recipients...', { id })
 
     // Get recipients
     const { data: recipients, error: recipientsError } = await supabase
@@ -64,8 +69,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (!recipients || recipients.length === 0) {
+      console.error('📨 Send endpoint - No recipients found for campaign:', { id, count: recipients?.length })
       return res.status(400).json({ error: 'No recipients to send to' })
     }
+    console.log('📨 Send endpoint - Recipients found, preparing to send...', { id, recipientCount: recipients.length })
 
     let sentCount = 0
     let failedCount = 0

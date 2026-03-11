@@ -230,6 +230,7 @@ export default function CampaignDetail() {
     setError('')
 
     try {
+      console.log('🚀 handleSendCampaign: Starting campaign send...', { id, tokenLength: accessToken?.length })
       const response = await axios.post(
         `/api/marketing/campaigns/${id}/send`,
         {},
@@ -238,8 +239,15 @@ export default function CampaignDetail() {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
+          timeout: 30000,
         }
       )
+
+      console.log('✅ handleSendCampaign: Campaign sent successfully', {
+        sent: response.data.sent,
+        failed: response.data.failed,
+        status: response.status,
+      })
 
       // Update campaign status to 'sent'
       setCampaign((prev) =>
@@ -258,10 +266,16 @@ export default function CampaignDetail() {
         `Campaign sent successfully!\n\n📧 Emails sent: ${response.data.sent}\n❌ Failed: ${response.data.failed}`
       )
     } catch (err) {
-      console.error('Error sending campaign:', err)
+      console.error('❌ handleSendCampaign: Error sending campaign:', {
+        status: (err as any).response?.status,
+        error: (err as any).response?.data?.error,
+        message: (err as any).message,
+        fullError: err,
+      })
       const errorMessage =
         (err as any).response?.data?.error ||
         (err as any).response?.data?.message ||
+        (err as any).message ||
         'Failed to send campaign'
       setError(errorMessage)
     } finally {
