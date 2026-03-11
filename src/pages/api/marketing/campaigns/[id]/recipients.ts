@@ -351,6 +351,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           success: true,
           added: data?.length || validatedRecipients.length,
           message: `Added ${validatedRecipients.length} recipients to campaign`,
+          debug: {
+            insertSuccess: !error,
+            rowsReturned: data?.length || 0,
+            insertError: error ? { code: error.code, message: error.message, details: error.details } : null,
+          }
         })
       } catch (insertError: any) {
         console.error('❌ Recipients POST - Caught exception:', {
