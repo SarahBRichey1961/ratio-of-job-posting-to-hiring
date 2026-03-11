@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { DashboardLayout } from '@/components/DashboardLayout'
 import { TrafficMetrics } from '@/components/TrafficMetrics'
 import {
@@ -14,6 +14,7 @@ import {
   getIndustriesByTrend,
 } from '@/lib/industryInsights'
 import { FALLBACK_BOARDS, calculateBoardMetrics } from '@/lib/fallbackBoardsData'
+import { useAuth } from '@/context/AuthContext'
 
 interface BoardInsight {
   name: string
@@ -56,12 +57,27 @@ interface InsightsData {
 }
 
 export default function InsightsPage() {
+  const { isLoading: authLoading } = useAuth()
+  const [mounted, setMounted] = useState(false)
   const [insights, setInsights] = useState<InsightsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'metrics' | 'sources'>('metrics')
   const [marketTrends, setMarketTrends] = useState<any>(null)
+  const fetchRef = useRef(false)
+
+  // Track if component is mounted to prevent hydration mismatches
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
+    // Only fetch data after component is mounted and auth is initialized
+    if (!mounted || authLoading) return
+
+    // Prevent duplicate fetches in strict mode
+    if (fetchRef.current) return
+    fetchRef.current = true
+
     // Fetch market trends from database
     const fetchData = async () => {
       try {
@@ -261,7 +277,7 @@ export default function InsightsPage() {
     }
 
     fetchData()
-  }, [])
+  }, [mounted, authLoading])
 
   if (loading || !insights) {
     return (
