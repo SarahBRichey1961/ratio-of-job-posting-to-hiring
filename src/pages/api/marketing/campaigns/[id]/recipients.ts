@@ -133,15 +133,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log('🔐 Recipients POST - Using SERVICE_ROLE_KEY to bypass RLS...')
         const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
         
+        console.log('🔐 Recipients POST - Checking environment:', {
+          hasServiceRoleKey: !!serviceRoleKey,
+          keyLength: serviceRoleKey ? serviceRoleKey.length : 0,
+          supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? '✓ set' : '✗ missing',
+        })
+        
         if (!serviceRoleKey) {
           console.error('❌ Recipients POST - SUPABASE_SERVICE_ROLE_KEY not configured!')
           return res.status(500).json({ 
             error: 'Server not configured for recipient uploads', 
-            details: 'Missing SUPABASE_SERVICE_ROLE_KEY'
+            details: 'Missing SUPABASE_SERVICE_ROLE_KEY',
+            hint: 'Add SUPABASE_SERVICE_ROLE_KEY to Netlify environment variables'
           })
         }
 
         // Use SERVICE_ROLE_KEY to bypass RLS - we've already verified ownership above
+        console.log('🔐 Recipients POST - Creating serviceRoleClient with KEY...')
         const serviceRoleClient = createClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
           serviceRoleKey,
@@ -152,6 +160,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
           }
         )
+        
+        console.log('🔐 Recipients POST - ServiceRoleClient created, ready for insert')
+        console.log('🔐 Recipients POST - Attempting INSERT with:', {
+          recipientCount: validatedRecipients.length,
+          sampleRecord: validatedRecipients[0],
+        })
 
         console.log('🔐 Recipients POST - Attempting insert with SERVICE_ROLE_KEY...')
         // Insert recipients (skip duplicates)
@@ -160,14 +174,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .insert(validatedRecipients)
           .select()
 
-        console.log('🔐 Recipients POST - Insert result:', {
-          campaignId: id,
-          userId: userId,
-          attemptedCount: validatedRecipients.length,
-          insertedCount: data?.length || 0,
-          successfulInsert: !error && data && data.length > 0,
-          returnedData: data ? data.slice(0, 2) : null,
-          error: error ? { code: error.code, message: error.message, details: error.details } : null,
+        console.log('🔐 Recipients POST - INSERT RESULT:', {
+          insertError: error ? { code: error.code, message: error.message, details: error.details, hint: error.hint } : null,
+          insertSuccess: !error,
+          dataReturned: data ? `${data.length} rows` : 'null',
+          firstRow: data && data.length > 0 ? { id: data[0].id, email: data[0].email } : null,
         })
 
         if (error) {
@@ -315,11 +326,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       } catch (insertError: any) {
         console.error('❌ Recipients POST - Caught exception:', {
           error: insertError.message,
-          status: insertError.status,
           code: insertError.code,
           details: insertError.details,
           hint: insertError.hint,
-          fullError: insertError,
         })
         return res.status(500).json({
           error: 'Failed to add recipients',
