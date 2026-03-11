@@ -63,34 +63,46 @@ export default function InsightsPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'metrics' | 'sources'>('metrics')
   const [marketTrends, setMarketTrends] = useState<any>(null)
+  const [error, setError] = useState<string | null>(null)
   const fetchRef = useRef(false)
 
   // Track if component is mounted to prevent hydration mismatches
   useEffect(() => {
+    console.log('🔄 InsightsPage: Mounting component')
     setMounted(true)
   }, [])
 
   useEffect(() => {
     // Only fetch data after component is mounted and auth is initialized
-    if (!mounted || authLoading) return
+    console.log(`📍 InsightsPage useEffect: mounted=${mounted}, authLoading=${authLoading}, fetchRef=${fetchRef.current}`)
+    if (!mounted || authLoading) {
+      console.log('⏳ Skipping fetch - not mounted or auth still loading')
+      return
+    }
 
     // Prevent duplicate fetches in strict mode
-    if (fetchRef.current) return
+    if (fetchRef.current) {
+      console.log('⚠️ Skipping fetch - already fetched')
+      return
+    }
     fetchRef.current = true
 
     // Fetch market trends from database
     const fetchData = async () => {
       try {
+        console.log('📨 Starting data fetch...')
         const trends = await getMarketTrends()
         console.log('✅ Market trends fetched:', trends)
         
         setMarketTrends(trends)
 
         // Calculate metrics from 70 fallback boards
+        console.log('📊 Calculating board metrics...')
         const boardMetrics = calculateBoardMetrics(FALLBACK_BOARDS)
         console.log('📊 Board metrics calculated:', boardMetrics)
         
         // Transform board metrics into insights
+        console.log('🔄 Transforming board metrics to insights...')
         const mockData: InsightsData = {
           risingBoards: boardMetrics.risingBoards.map((board) => ({
             name: board.name,
@@ -190,11 +202,17 @@ export default function InsightsPage() {
           },
         }
 
+        console.log('💾 Setting insights state...')
         setInsights(mockData)
+        console.log('✅ Insights state set successfully')
       } catch (error) {
         console.error('❌ Error loading insights:', error)
         console.error('Error details:', error instanceof Error ? error.message : String(error))
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+        setError(errorMsg)
+        
         // Fallback to board metrics when database fails
+        console.log('🔄 Using fallback data due to error...')
         const boardMetrics = calculateBoardMetrics(FALLBACK_BOARDS)
         setInsights({
           risingBoards: boardMetrics.risingBoards.map((board) => ({
@@ -272,18 +290,27 @@ export default function InsightsPage() {
           },
         })
       } finally {
+        console.log('🏁 Data fetch complete, setting loading=false')
         setLoading(false)
       }
     }
 
+    console.log('🚀 Calling fetchData()...')
     fetchData()
   }, [mounted, authLoading])
 
   if (loading || !insights) {
+    console.log(`🔄 Rendering loading state: loading=${loading}, insights=${!!insights}`, insights)
     return (
       <DashboardLayout>
         <div className="px-6 py-8 space-y-8">
           <PageHeader title="Market Insights" description="Loading..." />
+          {error && (
+            <Card className="bg-red-900 border-red-700">
+              <p className="text-red-200"><strong>Error:</strong> {error}</p>
+              <p className="text-red-300 text-sm mt-2">Check console for details</p>
+            </Card>
+          )}
           <Card>
             <p className="text-gray-400">Loading insights...</p>
           </Card>
@@ -291,6 +318,8 @@ export default function InsightsPage() {
       </DashboardLayout>
     )
   }
+
+  console.log('✅ Rendering Insights page with data:', insights)
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
