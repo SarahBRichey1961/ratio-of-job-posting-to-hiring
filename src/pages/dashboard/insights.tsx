@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { DashboardLayout } from '@/components/DashboardLayout'
 import { TrafficMetrics } from '@/components/TrafficMetrics'
+import { ErrorBoundary, SafeChart } from '@/components/SafeChart'
 import {
   PageHeader,
   Card,
@@ -344,9 +345,10 @@ export default function InsightsPage() {
   }
 
   return (
-    <DashboardLayout>
-      <div className="px-6 py-8 space-y-8">
-        <PageHeader
+    <ErrorBoundary>
+      <DashboardLayout>
+        <div className="px-6 py-8 space-y-8">
+          <PageHeader
           title="Market Insights"
           description="Hiring trends, job board momentum, and role-specific analysis"
         />
@@ -415,19 +417,21 @@ export default function InsightsPage() {
 
       {/* Visualizations */}
       <Section title="Board Performance Trends">
-        <Card>
-          <BoardScoresChart
-            data={[
-              insights.bestOverall,
-              insights.bestForSpeed,
-              insights.bestForQuality,
-              insights.worstPerformer,
-              insights.risingBoards[0] || insights.bestOverall,
-            ]}
-            title="Top & Bottom Performing Boards"
-            height={300}
-          />
-        </Card>
+        <SafeChart title="Top & Bottom Performing Boards" fallbackMessage="Unable to load performance chart">
+          <Card>
+            <BoardScoresChart
+              data={[
+                insights.bestOverall,
+                insights.bestForSpeed,
+                insights.bestForQuality,
+                insights.worstPerformer,
+                insights.risingBoards[0] || insights.bestOverall,
+              ]}
+              title="Top & Bottom Performing Boards"
+              height={300}
+            />
+          </Card>
+        </SafeChart>
       </Section>
 
       {/* Role Distribution Chart - Hidden */}
@@ -818,6 +822,7 @@ export default function InsightsPage() {
       {/* Traffic Metrics - Now at the bottom */}
       <TrafficMetrics />
       </div>
-    </DashboardLayout>
+      </DashboardLayout>
+    </ErrorBoundary>
   )
 }
