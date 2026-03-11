@@ -63,7 +63,7 @@ const LoginPage = () => {
 
       <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="bg-slate-800 border border-slate-700 rounded-xl p-8">
-          <h2 className="text-3xl font-bold text-white mb-8 text-center">Sign In</h2>
+          <h2 className="text-3xl font-bold text-white mb-8 text-center">Login</h2>
 
           {error && (
             <div className="bg-red-600/20 border border-red-600/50 text-red-200 px-4 py-3 rounded-lg mb-6 text-sm">
@@ -71,7 +71,7 @@ const LoginPage = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
             <div>
               <label className="block text-white font-semibold mb-2">Email</label>
               <input
@@ -79,6 +79,7 @@ const LoginPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                autoComplete="off"
                 className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                 placeholder="your@email.com"
               />
@@ -91,6 +92,7 @@ const LoginPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete="off"
                 className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                 placeholder="••••••••"
               />
@@ -101,7 +103,7 @@ const LoginPage = () => {
               disabled={loading}
               className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Logging in...' : 'Login'}
             </button>
           </form>
 

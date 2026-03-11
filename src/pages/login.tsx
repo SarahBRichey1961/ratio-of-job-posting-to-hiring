@@ -56,7 +56,7 @@ export default function LoginPage() {
 
         {/* Login Card */}
         <div className="bg-gray-800 rounded-lg shadow-2xl p-6 sm:p-8 border border-gray-700">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">Sign In</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">Login</h2>
 
           {error && (
             <div className="mb-6 p-4 bg-red-900/20 border border-red-800 rounded-lg">
@@ -64,7 +64,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
             {/* Email Input */}
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-gray-300 mb-2 uppercase tracking-wide">
@@ -77,6 +77,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
+                autoComplete="off"
                 className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
@@ -93,6 +94,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
+                autoComplete="off"
                 className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
@@ -103,7 +105,7 @@ export default function LoginPage() {
               disabled={isLoading}
               className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors duration-200 mt-6 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? 'Logging in...' : 'Login'}
             </button>
           </form>
 
