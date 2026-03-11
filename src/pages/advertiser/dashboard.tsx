@@ -39,6 +39,7 @@ export default function AdvertiserDashboard() {
   const [success, setSuccess] = useState('')
   const [imagePreview, setImagePreview] = useState<string>('')
   const [previewAdIndex, setPreviewAdIndex] = useState(0)
+  const [mounted, setMounted] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -48,8 +49,15 @@ export default function AdvertiserDashboard() {
     alt_text: ''
   })
 
+  // Track client-side hydration to prevent flashing
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   // Redirect if not logged in or create advertiser account if needed
   useEffect(() => {
+    if (!mounted) return
+
     if (!session) {
       router.push('/auth/login?redirect=/advertiser/dashboard')
       return
@@ -232,7 +240,7 @@ export default function AdvertiserDashboard() {
     }
   }
 
-  if (loading) {
+  if (!mounted || !session || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
         <p className="text-white text-lg">Loading...</p>
