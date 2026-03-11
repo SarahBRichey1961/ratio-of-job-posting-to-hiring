@@ -28,13 +28,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const supabase = authenticatedSupabase
 
     // Verify campaign ownership
+    console.log('🔐 Recipients POST - Campaign verification:', {
+      campaignId: id,
+      campaignIdType: typeof id,
+      userId,
+    })
+    
     const { data: campaign, error: campaignError } = await supabase
       .from('marketing_campaigns')
       .select('id, creator_id')
       .eq('id', id)
       .single()
 
-    if (campaignError || !campaign || campaign.creator_id !== userId) {
+    console.log('🔐 Recipients POST - Verification result:', {
+      campaignFound: !!campaign,
+      creatorIdMatches: campaign?.creator_id === userId,
+      campaignError: campaignError ? { code: campaignError.code, message: campaignError.message } : null,
+    })
+
+    if (campaignError || !campaign) {
+      console.error('🔐 Recipients POST - Campaign not found or error:', campaignError)
+      return res.status(403).json({ error: 'Campaign not found' })
+    }
+    
+    if (campaign.creator_id !== userId) {
+      console.error('🔐 Recipients POST - Access denied: creator_id mismatch', {
+        campaignCreatorId: campaign.creator_id,
+        userId,
+      })
       return res.status(403).json({ error: 'Access denied' })
     }
 
@@ -169,6 +190,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         console.log('🔐 Recipients POST - Attempting insert with SERVICE_ROLE_KEY...')
         // Insert recipients (skip duplicates)
+        console.log('📧 Sample payload to be inserted:', {
+          campaignId: id,
+          sampleRecipient: {
+            ...validatedRecipients[0],
+            campaign_id: validatedRecipients[0].campaign_id,
+          },
+        })
+        
         const { data, error } = await serviceRoleClient
           .from('campaign_recipients')
           .insert(validatedRecipients)
@@ -178,7 +207,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           insertError: error ? { code: error.code, message: error.message, details: error.details, hint: error.hint } : null,
           insertSuccess: !error,
           dataReturned: data ? `${data.length} rows` : 'null',
-          firstRow: data && data.length > 0 ? { id: data[0].id, email: data[0].email } : null,
+          firstRow: data && data.length > 0 ? { id: data[0].id, email: data[0].email, campaign_id: data[0].campaign_id } : null,
         })
 
         if (error) {
