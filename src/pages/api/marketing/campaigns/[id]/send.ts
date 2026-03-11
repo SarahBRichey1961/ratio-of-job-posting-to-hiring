@@ -55,27 +55,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Campaign must be in draft status to send' })
     }
 
-    console.log('📨 Send endpoint - Campaign found, fetching recipients...', { id })
+    console.log('📨 Send endpoint - Campaign found, fetching recipients...', { id, campaignStatus: campaign.status })
 
     // Get recipients
+    console.log('📨 Send endpoint - Querying campaign_recipients with eq(campaign_id, id)...')
     const { data: recipients, error: recipientsError } = await supabase
       .from('campaign_recipients')
       .select('id, email, first_name, last_name')
       .eq('campaign_id', id)
       .eq('status', 'pending')
 
+    console.log('📨 Send endpoint - Recipients query result:', {
+      campaignId: id,
+      userId,
+      count: recipients?.length || 0,
+      rawCount: recipients ? recipients.length : 'null',
+      recipientsData: recipients ? recipients.slice(0, 2) : null,
+      error: recipientsError ? { code: recipientsError.code, message: recipientsError.message, details: recipientsError.details } : null,
+    })
+
     if (recipientsError) {
-      console.error('📨 Send endpoint - Error fetching recipients:', {
+      console.error('❌ Send endpoint - Error fetching recipients:', {
         code: recipientsError.code,
         message: recipientsError.message,
         details: recipientsError.details,
+        hint: recipientsError.hint,
       })
+      if (recipientsError.code === '42501') {
+        console.error('❌ Send endpoint - RLS POLICY VIOLATION: Cannot query campaign_recipients')
+      }
       throw recipientsError
     }
 
     if (!recipients || recipients.length === 0) {
-      console.error('📨 Send endpoint - No recipients found for campaign:', { id, count: recipients?.length })
-      return res.status(400).json({ error: 'No recipients to send to' })
+      console.error('❌ Send endpoint - No recipients found for campaign:', { campaignId: id, receivedCount: recipients?.length, recipientsIsNull: !recipients })
+      return res.status(400).json({ error: 'No recipients to send to', debug: { count: recipients?.length } })
     }
     console.log('📨 Send endpoint - Recipients found, preparing to send...', { id, recipientCount: recipients.length })
 

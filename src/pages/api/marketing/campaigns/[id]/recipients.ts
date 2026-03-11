@@ -85,6 +85,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Add recipients from CSV or JSON
       const { recipients } = req.body
 
+      console.log('🟦 Recipients POST - Received request:', {
+        userId,
+        campaignId: id,
+        receivedCount: Array.isArray(recipients) ? recipients.length : 'not an array',
+        bodyKeys: Object.keys(req.body),
+      })
+
       if (!Array.isArray(recipients) || recipients.length === 0) {
         return res.status(400).json({ error: 'Invalid recipients data' })
       }
@@ -111,30 +118,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
         })
 
+      console.log('🟦 Recipients POST - Validated:', {
+        validatedCount: validatedRecipients.length,
+        sampleEmails: validatedRecipients.slice(0, 3).map((r: any) => r.email),
+        campaignIdType: typeof id,
+        campaignIdValue: id,
+      })
+
       if (validatedRecipients.length === 0) {
         return res.status(400).json({ error: 'No valid recipients provided' })
       }
 
       try {
+        console.log('🟦 Recipients POST - Attempting insert to campaign_recipients...')
         // Insert recipients (skip duplicates)
         const { data, error } = await supabase
           .from('campaign_recipients')
           .insert(validatedRecipients)
           .select()
 
-        console.log('Recipients POST - Insert attempt:', {
+        console.log('🟦 Recipients POST - Insert result:', {
           campaignId: id,
           userId: userId,
           attemptedCount: validatedRecipients.length,
           insertedCount: data?.length || 0,
           successfulInsert: !error && data && data.length > 0,
-          error: error ? { code: error.code, message: error.message } : null,
+          returnedData: data ? data.slice(0, 2) : null,
+          error: error ? { code: error.code, message: error.message, details: error.details } : null,
         })
 
         if (error) {
           // 23505 is unique constraint violation (duplicate)
           if (error.code === '23505') {
-            console.log('Recipients POST - Duplicate error (expected):', { campaignId: id })
+            console.log('🟦 Recipients POST - Duplicate error (expected but insert might have succeeded):', { campaignId: id, errorCode: error.code })
             return res.status(201).json({
               success: true,
               added: validatedRecipients.length,
@@ -142,12 +158,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             })
           }
           // Log actual error for debugging
-          console.error('Supabase insert error:', {
+          console.error('❌ Recipients POST - Supabase insert error:', {
             code: error.code,
             message: error.message,
             details: error.details,
             hint: error.hint,
+
           })
+          // This might be an RLS policy violation (42501) - try to detect it
+          if (error.code === '42501') {
+            console.error('❌ Recipients POST - RLS POLICY VIOLATION: User cannot insert into campaign_recipients')
+          }
           throw error
         }
 
@@ -159,18 +180,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         })
 
         // Verify recipients were actually inserted by querying them back
+        console.log('🟦 Recipients POST - Verifying insert by querying back...')
         const { count: verifyCount, error: verifyError } = await supabase
           .from('campaign_recipients')
           .select('*', { count: 'exact', head: true })
           .eq('campaign_id', id)
 
-        console.log('Recipients POST - Verification count:', {
+        console.log('🟦 Recipients POST - Verification result:', {
           campaignId: id,
           userId: userId,
           expectedCount: data?.length || validatedRecipients.length,
           verifiedCount: verifyCount,
-          verifyError: verifyError ? { code: verifyError.code, message: verifyError.message } : null,
+          verifyError: verifyError ? { code: verifyError.code, message: verifyError.message, details: verifyError.details } : null,
         })
+        if (verifyError && verifyError.code === '42501') {
+          console.error('❌ Recipients POST - RLS POLICY VIOLATION on SELECT: User cannot read campaign_recipients')
+        }
 
         // Update analytics total_recipients count using SERVICE_ROLE to bypass RLS
         if (verifyCount !== null && verifyCount !== undefined) {
@@ -265,16 +290,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           message: `Added ${validatedRecipients.length} recipients to campaign`,
         })
       } catch (insertError: any) {
-        console.error('❌ Recipients POST - Error inserting recipients:', {
+        console.error('❌ Recipients POST - Caught exception:', {
           error: insertError.message,
           status: insertError.status,
           code: insertError.code,
           details: insertError.details,
           hint: insertError.hint,
+          fullError: insertError,
         })
         return res.status(500).json({
           error: 'Failed to add recipients',
           details: insertError.message || insertError.code,
+          code: insertError.code,
+          hint: insertError.hint,
         })
       }
     } else if (req.method === 'DELETE') {
