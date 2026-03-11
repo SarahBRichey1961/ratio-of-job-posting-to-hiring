@@ -83,9 +83,17 @@ export default function MarketingLauncher() {
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900">🚀 Marketing Launcher</h1>
-              <p className="text-gray-600 mt-2">Launch projects to target audiences via email campaigns</p>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/hub"
+                className="text-gray-600 hover:text-gray-900 transition text-sm font-medium"
+              >
+                ← Back to Hub
+              </Link>
+              <div>
+                <h1 className="text-4xl font-bold text-gray-900">🚀 Marketing Launcher</h1>
+                <p className="text-gray-600 mt-2">Launch projects to target audiences via email campaigns</p>
+              </div>
             </div>
             <Link
               href="/marketing/launcher/new"
