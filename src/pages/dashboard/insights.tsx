@@ -90,14 +90,29 @@ export default function InsightsPage() {
     }
     fetchRef.current = true
 
-    // Fetch market trends from database
+    // Fetch market trends from database with timeout fallback
     const fetchData = async () => {
       try {
         console.log('📨 Starting data fetch...')
-        const trends = await getMarketTrends()
-        console.log('✅ Market trends fetched:', trends)
         
-        setMarketTrends(trends)
+        // Create a timeout promise that resolves after 5 seconds
+        const timeoutPromise = new Promise((resolve) => {
+          setTimeout(() => {
+            console.warn('⏱️ Data fetch timeout (5s) - using fallback data')
+            resolve(null)
+          }, 5000)
+        })
+
+        // Race between getMarketTrends and timeout
+        const trends = await Promise.race([
+          getMarketTrends(),
+          timeoutPromise
+        ]) as any
+        
+        console.log('✅ Market trends fetch completed:', !!trends)
+        if (trends) {
+          setMarketTrends(trends)
+        }
 
         // Calculate metrics from 70 fallback boards
         console.log('📊 Calculating board metrics...')
@@ -205,9 +220,11 @@ export default function InsightsPage() {
           },
         }
 
-        console.log('💾 Setting insights state...')
+        console.log('💾 Setting insights state with data...')
         setInsights(mockData)
-        console.log('✅ Insights state set successfully')
+        console.log('✅ Insights state set successfully - page should render now')
+        setLoading(false)
+        console.log('✅ Loading state set to false')
       } catch (error) {
         console.error('❌ Error loading insights:', error)
         console.error('Error details:', error instanceof Error ? error.message : String(error))
@@ -217,6 +234,7 @@ export default function InsightsPage() {
         // Fallback to board metrics when database fails
         console.log('🔄 Using fallback data due to error...')
         const boardMetrics = calculateBoardMetrics(FALLBACK_BOARDS)
+        console.log('💾 Setting fallback insights state...')
         setInsights({
           risingBoards: boardMetrics.risingBoards.map((board) => ({
             name: board.name,
@@ -293,13 +311,14 @@ export default function InsightsPage() {
           },
         })
       } finally {
-        console.log('🏁 Data fetch complete, setting loading=false')
+        console.log('🏁 Data fetch complete, setting loading=false in finally block')
         setLoading(false)
+        console.log('✅ Page ready for display')
       }
     }
 
     console.log('🚀 Calling fetchData()...')
-    fetchData()
+    fetchData().catch(err => console.error('❌ Uncaught error in fetchData:', err))
   }, [mounted])
 
   if (loading || !insights) {
