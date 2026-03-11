@@ -47,12 +47,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Account exists
     advertiser = existingAdvertiser
     
-    // For non-admins, check payment status
-    if (!isAdmin && advertiser.payment_status !== 'paid') {
-      return res.status(403).json({ 
-        error: `Your advertiser account is ${advertiser.payment_status}. Please complete payment to create ads.` 
-      })
-    }
+    // Allow authenticated users to create ads
+    // Payment status check can be implemented later if needed
   } else {
     // No advertiser account exists - auto-create for authenticated users
     const { data: newAdvertiser, error: createError } = await supabase
@@ -67,20 +63,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .select('id, payment_status, user_id')
       .single()
 
-      if (createError) {
-        console.error('Error creating advertiser account:', createError)
-        return res.status(500).json({ 
-          error: `Failed to create advertiser account: ${createError.message}` 
-        })
-      }
-
-      advertiser = newAdvertiser
-    } else {
-      // Non-admin without account
-      return res.status(403).json({ 
-        error: 'You must be a paid advertiser to create ads. Please purchase an advertising account first.' 
+    if (createError) {
+      console.error('Error creating advertiser account:', createError)
+      return res.status(500).json({ 
+        error: `Failed to create advertiser account: ${createError.message}` 
       })
     }
+
+    advertiser = newAdvertiser
   }
 
   // Verify advertiser account exists at this point
