@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
 import axios from 'axios'
-import { getSupabase } from '@/lib/supabase'
+import { useAuth } from '@/context/AuthContext'
 import Link from 'next/link'
 
 interface Campaign {
@@ -15,41 +15,44 @@ interface Campaign {
 }
 
 export default function MarketingLauncher() {
+  const { session, isLoading: authLoading } = useAuth()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
-    const getUser = async () => {
-      try {
-        const supabase = getSupabase()
-        if (!supabase) {
-          setError('Connection error')
-          return
-        }
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user?.id) {
-          setUserId(session.user.id)
-          fetchCampaigns(session.access_token)
-        }
-      } catch (err) {
-        console.error('Error getting user:', err)
-        setError('Failed to authenticate')
-      }
+    console.log('🚀 MarketingLauncher: Component mounted, session=', !!session)
+    
+    // Wait for auth to be ready
+    if (authLoading) {
+      console.log('⏳ Auth still loading, waiting...')
+      return
     }
-    getUser()
-  }, [])
+
+    // Check if authenticated
+    if (!session?.access_token) {
+      console.error('❌ No session or access token available')
+      setError('Authentication required')
+      setLoading(false)
+      return
+    }
+
+    console.log('✅ Session available, fetching campaigns...')
+    fetchCampaigns(session.access_token)
+  }, [session, authLoading])
 
   const fetchCampaigns = async (token: string) => {
     try {
+      console.log('📨 Fetching campaigns with token...')
       setLoading(true)
       const response = await axios.get('/api/marketing/campaigns', {
         headers: { Authorization: `Bearer ${token}` },
       })
-      setCampaigns(response.data.data || [])
+      const campaignsList = response.data.data || []
+      console.log(`✅ Campaigns fetched: ${campaignsList.length} campaigns`)
+      setCampaigns(campaignsList)
     } catch (err) {
-      console.error('Error fetching campaigns:', err)
+      console.error('❌ Error fetching campaigns:', err)
       setError('Failed to load campaigns')
     } finally {
       setLoading(false)
