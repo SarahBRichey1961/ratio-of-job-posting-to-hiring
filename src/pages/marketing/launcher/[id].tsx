@@ -3,6 +3,7 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import axios from 'axios'
 import { getSupabase } from '@/lib/supabase'
+import { useAuth } from '@/context/AuthContext'
 import RecipientUploader from '@/components/RecipientUploader'
 
 interface Campaign {
@@ -35,6 +36,7 @@ interface Analytics {
 export default function CampaignDetail() {
   const router = useRouter()
   const { id } = router.query
+  const { session, isLoading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [analytics, setAnalytics] = useState<Analytics | null>(null)
@@ -57,25 +59,31 @@ export default function CampaignDetail() {
   })
 
   useEffect(() => {
-    if (!id) return
+    if (!id || typeof id !== 'string') return
 
     const fetchCampaign = async () => {
       try {
-        const supabase = getSupabase()
-        const { data: { session } } = await supabase?.auth.getSession() || {}
-
-        if (!session?.access_token) {
+        // Check token FIRST - presence means auth is complete
+        if (session?.access_token) {
+          console.log('✅ CampaignDetail: Session with access_token available, fetching immediately')
+          setAccessToken(session.access_token)
+        } else if (authLoading) {
+          console.log('⏳ CampaignDetail: Auth loading and no session yet, waiting...')
+          return
+        } else {
+          console.error('❌ CampaignDetail: No session after auth complete')
           router.push('/hub/login?redirect=/marketing/launcher')
           return
         }
 
-        setAccessToken(session.access_token)
-
+        console.log('📨 CampaignDetail: Fetching campaign with token...', { id, tokenLength: session?.access_token?.length })
         const response = await axios.get(`/api/marketing/campaigns/${id}`, {
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
           },
+          timeout: 10000,
         })
+        console.log('✅ CampaignDetail: Campaign fetched successfully')
 
         setCampaign(response.data)
         setEditData({
@@ -90,16 +98,17 @@ export default function CampaignDetail() {
 
         // Fetch analytics
         try {
-          console.log('Initial fetch - Loading analytics for campaign:', id)
+          console.log('📊 CampaignDetail: Loading analytics for campaign:', id)
           const analyticsResponse = await axios.get(`/api/marketing/campaigns/${id}/analytics`, {
             headers: {
               'Authorization': `Bearer ${session.access_token}`,
             },
+            timeout: 10000,
           })
-          console.log('Initial fetch - Analytics loaded:', analyticsResponse.data)
+          console.log('✅ CampaignDetail: Analytics loaded:', analyticsResponse.data)
           setAnalytics(analyticsResponse.data)
         } catch (err) {
-          console.log('Initial fetch - Analytics not available:', {
+          console.log('⚠️ CampaignDetail: Analytics not available:', {
             status: (err as any).response?.status,
             error: (err as any)?.message
           })
@@ -112,8 +121,10 @@ export default function CampaignDetail() {
       }
     }
 
-    fetchCampaign()
-  }, [id, router])
+    if (session?.access_token) {
+      fetchCampaign()
+    }
+  }, [id, session?.access_token, authLoading])
 
   const refreshAnalytics = async () => {
     if (!id || !accessToken) {
