@@ -96,8 +96,12 @@ export default function RecipientUploader({ campaignId, accessToken, onSuccess }
         setError('Upload returned unexpected response')
       }
     } catch (err) {
-      console.error('Error uploading recipients:', err)
-      setError((err as any).response?.data?.error || 'Failed to add recipients')
+      console.error('❌ RecipientUploader - Error uploading recipients:', {
+        status: (err as any).response?.status,
+        error: (err as any).response?.data?.error || (err as any).message,
+        details: (err as any).response?.data?.details,
+      })
+      setError((err as any).response?.data?.error || (err as any).message || 'Failed to add recipients')
     } finally {
       setLoading(false)
     }

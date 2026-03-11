@@ -65,6 +65,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .eq('status', 'pending')
 
     if (recipientsError) {
+      console.error('📨 Send endpoint - Error fetching recipients:', {
+        code: recipientsError.code,
+        message: recipientsError.message,
+        details: recipientsError.details,
+      })
       throw recipientsError
     }
 
@@ -177,7 +182,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     })
   } catch (error) {
-    console.error('Error sending campaign:', error)
-    res.status(500).json({ error: 'Internal server error' })
+    console.error('🚀 Send endpoint - Unexpected error:', {
+      message: (error as any).message,
+      code: (error as any).code,
+      status: (error as any).status,
+      details: (error as any).details,
+      fullError: error,
+    })
+    res.status(500).json({
+      error: (error as any).message || 'Internal server error',
+      details: (error as any).details || (error as any).code,
+    })
   }
 }

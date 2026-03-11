@@ -128,12 +128,12 @@ export default function CampaignDetail() {
 
   const refreshAnalytics = async () => {
     if (!id || !accessToken) {
-      console.warn('refreshAnalytics - Missing id or accessToken:', { id, hasAccessToken: !!accessToken })
+      console.warn('🔄 refreshAnalytics - Missing id or accessToken:', { id, hasAccessToken: !!accessToken })
       return
     }
 
     try {
-      console.log('refreshAnalytics - Fetching analytics for campaign:', { id })
+      console.log('🔄 refreshAnalytics - Fetching analytics for campaign:', { id })
       
       // Force bypass cache with timestamp
       const analyticsResponse = await axios.get(`/api/marketing/campaigns/${id}/analytics?t=${Date.now()}`, {
@@ -141,21 +141,24 @@ export default function CampaignDetail() {
           'Authorization': `Bearer ${accessToken}`,
           'Cache-Control': 'no-cache',
         },
+        timeout: 10000,
       })
       
-      console.log('refreshAnalytics - Analytics refreshed successfully:', {
+      console.log('✅ refreshAnalytics - Analytics refreshed successfully:', {
         totalRecipients: analyticsResponse.data.total_recipients,
         sent: analyticsResponse.data.sent,
       })
       
       setAnalytics(analyticsResponse.data)
       
-      // Validate that recipients count is > 0
+      // Validate that recipients count makes sense
       if (analyticsResponse.data.total_recipients === 0) {
-        console.warn('refreshAnalytics - Analytics returned 0 recipients, this might indicate an RLS or query issue')
+        console.warn('⚠️ refreshAnalytics - Analytics returned 0 recipients. If you just uploaded a CSV, check:',
+          'Browser console for upload errors | Backend logs | Check if SUPABASE_SERVICE_ROLE_KEY is configured'
+        )
       }
     } catch (err) {
-      console.error('refreshAnalytics - Error refreshing analytics:', {
+      console.error('❌ refreshAnalytics - Error refreshing analytics:', {
         error: (err as any).message,
         status: (err as any).response?.status,
         data: (err as any).response?.data,
