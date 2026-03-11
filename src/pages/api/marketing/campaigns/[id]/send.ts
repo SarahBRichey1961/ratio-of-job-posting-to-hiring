@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
+import { createClient } from '@supabase/supabase-js'
 import { getSupabase, getAuthenticatedSupabase, getUserIdFromToken } from '@/lib/supabase'
 
 // Resend email service - add your API key to environment variables
@@ -57,9 +58,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('📨 Send endpoint - Campaign found, fetching recipients...', { id, campaignStatus: campaign.status })
 
-    // Get recipients
-    console.log('📨 Send endpoint - Querying campaign_recipients with eq(campaign_id, id)...')
-    const { data: recipients, error: recipientsError } = await supabase
+    // Use SERVICE_ROLE_KEY to bypass RLS for reading recipients
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!serviceRoleKey) {
+      console.error('📨 Send endpoint - SUPABASE_SERVICE_ROLE_KEY not configured')
+      return res.status(500).json({ error: 'Email service not properly configured' })
+    }
+
+    const serviceRoleClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceRoleKey,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      }
+    )
+
+    // Get recipients with SERVICE_ROLE to bypass RLS
+    console.log('📨 Send endpoint - Querying campaign_recipients with SERVICE_ROLE_KEY...')
+    const { data: recipients, error: recipientsError } = await serviceRoleClient
       .from('campaign_recipients')
       .select('id, email, first_name, last_name')
       .eq('campaign_id', id)
@@ -129,7 +148,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (emailResponse.ok) {
           const emailData = await emailResponse.json()
           // Update recipient status and tracking ID
-          await supabase
+          await serviceRoleClient
             .from('campaign_recipients')
             .update({
               status: 'sent',
@@ -150,7 +169,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Update campaign status
-    const { error: updateError } = await supabase
+    const { error: updateError } = await serviceRoleClient
       .from('marketing_campaigns')
       .update({
         status: 'sent',
@@ -163,19 +182,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Update or create analytics record
-    const { data: existingAnalytics } = await supabase
+    const { data: existingAnalytics } = await serviceRoleClient
       .from('campaign_analytics')
       .select('id')
       .eq('campaign_id', id)
       .single()
 
     if (existingAnalytics) {
-      await supabase
+      await serviceRoleClient
         .from('campaign_analytics')
         .update({ sent: sentCount })
         .eq('campaign_id', id)
     } else {
-      await supabase
+      await serviceRoleClient
         .from('campaign_analytics')
         .insert({
           campaign_id: id,
