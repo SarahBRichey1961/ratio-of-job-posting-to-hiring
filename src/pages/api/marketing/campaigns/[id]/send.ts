@@ -60,7 +60,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Get recipients
     const { data: recipients, error: recipientsError } = await supabase
       .from('campaign_recipients')
-      .select('id, email, name')
+      .select('id, email, first_name, last_name')
       .eq('campaign_id', id)
       .eq('status', 'pending')
 
@@ -86,8 +86,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     for (const recipient of recipients) {
       try {
         // Replace personalization tokens
+        const recipientName = recipient.first_name || (recipient.first_name && `${recipient.first_name} ${recipient.last_name}`.trim()) || recipient.email
         let htmlBody = campaign.email_body_html
-          .replace(/\[RECIPIENT_NAME\]/g, recipient.name || recipient.email)
+          .replace(/\[RECIPIENT_NAME\]/g, recipientName)
           .replace(/\[CAMPAIGN_ID\]/g, id as string)
           .replace(/\[RECIPIENT_ID\]/g, recipient.id)
 
