@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getSupabase, getAuthenticatedSupabase } from '@/lib/supabase'
+import { getSupabase, getAuthenticatedSupabase, getUserIdFromToken } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -13,15 +13,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const token = authHeader.substring(7)
 
   try {
+    const userId = getUserIdFromToken(token)
+    if (!userId) {
+      console.error('Recipients - Failed to extract user ID from token')
+      return res.status(401).json({ error: 'Invalid token' })
+    }
+
     const authenticatedSupabase = await getAuthenticatedSupabase(token)
     if (!authenticatedSupabase) {
       return res.status(500).json({ error: 'Failed to initialize Supabase client' })
-    }
-
-    const { data: { user } } = await authenticatedSupabase.auth.getUser()
-
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid token' })
     }
 
     // Use authenticated client for all queries so RLS policies work
@@ -34,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .eq('id', id)
       .single()
 
-    if (campaignError || !campaign || campaign.creator_id !== user.id) {
+    if (campaignError || !campaign || campaign.creator_id !== userId) {
       return res.status(403).json({ error: 'Access denied' })
     }
 
@@ -124,7 +124,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         console.log('Recipients POST - Insert attempt:', {
           campaignId: id,
-          userId: user.id,
+          userId: userId,
           attemptedCount: validatedRecipients.length,
           insertedCount: data?.length || 0,
           successfulInsert: !error && data && data.length > 0,
@@ -153,7 +153,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         console.log('Recipients POST - Insert successful:', { 
           campaignId: id,
-          userId: user.id,
+          userId: userId,
           insertedCount: data?.length,
           insertedEmails: data?.slice(0, 3)?.map((r: any) => r.email),
         })
@@ -166,7 +166,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         console.log('Recipients POST - Verification count:', {
           campaignId: id,
-          userId: user.id,
+          userId: userId,
           expectedCount: data?.length || validatedRecipients.length,
           verifiedCount: verifyCount,
           verifyError: verifyError ? { code: verifyError.code, message: verifyError.message } : null,
@@ -176,7 +176,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (verifyCount !== null && verifyCount !== undefined) {
           console.log('Recipients POST - Attempting to update analytics:', {
             campaignId: id,
-            userId: user.id,
+            userId: userId,
             newCount: verifyCount,
             timestamp: new Date().toISOString(),
           })
@@ -211,7 +211,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
             console.log('Recipients POST - Analytics update result:', {
               campaignId: id,
-              userId: user.id,
+              userId: userId,
               newCount: verifyCount,
               updateSuccess: !updateError,
               recordsUpdated: updateData?.length,
