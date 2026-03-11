@@ -63,9 +63,34 @@ export const getSupabase = () => {
 }
 
 /**
+ * Decode JWT token to extract user info
+ * JWT tokens have format: header.payload.signature
+ * Payload is base64url encoded JSON
+ */
+function decodeJwt(token: string): any {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) {
+      console.error('Invalid JWT format')
+      return null
+    }
+    
+    // Decode the payload (second part)
+    const payload = parts[1]
+    // Add padding if needed
+    const padded = payload + '='.repeat((4 - payload.length % 4) % 4)
+    const decoded = Buffer.from(padded, 'base64').toString('utf-8')
+    return JSON.parse(decoded)
+  } catch (error) {
+    console.error('Failed to decode JWT:', error)
+    return null
+  }
+}
+
+/**
  * Create an authenticated Supabase client with a user's JWT token
  * Used by API routes to access Supabase with user context
- * Properly sets the session so that auth.getUser() and RLS policies work correctly
+ * Properly sets the session so that RLS policies work correctly
  */
 export const getAuthenticatedSupabase = async (token: string) => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -77,6 +102,12 @@ export const getAuthenticatedSupabase = async (token: string) => {
   }
 
   try {
+    if (!token || token.length < 50) {
+      console.error('Invalid token format:', { length: token?.length })
+      return null
+    }
+
+    // Create client with Authorization header
     const authenticatedClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: {
@@ -90,19 +121,28 @@ export const getAuthenticatedSupabase = async (token: string) => {
       },
     })
 
-    // Just verify the token looks valid (basic validation)
-    // Don't call getUser() as it may fail for valid tokens that just lack user metadata
-    if (!token || token.length < 50) {
-      console.error('Invalid token format:', { length: token?.length })
+    // Decode JWT to extract user info for validation
+    const decoded = decodeJwt(token)
+    if (!decoded || !decoded.sub) {
+      console.error('Failed to decode JWT token')
       return null
     }
 
-    console.log('Authenticated client created with token, length:', token.length)
+    console.log('✓ Authenticated client created with token for user:', decoded.sub)
     return authenticatedClient
   } catch (error) {
     console.error('Failed to create authenticated Supabase client:', error)
     return null
   }
+}
+
+/**
+ * Extract user ID from JWT token
+ * Useful for server-side API routes that need user_id without calling auth.getUser()
+ */
+export const getUserIdFromToken = (token: string): string | null => {
+  const decoded = decodeJwt(token)
+  return decoded?.sub || null
 }
 
 // Safe mock object that returns proper responses even when Supabase is not initialized

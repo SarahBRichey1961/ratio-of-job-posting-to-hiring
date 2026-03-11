@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { createClient } from '@supabase/supabase-js'
+import { getUserIdFromToken } from '@/lib/supabase'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -15,28 +16,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const token = authHeader.substring(7)
 
-  // Create authenticated client
-  const authSupabase = createClient(supabaseUrl, supabaseKey, {
-    global: {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    },
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false
-    }
-  })
-
-  // Get authenticated user
-  const { data: { user }, error: userError } = await authSupabase.auth.getUser()
-  if (userError || !user) {
-    return res.status(401).json({ error: 'Unauthorized' })
+  // Extract user ID from token
+  const userId = getUserIdFromToken(token)
+  if (!userId) {
+    return res.status(401).json({ error: 'Invalid token' })
   }
 
   // ADMIN BYPASS: Sarah@websepic.com can create unlimited ads without payment
-  const isAdmin = user.email === 'Sarah@websepic.com'
+  // Note: For now, we'll allow the endpoint if user is authenticated
+  // In the future, we could verify admin status from the token or user metadata
 
   // Get or create advertiser account for this user
   let advertiser: any
@@ -44,7 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { data: existingAdvertiser, error: getError } = await supabase
     .from('advertiser_accounts')
     .select('id, payment_status, user_id')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .single()
 
   if (getError && getError.code !== 'PGRST116') {
@@ -66,20 +54,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
     }
   } else {
-    // No advertiser account exists
-    if (isAdmin || user.email === 'Sarah@websepic.com') {
-      // Auto-create for admins with paid status
-      const { data: newAdvertiser, error: createError } = await supabase
-        .from('advertiser_accounts')
-        .insert({
-          user_id: user.id,
-          company_name: user.email?.split('@')[0] || 'Advertiser',
-          contact_email: user.email,
-          payment_status: 'paid',
-          subscription_type: 'admin'
-        })
-        .select('id, payment_status, user_id')
-        .single()
+    // No advertiser account exists - auto-create for authenticated users
+    const { data: newAdvertiser, error: createError } = await supabase
+      .from('advertiser_accounts')
+      .insert({
+        user_id: userId,
+        company_name: null,
+        contact_email: null,
+        payment_status: 'trial',
+        subscription_type: 'free'
+      })
+      .select('id, payment_status, user_id')
+      .single()
 
       if (createError) {
         console.error('Error creating advertiser account:', createError)

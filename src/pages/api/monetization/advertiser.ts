@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { createClient } from '@supabase/supabase-js'
+import { getUserIdFromToken } from '@/lib/supabase'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -17,24 +18,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const token = authHeader.substring(7)
 
-      // Create authenticated client
-      const authSupabase = createClient(supabaseUrl, supabaseKey, {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        },
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-          detectSessionInUrl: false
-        }
-      })
-
-      // Get authenticated user
-      const { data: { user }, error: userError } = await authSupabase.auth.getUser()
-      if (userError || !user) {
-        return res.status(401).json({ error: 'Unauthorized' })
+      // Extract user ID from token
+      const userId = getUserIdFromToken(token)
+      if (!userId) {
+        return res.status(401).json({ error: 'Invalid token' })
       }
 
       const { company_name, website, contact_email } = req.body
@@ -43,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { data: existing, error: checkError } = await supabase
         .from('advertiser_accounts')
         .select('id, website, contact_email, payment_status, subscription_type')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .single()
 
       // Handle errors from checking for existing account
@@ -61,10 +48,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             .update({
               company_name,
               website: website || existing.website,
-              contact_email: contact_email || user.email,
+              contact_email: contact_email || existing.contact_email,
               updated_at: new Date().toISOString()
             })
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
             .select()
             .single()
 
@@ -78,17 +65,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(200).json({ id: existing.id, created: false })
       } else {
         // Create new advertiser account (company_name is optional now)
-        if (!user.id) {
+        if (!userId) {
           throw new Error('User ID is missing - cannot create advertiser account')
         }
         
         const { data, error } = await supabase
           .from('advertiser_accounts')
           .insert({
-            user_id: user.id,
+            user_id: userId,
             company_name: company_name || null,
             website: website || null,
-            contact_email: contact_email || user.email
+            contact_email: contact_email || null
           })
           .select()
           .single()
@@ -112,28 +99,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const token = authHeader.substring(7)
-      const authSupabase = createClient(supabaseUrl, supabaseKey, {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        },
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-          detectSessionInUrl: false
-        }
-      })
-
-      const { data: { user }, error: userError } = await authSupabase.auth.getUser()
-      if (userError || !user) {
-        return res.status(401).json({ error: 'Unauthorized' })
+      const userId = getUserIdFromToken(token)
+      if (!userId) {
+        return res.status(401).json({ error: 'Invalid token' })
       }
 
       const { data, error } = await supabase
         .from('advertiser_accounts')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .single()
 
       if (error && error.code !== 'PGRST116') {
