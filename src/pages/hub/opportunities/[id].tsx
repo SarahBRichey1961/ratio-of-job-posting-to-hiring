@@ -227,7 +227,7 @@ const OpportunityDetail = () => {
               )}
               {!userId && (
                 <Link href="/hub/login" className="w-full inline-block text-center bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 font-medium">
-                  Sign In to Apply
+                  Login to Apply
                 </Link>
               )}
             </div>

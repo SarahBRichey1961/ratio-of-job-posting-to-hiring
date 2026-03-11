@@ -285,7 +285,7 @@ const ProjectDetail = () => {
               )}
               {!userId && (
                 <Link href="/hub/login" className="w-full inline-block text-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium">
-                  Sign In to Join
+                  Login to Join
                 </Link>
               )}
               <Link href="/hub/discussions" className="w-full inline-block text-center border border-indigo-600 text-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-50 font-medium">

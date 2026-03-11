@@ -10,24 +10,26 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const { signIn, isAuthenticated } = useAuth()
   const router = useRouter()
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated - only during page load, not after form submit
   React.useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !isSubmitting) {
       router.push('/dashboard')
     }
-  }, [isAuthenticated, router])
+  }, [isAuthenticated, router, isSubmitting])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setIsLoading(true)
+    setIsSubmitting(true)
 
     try {
       await signIn(email, password)
-      // Auth state change listener will handle redirect
+      // Set isSubmitting so redirect happens in useEffect
       router.push('/dashboard')
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to sign in. Please check your email and password.'
@@ -36,8 +38,8 @@ export default function LoginPage() {
       } else {
         setError(errorMessage)
       }
-    } finally {
       setIsLoading(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -78,6 +80,8 @@ export default function LoginPage() {
                 placeholder="you@example.com"
                 required
                 autoComplete="off"
+                data-lpignore="true"
+                data-form-type="other"
                 className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
@@ -95,6 +99,8 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 required
                 autoComplete="off"
+                data-lpignore="true"
+                data-form-type="other"
                 className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>

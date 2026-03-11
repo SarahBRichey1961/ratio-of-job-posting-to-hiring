@@ -11,25 +11,27 @@ const LoginPage = () => {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Redirect after successful login
+  // Redirect after successful login - only if user explicitly submitted form
   useEffect(() => {
-    if (!session) return
+    if (!session || !isSubmitting) return
 
     // Check if there's a redirect parameter
     const redirectUrl = (router.query.redirect as string) || '/hub'
     
     router.push(redirectUrl)
-  }, [session, router])
+  }, [session, router, isSubmitting])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
+    setIsSubmitting(true)
 
     try {
       await signIn(email, password)
-      // The useEffect above will handle the advertiser check and redirect
+      // The useEffect above will handle redirect since isSubmitting is true
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to sign in'
       if (errorMessage.toLowerCase().includes('rate limit') || errorMessage.toLowerCase().includes('too many')) {
@@ -38,14 +40,15 @@ const LoginPage = () => {
         setError(errorMessage)
       }
       setLoading(false)
+      setIsSubmitting(false)
     }
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <Head>
-        <title>Sign In - Take The Reins</title>
-        <meta name="description" content="Sign in to Take The Reins" />
+        <title>Login - Take The Reins</title>
+        <meta name="description" content="Login to Take The Reins" />
       </Head>
 
       <nav className="bg-slate-800/50 backdrop-blur border-b border-slate-700">
@@ -80,6 +83,8 @@ const LoginPage = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="off"
+                data-lpignore="true"
+                data-form-type="other"
                 className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                 placeholder="your@email.com"
               />
@@ -93,6 +98,8 @@ const LoginPage = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="off"
+                data-lpignore="true"
+                data-form-type="other"
                 className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                 placeholder="••••••••"
               />

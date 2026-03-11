@@ -598,7 +598,7 @@ const BuildManifesto = () => {
               <div className="bg-gradient-to-r from-indigo-600/20 to-rose-600/20 border border-indigo-600/50 rounded-xl p-8">
                 <h2 className="text-2xl font-bold text-white mb-4">Want a Custom URL?</h2>
                 <p className="text-slate-300 mb-6">
-                  Sign in to get a personalized, email-based manifesto URL that's easy to share and remember:
+                  Login to get a personalized, email-based manifesto URL that's easy to share and remember:
                 </p>
                 <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 mb-6">
                   <code className="text-indigo-300 font-semibold">takethereigns.netlify.app/manifesto/your@email.com</code>
