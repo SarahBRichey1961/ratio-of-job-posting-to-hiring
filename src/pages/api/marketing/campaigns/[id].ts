@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getSupabase, getAuthenticatedSupabase } from '@/lib/supabase'
+import { getSupabase, getAuthenticatedSupabase, getUserIdFromToken } from '@/lib/supabase'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const supabase = getSupabase()
@@ -29,27 +29,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(500).json({ error: 'Failed to initialize Supabase client' })
       }
 
-      console.log('GET - Authenticated client ready, fetching user...')
-      const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
-      if (userError) {
-        console.error('GET - getUser() failed:', {
-          code: userError.code,
-          message: userError.message,
-          status: userError.status,
-        })
+      console.log('GET - Extracting user ID from JWT token...')
+      const userId = getUserIdFromToken(token)
+      if (!userId) {
+        console.error('GET - Failed to extract user ID from token')
+        return res.status(401).json({ error: 'Invalid token' })
       }
-      if (!user) {
-        console.error('GET - No user returned from getUser()')
-        return res.status(401).json({ error: 'Unauthorized' })
-      }
-
-      console.log('GET - User authenticated:', user.id)
+      console.log('GET - User authenticated:', userId)
 
       const { data, error } = await authenticatedSupabase
         .from('marketing_campaigns')
         .select('*')
         .eq('id', id)
-        .eq('creator_id', user.id)
+        .eq('creator_id', userId)
         .single()
 
       if (error) {
@@ -86,9 +78,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(500).json({ error: 'Failed to initialize Supabase client' })
       }
 
-      const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
-      if (userError || !user) {
-        return res.status(401).json({ error: 'Unauthorized' })
+      const userId = getUserIdFromToken(token)
+      if (!userId) {
+        return res.status(401).json({ error: 'Invalid token' })
       }
 
       // Verify ownership
@@ -98,7 +90,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .eq('id', id)
         .single()
 
-      if (fetchError || !campaign || campaign.creator_id !== user.id) {
+      if (fetchError || !campaign || campaign.creator_id !== userId) {
         return res.status(403).json({ error: 'Unauthorized to update this campaign' })
       }
 
@@ -139,9 +131,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(500).json({ error: 'Failed to initialize Supabase client' })
       }
 
-      const { data: { user }, error: userError } = await authenticatedSupabase.auth.getUser()
-      if (userError || !user) {
-        return res.status(401).json({ error: 'Unauthorized' })
+      const userId = getUserIdFromToken(token)
+      if (!userId) {
+        return res.status(401).json({ error: 'Invalid token' })
       }
 
       // Verify ownership
@@ -151,7 +143,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .eq('id', id)
         .single()
 
-      if (fetchError || !campaign || campaign.creator_id !== user.id) {
+      if (fetchError || !campaign || campaign.creator_id !== userId) {
         return res.status(403).json({ error: 'Unauthorized to delete this campaign' })
       }
 
