@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
@@ -40,6 +40,7 @@ export default function AdvertiserDashboard() {
   const [imagePreview, setImagePreview] = useState<string>('')
   const [previewAdIndex, setPreviewAdIndex] = useState(0)
   const [mounted, setMounted] = useState(false)
+  const ensureAccountCalledRef = useRef(false)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -54,16 +55,20 @@ export default function AdvertiserDashboard() {
     setMounted(true)
   }, [])
 
+  // Handle redirect for unauthenticated users
+  useEffect(() => {
+    if (mounted && !session) {
+      router.push('/auth/login?redirect=/advertiser/dashboard')
+    }
+  }, [mounted, session, router])
+
   // Redirect if not logged in or create advertiser account if needed
   useEffect(() => {
-    if (!mounted) return
+    if (!mounted || !session || ensureAccountCalledRef.current) return
 
-    if (!session) {
-      router.push('/auth/login?redirect=/advertiser/dashboard')
-      return
-    }
+    ensureAccountCalledRef.current = true
 
-    // Ensure advertiser account exists
+    // Ensure advertiser account exists (only call once)
     const ensureAdvertiserAccount = async () => {
       try {
         const response = await fetch('/api/monetization/advertiser', {
@@ -83,7 +88,7 @@ export default function AdvertiserDashboard() {
     }
 
     ensureAdvertiserAccount()
-  }, [session, router])
+  }, [mounted, session])
 
   // Fetch ads and account details
   useEffect(() => {
