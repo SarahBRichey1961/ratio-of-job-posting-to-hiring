@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { useEffect, useState, useMemo } from 'react'
+import { getSupabase } from '@/lib/supabase'
 
 interface Ad {
   id: string
@@ -37,10 +37,8 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
   const [isLoading, setIsLoading] = useState(true)
   const [sessionId] = useState(() => Math.random().toString(36).substring(7))
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-  )
+  // Use singleton browser client instead of creating a new one
+  const supabase = useMemo(() => getSupabase(), [])
 
   // Fetch active ads on mount
   useEffect(() => {
@@ -77,7 +75,7 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
     }
 
     fetchAds()
-  }, [])
+  }, [supabase, pageType, maxAds])
 
   // Track impression when ad is displayed
   useEffect(() => {
@@ -103,7 +101,7 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
     }
 
     trackImpression()
-  }, [currentAdIndex, ads])
+  }, [currentAdIndex, ads, supabase, pageType, sessionId])
 
   // Handle ad rotation timer
   useEffect(() => {
