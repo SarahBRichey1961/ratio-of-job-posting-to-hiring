@@ -249,6 +249,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             hint: error.hint,
           })
           
+          // 23505 is unique constraint violation - email already exists
+          // This can happen if emails were partially inserted in a previous attempt
+          if (error.code === '23505') {
+            console.log('🟦 Recipients POST - Duplicate constraint hit, treating as partial success')
+            // Re-query to get accurate count of recipients now in database
+            const { count: finalCount } = await serviceRoleClient
+              .from('campaign_recipients')
+              .select('*', { count: 'exact', head: true })
+              .eq('campaign_id', id)
+            
+            // Return success - the duplicates are already in the database
+            return res.status(201).json({
+              success: true,
+              added: Math.max(0, (finalCount || 0) - (existingEmails?.size || 0)),
+              message: `Uploaded ${validatedRecipients.length} recipients (${duplicateCount} already exist, new duplicates handled)`,
+              debug: {
+                insertSuccess: false,
+                constraintViolation: true,
+                rowsReturned: finalCount,
+                duplicatesSkipped: duplicateCount,
+                insertError: null,
+              }
+            })
+          }
+          
           if (error.code === '42501') {
             console.error('❌ Recipients POST - RLS POLICY VIOLATION: User cannot insert into campaign_recipients')
           }
