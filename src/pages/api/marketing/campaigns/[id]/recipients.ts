@@ -253,7 +253,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             console.error('❌ Recipients POST - RLS POLICY VIOLATION: User cannot insert into campaign_recipients')
           }
           
-          throw error
+          return res.status(500).json({
+            error: 'Failed to add recipients',
+            details: error.message || error.code,
+            code: error.code,
+            hint: error.hint,
+            debug: {
+              insertSuccess: false,
+              rowsReturned: 0,
+              insertError: { code: error.code, message: error.message, details: error.details },
+            }
+          })
         }
 
         console.log('Recipients POST - Insert successful:', { 
