@@ -254,6 +254,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
           
           throw error
+        }
+
+        console.log('Recipients POST - Insert successful:', { 
+          campaignId: id,
+          userId: userId,
+          insertedCount: data?.length,
+          insertedEmails: data?.slice(0, 3)?.map((r: any) => r.email),
+        })
+
+        // Verify recipients were actually inserted by querying them back
+        console.log('🟦 Recipients POST - Verifying insert by querying back...')
         const { count: verifyCount, error: verifyError } = await serviceRoleClient
           .from('campaign_recipients')
           .select('*', { count: 'exact', head: true })
