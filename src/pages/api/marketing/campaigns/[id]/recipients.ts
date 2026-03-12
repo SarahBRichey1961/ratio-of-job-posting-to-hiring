@@ -183,24 +183,55 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         )
         
         console.log('🔐 Recipients POST - ServiceRoleClient created, ready for insert')
-        console.log('🔐 Recipients POST - Attempting INSERT with:', {
-          recipientCount: validatedRecipients.length,
-          sampleRecord: validatedRecipients[0],
+        
+        // Get existing email addresses to filter out duplicates BEFORE inserting
+        console.log('🔐 Recipients POST - Checking for existing recipients to skip duplicates...')
+        const { data: existingRecipients, error: existingError } = await serviceRoleClient
+          .from('campaign_recipients')
+          .select('email')
+          .eq('campaign_id', id)
+        
+        if (existingError) {
+          console.warn('🟦 Recipients POST - Could not check for duplicates:', existingError)
+        }
+        
+        const existingEmails = new Set(
+          (existingRecipients || []).map((r: any) => r.email.toLowerCase().trim())
+        )
+        
+        // Filter out duplicates
+        const newRecipients = validatedRecipients.filter((r: any) => !existingEmails.has(r.email))
+        const duplicateCount = validatedRecipients.length - newRecipients.length
+        
+        console.log('🔐 Recipients POST - Duplicate filtering:', {
+          totalProvided: validatedRecipients.length,
+          willInsert: newRecipients.length,
+          duplicatesSkipped: duplicateCount,
+          existingInDb: existingEmails.size,
         })
+        
+        if (newRecipients.length === 0) {
+          return res.status(201).json({
+            success: true,
+            added: 0,
+            message: `All ${duplicateCount} recipients already exist in this campaign`,
+            debug: {
+              insertSuccess: true,
+              rowsReturned: 0,
+              duplicatesSkipped: duplicateCount,
+              insertError: null,
+            }
+          })
+        }
 
-        console.log('🔐 Recipients POST - Attempting insert with SERVICE_ROLE_KEY...')
-        // Insert recipients (skip duplicates)
-        console.log('📧 Sample payload to be inserted:', {
-          campaignId: id,
-          sampleRecipient: {
-            ...validatedRecipients[0],
-            campaign_id: validatedRecipients[0].campaign_id,
-          },
+        console.log('🔐 Recipients POST - Attempting INSERT with:', {
+          recipientCount: newRecipients.length,
+          sampleRecord: newRecipients[0],
         })
         
         const { data, error } = await serviceRoleClient
           .from('campaign_recipients')
-          .insert(validatedRecipients)
+          .insert(newRecipients)
           .select()
 
         console.log('🔐 Recipients POST - INSERT RESULT:', {
@@ -211,52 +242,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         })
 
         if (error) {
-          // 23505 is unique constraint violation (duplicate)
-          if (error.code === '23505') {
-            console.log('🟦 Recipients POST - CONSTRAINT VIOLATION (likely duplicate email):', { 
-              campaignId: id, 
-              errorCode: error.code,
-              fullError: { code: error.code, message: error.message, details: error.details, hint: error.hint },
-              triedToInsert: validatedRecipients.length,
-              actuallyInserted: 0,
-            })
-            
-            // Try to get current count of recipients for this campaign
-            const { count: currentCount } = await serviceRoleClient
-              .from('campaign_recipients')
-              .select('*', { count: 'exact', head: true })
-              .eq('campaign_id', id)
-            
-            return res.status(201).json({
-              success: false,
-              added: 0,
-              message: `Duplicate recipients detected - no new records added`,
-              debug: {
-                insertSuccess: false,
-                rowsReturned: 0,
-                insertError: { 
-                  code: error.code, 
-                  message: error.message, 
-                  details: error.details,
-                  hint: 'One or more email addresses already exist in this campaign'
-                },
-                existingRecipients: currentCount,
-              }
-            })
-          }
-          // Log actual error for debugging
           console.error('❌ Recipients POST - Supabase insert error:', {
             code: error.code,
             message: error.message,
             details: error.details,
             hint: error.hint,
-
           })
-          // This might be an RLS policy violation (42501) - try to detect it
+          
           if (error.code === '42501') {
             console.error('❌ Recipients POST - RLS POLICY VIOLATION: User cannot insert into campaign_recipients')
           }
-          throw error
+          
+          return res.status(500).json({
+            error: 'Failed to add recipients',
+            details: error.message || error.code,
+            code: error.code,
+            hint: error.hint,
+            debug: {
+              insertSuccess: false,
+              rowsReturned: 0,
+              insertError: { code: error.code, message: error.message, details: error.details },
+            }
+          })
         }
 
         console.log('Recipients POST - Insert successful:', { 
@@ -378,11 +385,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         res.status(201).json({
           success: true,
-          added: data?.length || validatedRecipients.length,
-          message: `Added ${validatedRecipients.length} recipients to campaign`,
+          added: data?.length || newRecipients.length,
+          message: `Added ${data?.length || newRecipients.length} new recipients${duplicateCount > 0 ? ` (${duplicateCount} duplicates skipped)` : ''}`,
           debug: {
             insertSuccess: !error,
             rowsReturned: data?.length || 0,
+            duplicatesSkipped: duplicateCount,
             insertError: error ? { code: error.code, message: error.message, details: error.details } : null,
           }
         })
