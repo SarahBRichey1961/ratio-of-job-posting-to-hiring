@@ -253,28 +253,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             console.error('❌ Recipients POST - RLS POLICY VIOLATION: User cannot insert into campaign_recipients')
           }
           
-          return res.status(500).json({
-            error: 'Failed to add recipients',
-            details: error.message || error.code,
-            code: error.code,
-            hint: error.hint,
-            debug: {
-              insertSuccess: false,
-              rowsReturned: 0,
-              insertError: { code: error.code, message: error.message, details: error.details },
-            }
-          })
-        }
-
-        console.log('Recipients POST - Insert successful:', { 
-          campaignId: id,
-          userId: userId,
-          insertedCount: data?.length,
-          insertedEmails: data?.slice(0, 3)?.map((r: any) => r.email),
-        })
-
-        // Verify recipients were actually inserted by querying them back
-        console.log('🟦 Recipients POST - Verifying insert by querying back...')
+          throw error
         const { count: verifyCount, error: verifyError } = await serviceRoleClient
           .from('campaign_recipients')
           .select('*', { count: 'exact', head: true })
