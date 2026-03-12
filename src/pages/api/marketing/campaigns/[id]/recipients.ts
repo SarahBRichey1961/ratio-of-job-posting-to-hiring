@@ -213,11 +213,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (error) {
           // 23505 is unique constraint violation (duplicate)
           if (error.code === '23505') {
-            console.log('🟦 Recipients POST - Duplicate error (expected but insert might have succeeded):', { campaignId: id, errorCode: error.code })
+            console.log('🟦 Recipients POST - CONSTRAINT VIOLATION (likely duplicate email):', { 
+              campaignId: id, 
+              errorCode: error.code,
+              fullError: { code: error.code, message: error.message, details: error.details, hint: error.hint },
+              triedToInsert: validatedRecipients.length,
+              actuallyInserted: 0,
+            })
+            
+            // Try to get current count of recipients for this campaign
+            const { count: currentCount } = await serviceRoleClient
+              .from('campaign_recipients')
+              .select('*', { count: 'exact', head: true })
+              .eq('campaign_id', id)
+            
             return res.status(201).json({
-              success: true,
-              added: validatedRecipients.length,
-              message: `Added ${validatedRecipients.length} recipients to campaign (some may have been duplicates)`,
+              success: false,
+              added: 0,
+              message: `Duplicate recipients detected - no new records added`,
+              debug: {
+                insertSuccess: false,
+                rowsReturned: 0,
+                insertError: { 
+                  code: error.code, 
+                  message: error.message, 
+                  details: error.details,
+                  hint: 'One or more email addresses already exist in this campaign'
+                },
+                existingRecipients: currentCount,
+              }
             })
           }
           // Log actual error for debugging
