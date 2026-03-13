@@ -350,20 +350,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               }
             )
 
+            // Use UPSERT to ensure the record exists and gets updated
             const { data: updateData, error: updateError } = await serviceRoleClient
               .from('campaign_analytics')
-              .update({ 
+              .upsert({ 
+                campaign_id: id,
                 total_recipients: verifyCount,
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
+              }, {
+                onConflict: 'campaign_id'
               })
-              .eq('campaign_id', id)
               .select()
 
-            console.log('Recipients POST - Analytics update result:', {
+            console.log('Recipients POST - Analytics upsert result:', {
               campaignId: id,
               userId: userId,
               newCount: verifyCount,
-              updateSuccess: !updateError,
+              upsertSuccess: !updateError,
               recordsUpdated: updateData?.length,
               updateError: updateError ? { 
                 code: updateError.code, 
@@ -373,17 +376,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             })
 
             if (updateError) {
-              console.error('Recipients POST - FAILED to update analytics:', {
+              console.error('Recipients POST - FAILED to upsert analytics:', {
                 campaignId: id,
                 error: updateError,
               })
             } else if (updateData && updateData.length > 0) {
-              console.log('Recipients POST - Analytics successfully updated:', {
+              console.log('Recipients POST - Analytics successfully upserted:', {
                 campaignId: id,
                 newTotal: updateData[0].total_recipients,
               })
             } else {
-              console.warn('Recipients POST - Analytics update returned no rows:', {
+              console.warn('Recipients POST - Analytics upsert returned no rows:', {
                 campaignId: id,
               })
             }
@@ -459,14 +462,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
           await serviceRoleClient
             .from('campaign_analytics')
-            .update({ 
+            .upsert({ 
+              campaign_id: id,
               total_recipients: 0,
-              updated_at: new Date().toISOString()
+              updated_at: new Date().toISOString(),
+            }, {
+              onConflict: 'campaign_id'
             })
-            .eq('campaign_id', id)
         }
       } catch (err) {
-        console.error('Failed to update analytics after deletion:', err)
+        console.error('Failed to upsert analytics after deletion:', err)
         // Don't fail the delete operation
       }
 
