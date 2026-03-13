@@ -334,10 +334,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
           if (!serviceRoleKey) {
             console.error('❌ Recipients POST - SUPABASE_SERVICE_ROLE_KEY not configured')
-            // Return error - we need this key to update analytics
             return res.status(500).json({ 
               error: 'Server configuration error: missing SUPABASE_SERVICE_ROLE_KEY',
-              debug: { insertedCount, verifyCount }
             })
           }
 
@@ -352,50 +350,54 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
           )
 
-          // Use UPSERT to ensure the record exists and gets updated
-          const { data: updateData, error: updateError } = await srClient
+          // Simply try to update the analytics record
+          // If it doesn't exist, we'll insert it
+          console.log('Recipients POST - Updating analytics record...')
+          const { data: updateResult, error: updateError } = await srClient
             .from('campaign_analytics')
-            .upsert({ 
-              campaign_id: id,
+            .update({ 
               total_recipients: totalCount,
               updated_at: new Date().toISOString(),
-            }, {
-              onConflict: 'campaign_id'
             })
+            .eq('campaign_id', id as string)
             .select()
 
-          console.log('Recipients POST - Analytics upsert result:', {
-            campaignId: id,
-            totalCount,
-            upsertSuccess: !updateError,
-            recordsUpdated: updateData?.length,
-            error: updateError ? { code: updateError.code, message: updateError.message } : null,
-          })
-
           if (updateError) {
-            console.error('❌ Recipients POST - Failed to upsert analytics:', updateError.message)
-            return res.status(500).json({
-              error: 'Failed to update campaign analytics',
-              details: updateError.message,
-              code: updateError.code,
-              debug: { insertedCount, totalCount }
-            })
+            console.error('Recipients POST - UPDATE failed:', updateError.message)
+            throw updateError
           }
 
-          if (!updateData || updateData.length === 0) {
-            console.warn('⚠️ Recipients POST - Analytics upsert returned no rows')
+          // If update didn't affect any rows, the record doesn't exist - try INSERT
+          if (!updateResult || updateResult.length === 0) {
+            console.log('Recipients POST - No existing analytics record, inserting new one...')
+            const { error: insertError } = await srClient
+              .from('campaign_analytics')
+              .insert({
+                campaign_id: id as string,
+                total_recipients: totalCount,
+                updated_at: new Date().toISOString(),
+                total_sent: 0,
+                total_bounced: 0,
+                total_opened: 0,
+                total_clicked: 0,
+                total_conversions: 0,
+              })
+
+            if (insertError) {
+              console.error('Recipients POST - INSERT failed:', insertError.message)
+              throw insertError
+            }
+            console.log('✓ Analytics record inserted')
           } else {
-            console.log('✓ Recipients POST - Analytics updated successfully:', {
-              campaignId: id,
-              newTotal: updateData[0].total_recipients,
+            console.log('✓ Analytics record updated:', {
+              totalRecipients: updateResult[0].total_recipients,
             })
           }
         } catch (analyticsErr) {
-          console.error('❌ Recipients POST - Exception updating analytics:', (analyticsErr as any).message)
+          console.error('❌ Recipients POST - Analytics error:', (analyticsErr as any).message)
           return res.status(500).json({
             error: 'Failed to update analytics',
             details: (analyticsErr as any).message,
-            debug: { insertedCount, totalCount }
           })
         }
 
