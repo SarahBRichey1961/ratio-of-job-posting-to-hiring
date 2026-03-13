@@ -238,7 +238,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           insertError: error ? { code: error.code, message: error.message, details: error.details, hint: error.hint } : null,
           insertSuccess: !error,
           dataReturned: data ? `${data.length} rows` : 'null',
-          firstRow: data && data.length > 0 ? { id: data[0].id, email: data[0].email, campaign_id: data[0].campaign_id } : null,
+          firstRow: data && data.length > 0 ? { id: data[0].id, email: data[0].email, campaign_id: data[0].campaign_id, status: data[0].status } : null,
         })
 
         if (error) {
