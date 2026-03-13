@@ -298,8 +298,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           insertedEmails: data?.slice(0, 3)?.map((r: any) => r.email),
         })
 
-        // Verify recipients were actually inserted by querying them back
-        console.log('🟦 Recipients POST - Verifying insert by querying back...')
+        // Determine recipient count - use INSERT result as primary source
+        // If INSERT succeeded and returned data, use that length
+        // Otherwise query to verify, but don't let query failure block analytics update
+        const insertedCount = data?.length || newRecipients.length
+        let totalCount = insertedCount
+
+        // Try to get total count via query for verification purposes
+        console.log('🟦 Recipients POST - Querying total recipients to verify...')
         const { count: verifyCount, error: verifyError } = await serviceRoleClient
           .from('campaign_recipients')
           .select('*', { count: 'exact', head: true })
@@ -308,118 +314,102 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log('🟦 Recipients POST - Verification result:', {
           campaignId: id,
           userId: userId,
-          expectedCount: data?.length || validatedRecipients.length,
+          insertedCount,
           verifiedCount: verifyCount,
-          verifyError: verifyError ? { code: verifyError.code, message: verifyError.message, details: verifyError.details } : null,
+          verifyError: verifyError ? { code: verifyError.code, message: verifyError.message } : null,
         })
-        if (verifyError && verifyError.code === '42501') {
-          console.error('❌ Recipients POST - RLS POLICY VIOLATION on SELECT: User cannot read campaign_recipients')
+
+        // Use verified count if available, otherwise use inserted count
+        if (verifyCount !== null && verifyCount !== undefined) {
+          totalCount = verifyCount
+          console.log('✓ Using verified count:', totalCount)
+        } else if (verifyError) {
+          console.warn('⚠️ Verification query failed, using inserted count instead:', { insertedCount, verifyError: verifyError.message })
+          totalCount = insertedCount
         }
 
-        // Update analytics total_recipients count using SERVICE_ROLE to bypass RLS
-        if (verifyCount !== null && verifyCount !== undefined) {
-          console.log('Recipients POST - Attempting to update analytics:', {
-            campaignId: id,
-            userId: userId,
-            newCount: verifyCount,
-            timestamp: new Date().toISOString(),
-          })
-
-          try {
-            // Use SERVICE_ROLE to update analytics - this bypasses RLS for internal operations
-            // This is necessary because auth.uid() doesn't work properly with Bearer tokens on the server
-            const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-            if (!serviceRoleKey) {
-              console.warn('Recipients POST - SUPABASE_SERVICE_ROLE_KEY not configured, skipping analytics update')
-              // Don't fail - recipients were saved successfully
-              return res.status(201).json({
-                success: true,
-                added: data?.length || validatedRecipients.length,
-                message: `Added ${validatedRecipients.length} recipients to campaign`,
-              })
-            }
-
-            const serviceRoleClient = createClient(
-              process.env.NEXT_PUBLIC_SUPABASE_URL!,
-              serviceRoleKey,
-              {
-                auth: {
-                  persistSession: false,
-                  autoRefreshToken: false,
-                },
-              }
-            )
-
-            // Use UPSERT to ensure the record exists and gets updated
-            const { data: updateData, error: updateError } = await serviceRoleClient
-              .from('campaign_analytics')
-              .upsert({ 
-                campaign_id: id,
-                total_recipients: verifyCount,
-                updated_at: new Date().toISOString(),
-              }, {
-                onConflict: 'campaign_id'
-              })
-              .select()
-
-            console.log('Recipients POST - Analytics upsert result:', {
-              campaignId: id,
-              userId: userId,
-              newCount: verifyCount,
-              upsertSuccess: !updateError,
-              recordsUpdated: updateData?.length,
-              updateError: updateError ? { 
-                code: updateError.code, 
-                message: updateError.message,
-                details: updateError.details,
-              } : null,
-            })
-
-            if (updateError) {
-              console.error('Recipients POST - FAILED to upsert analytics:', {
-                campaignId: id,
-                error: updateError,
-              })
-            } else if (updateData && updateData.length > 0) {
-              console.log('Recipients POST - Analytics successfully upserted:', {
-                campaignId: id,
-                newTotal: updateData[0].total_recipients,
-              })
-            } else {
-              console.warn('Recipients POST - Analytics upsert returned no rows:', {
-                campaignId: id,
-              })
-            }
-          } catch (err) {
-            console.error('Recipients POST - Exception updating analytics:', {
-              error: (err as any).message,
-              campaignId: id,
-              verifyCount,
-            })
-            // Don't fail the request - recipients were saved, just analytics update failed
-            // The frontend will query back and see the updated count
-            return res.status(201).json({
-              success: true,
-              added: data?.length || validatedRecipients.length,
-              message: `Added ${validatedRecipients.length} recipients to campaign`,
-              debug: {
-                insertSuccess: !error,
-                rowsReturned: data?.length || 0,
-                insertError: error ? { code: error.code, message: error.message, details: error.details } : null,
-              }
+        // NOW UPDATE ANALYTICS - ALWAYS EXECUTE THIS AFTER SUCCESSFUL INSERT
+        console.log('Recipients POST - Updating analytics with count:', { campaignId: id, totalCount })
+        try {
+          const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+          if (!serviceRoleKey) {
+            console.error('❌ Recipients POST - SUPABASE_SERVICE_ROLE_KEY not configured')
+            // Return error - we need this key to update analytics
+            return res.status(500).json({ 
+              error: 'Server configuration error: missing SUPABASE_SERVICE_ROLE_KEY',
+              debug: { insertedCount, verifyCount }
             })
           }
+
+          const srClient = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            serviceRoleKey,
+            {
+              auth: {
+                persistSession: false,
+                autoRefreshToken: false,
+              },
+            }
+          )
+
+          // Use UPSERT to ensure the record exists and gets updated
+          const { data: updateData, error: updateError } = await srClient
+            .from('campaign_analytics')
+            .upsert({ 
+              campaign_id: id,
+              total_recipients: totalCount,
+              updated_at: new Date().toISOString(),
+            }, {
+              onConflict: 'campaign_id'
+            })
+            .select()
+
+          console.log('Recipients POST - Analytics upsert result:', {
+            campaignId: id,
+            totalCount,
+            upsertSuccess: !updateError,
+            recordsUpdated: updateData?.length,
+            error: updateError ? { code: updateError.code, message: updateError.message } : null,
+          })
+
+          if (updateError) {
+            console.error('❌ Recipients POST - Failed to upsert analytics:', updateError.message)
+            return res.status(500).json({
+              error: 'Failed to update campaign analytics',
+              details: updateError.message,
+              code: updateError.code,
+              debug: { insertedCount, totalCount }
+            })
+          }
+
+          if (!updateData || updateData.length === 0) {
+            console.warn('⚠️ Recipients POST - Analytics upsert returned no rows')
+          } else {
+            console.log('✓ Recipients POST - Analytics updated successfully:', {
+              campaignId: id,
+              newTotal: updateData[0].total_recipients,
+            })
+          }
+        } catch (analyticsErr) {
+          console.error('❌ Recipients POST - Exception updating analytics:', (analyticsErr as any).message)
+          return res.status(500).json({
+            error: 'Failed to update analytics',
+            details: (analyticsErr as any).message,
+            debug: { insertedCount, totalCount }
+          })
         }
 
+        // SUCCESS: Return after analytics is confirmed updated
         res.status(201).json({
           success: true,
-          added: data?.length || newRecipients.length,
-          message: `Added ${data?.length || newRecipients.length} new recipients${duplicateCount > 0 ? ` (${duplicateCount} duplicates skipped)` : ''}`,
+          added: insertedCount,
+          message: `Added ${insertedCount} new recipients${duplicateCount > 0 ? ` (${duplicateCount} duplicates skipped)` : ''}`,
           debug: {
-            insertSuccess: !error,
-            rowsReturned: data?.length || 0,
+            insertSuccess: true,
+            insertedCount,
+            totalRecipients: totalCount,
+            verifiedCount: verifyCount,
             duplicatesSkipped: duplicateCount,
-            insertError: error ? { code: error.code, message: error.message, details: error.details } : null,
           }
         })
       } catch (insertError: any) {
