@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS campaign_recipients (
 -- Campaign Performance Analytics
 CREATE TABLE IF NOT EXISTS campaign_analytics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  campaign_id UUID NOT NULL REFERENCES marketing_campaigns(id) ON DELETE CASCADE,
+  campaign_id UUID NOT NULL UNIQUE REFERENCES marketing_campaigns(id) ON DELETE CASCADE,
   total_recipients INTEGER DEFAULT 0,
   total_sent INTEGER DEFAULT 0,
   total_bounced INTEGER DEFAULT 0,
