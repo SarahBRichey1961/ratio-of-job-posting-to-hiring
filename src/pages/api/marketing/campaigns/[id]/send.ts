@@ -53,7 +53,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (campaign.status !== 'draft') {
       console.warn('📨 Send endpoint - Campaign not in draft status:', { id, status: campaign.status })
-      return res.status(400).json({ error: 'Campaign must be in draft status to send' })
+      return res.status(400).json({ 
+        error: 'Campaign must be in draft status to send',
+        currentStatus: campaign.status,
+        hint: campaign.status === 'sent' ? 'To re-send a campaign after editing, save your changes first - the status will automatically reset to draft.' : 'Save your changes to reset campaign to draft status before sending.'
+      })
     }
 
     console.log('📨 Send endpoint - Campaign found, fetching recipients...', { id, campaignStatus: campaign.status })
