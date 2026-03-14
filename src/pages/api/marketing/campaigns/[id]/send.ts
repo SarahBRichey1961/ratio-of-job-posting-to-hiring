@@ -148,6 +148,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Send emails using Resend
     for (const recipient of recipients) {
       try {
+        console.log(`📧 Sending email to ${recipient.email}...`)
         // Replace personalization tokens
         const recipientName = recipient.first_name || (recipient.first_name && `${recipient.first_name} ${recipient.last_name}`.trim()) || recipient.email
         let htmlBody = campaign.email_body_html
@@ -160,6 +161,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         htmlBody += trackingPixel
 
         // Send email via Resend
+        console.log(`📧 Calling Resend API for ${recipient.email}...`)
         const emailResponse = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
@@ -175,25 +177,53 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }),
         })
 
-        if (emailResponse.ok) {
-          const emailData = await emailResponse.json()
-          // Update recipient status and tracking ID
-          await serviceRoleClient
-            .from('campaign_recipients')
-            .update({
-              status: 'sent',
-              tracking_id: emailData.id,
-              sent_at: new Date().toISOString(),
-            })
-            .eq('id', recipient.id)
+        const emailResponseText = await emailResponse.text()
+        console.log(`📧 Resend response for ${recipient.email}:`, {
+          status: emailResponse.status,
+          ok: emailResponse.ok,
+          bodyPreview: emailResponseText.substring(0, 200),
+        })
 
-          sentCount++
+        if (emailResponse.ok) {
+          try {
+            const emailData = JSON.parse(emailResponseText)
+            console.log(`📧 Email sent successfully to ${recipient.email}, tracking ID: ${emailData.id}`)
+            
+            // Update recipient status and tracking ID
+            const { error: updateError, data: updateData } = await serviceRoleClient
+              .from('campaign_recipients')
+              .update({
+                status: 'sent',
+                tracking_id: emailData.id,
+              })
+              .eq('id', recipient.id)
+              .select()
+
+            if (updateError) {
+              console.error(`❌ Failed to update recipient ${recipient.id} status to sent:`, {
+                error: updateError.message,
+                code: updateError.code,
+                details: updateError.details,
+              })
+              failedCount++
+              continue
+            }
+
+            console.log(`✅ Recipient ${recipient.id} status updated to sent`)
+            sentCount++
+          } catch (parseError) {
+            console.error(`❌ Failed to parse Resend response for ${recipient.email}:`, parseError)
+            failedCount++
+          }
         } else {
-          console.error(`Failed to send email to ${recipient.email}:`, await emailResponse.text())
+          console.error(`❌ Resend API error for ${recipient.email}:`, {
+            status: emailResponse.status,
+            response: emailResponseText,
+          })
           failedCount++
         }
       } catch (emailError) {
-        console.error(`Error sending email to ${recipient.email}:`, emailError)
+        console.error(`❌ Exception sending email to ${recipient.email}:`, emailError)
         failedCount++
       }
     }
