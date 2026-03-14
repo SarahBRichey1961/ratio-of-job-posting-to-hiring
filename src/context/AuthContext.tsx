@@ -76,19 +76,116 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               // No need to create a new client instance
               const dbClient = client
 
-              // Fetch user profile
-              const { data: profileData, error: fetchError } = await dbClient
-                .from('user_profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .maybeSingle()
+              console.log('👤 Attempting to fetch profile for user:', session.user.id)
 
-              if (!isMounted) return
+              // Add timeout wrapper for profile fetch (prevent RLS hanging)
+              let profileFetchCompleted = false
+              const profileFetchTimeout = setTimeout(() => {
+                if (!profileFetchCompleted && isMounted) {
+                  console.warn('⏱️ Profile fetch timeout (2s) - using fallback profile')
+                  setProfile({
+                    id: session.user.id,
+                    email: session.user.email || '',
+                    role: 'viewer',
+                    created_at: new Date().toISOString(),
+                  })
+                  setIsLoading(false)
+                  console.log('✅ Auth isLoading set to false (fetch timeout fallback)')
+                }
+              }, 2000)
 
-              if (!profileData && fetchError && fetchError.code !== 'PGRST116') {
-                // Table might not exist yet - use anon client
-                console.log('Profile fetch error:', fetchError.code, '- table may not exist')
-                // Set default profile and continue
+              try {
+                // Fetch user profile
+                const { data: profileData, error: fetchError } = await dbClient
+                  .from('user_profiles')
+                  .select('*')
+                  .eq('id', session.user.id)
+                  .maybeSingle()
+
+                profileFetchCompleted = true
+                clearTimeout(profileFetchTimeout)
+
+                console.log('📊 Profile fetch result:', {
+                  userID: session.user.id,
+                  hasData: !!profileData,
+                  hasError: !!fetchError,
+                  errorCode: fetchError?.code,
+                  errorMessage: fetchError?.message,
+                })
+
+                if (!isMounted) return
+
+                if (!profileData && fetchError && fetchError.code !== 'PGRST116') {
+                  // Table might not exist yet - use anon client
+                  console.log('⚠️ Profile fetch error:', fetchError.code, '- setting default profile')
+                  // Set default profile and continue
+                  if (isMounted) {
+                    setProfile({
+                      id: session.user.id,
+                      email: session.user.email || '',
+                      role: 'viewer',
+                      created_at: new Date().toISOString(),
+                    })
+                    setIsLoading(false)
+                    console.log('✅ Auth isLoading set to false (profile error fallback)')
+                  }
+                  return
+                }
+
+                if (!profileData) {
+                  console.log('⚠️ Profile not found, attempting to create default profile')
+                  // Try to create the profile now that user is authenticated
+                  const { data: createdProfile, error: createError } = await dbClient
+                    .from('user_profiles')
+                    .insert({
+                      id: session.user.id,
+                      email: session.user.email || '',
+                      role: 'viewer',
+                    })
+                    .select()
+                    .single()
+
+                  console.log('📝 Profile create result:', {
+                    created: !!createdProfile,
+                    error: createError?.message,
+                  })
+
+                  if (!isMounted) return
+
+                  if (createError) {
+                    console.error('❌ Could not create profile:', createError.code, createError.message)
+                    // Set a default profile anyway to allow user to continue
+                    if (isMounted) {
+                      setProfile({
+                        id: session.user.id,
+                        email: session.user.email || '',
+                        role: 'viewer',
+                        created_at: new Date().toISOString(),
+                      })
+                      setIsLoading(false)
+                      console.log('✅ Auth isLoading set to false (profile create error fallback)')
+                    }
+                  } else {
+                    if (isMounted) {
+                      setProfile(createdProfile as UserProfile)
+                      setIsLoading(false)
+                      console.log('✅ Auth isLoading set to false (profile created)')
+                    }
+                  }
+                } else {
+                  console.log('✅ Profile found, setting profile')
+                  if (isMounted) {
+                    setProfile(profileData as UserProfile)
+                    setIsLoading(false)
+                    console.log('✅ Auth isLoading set to false (profile loaded)')
+                  }
+                }
+              } catch (profileErr) {
+                console.error('⚠️ Exception during profile fetch:', (profileErr as any).message)
+                if (profileFetchCompleted === false) {
+                  clearTimeout(profileFetchTimeout)
+                  profileFetchCompleted = true
+                }
                 if (isMounted) {
                   setProfile({
                     id: session.user.id,
@@ -97,44 +194,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     created_at: new Date().toISOString(),
                   })
                   setIsLoading(false)
-                }
-                return
-              }
-
-              if (!profileData) {
-                console.log('Profile not found, creating default profile')
-                // Try to create the profile now that user is authenticated
-                const { data: createdProfile, error: createError } = await dbClient
-                  .from('user_profiles')
-                  .insert({
-                    id: session.user.id,
-                    email: session.user.email || '',
-                    role: 'viewer',
-                  })
-                  .select()
-                  .single()
-
-                if (!isMounted) return
-
-                if (createError) {
-                  console.error('Could not create profile:', createError.code, createError.message)
-                  // Set a default profile anyway to allow user to continue
-                  if (isMounted) {
-                    setProfile({
-                      id: session.user.id,
-                      email: session.user.email || '',
-                      role: 'viewer',
-                      created_at: new Date().toISOString(),
-                    })
-                  }
-                } else {
-                  if (isMounted) {
-                    setProfile(createdProfile as UserProfile)
-                  }
-                }
-              } else {
-                if (isMounted) {
-                  setProfile(profileData as UserProfile)
+                  console.log('✅ Auth isLoading set to false (profile fetch exception)')
                 }
               }
             } else {
