@@ -86,7 +86,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Verify ownership
       const { data: campaign, error: fetchError } = await authenticatedSupabase
         .from('marketing_campaigns')
-        .select('creator_id')
+        .select('creator_id, status')
         .eq('id', id)
         .single()
 
@@ -97,6 +97,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const updateData = {
         ...req.body,
         updated_at: new Date().toISOString(),
+      }
+
+      // If editing a sent campaign, reset status to draft so it can be re-sent
+      if (campaign.status === 'sent' && !req.body.status) {
+        console.log('PUT - Campaign was sent, resetting status to draft to allow re-sending')
+        updateData.status = 'draft'
       }
 
       const { data, error } = await authenticatedSupabase
