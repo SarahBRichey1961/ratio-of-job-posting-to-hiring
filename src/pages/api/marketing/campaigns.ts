@@ -141,7 +141,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (campaign?.id) {
         try {
           const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-          if (serviceRoleKey) {
+          if (!serviceRoleKey) {
+            console.warn('⚠️ CREATE - SUPABASE_SERVICE_ROLE_KEY not configured, analytics record not created')
+          } else {
+            console.log('📊 CREATE - Creating analytics record with SERVICE_ROLE_KEY:', {
+              campaignId: campaign.id,
+              serviceRoleKeyLength: serviceRoleKey.length,
+            })
+            
             const serviceRoleClient = createClient(
               process.env.NEXT_PUBLIC_SUPABASE_URL!,
               serviceRoleKey,
@@ -153,7 +160,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               }
             )
 
-            const { error: analyticsError } = await serviceRoleClient
+            console.log('📊 CREATE - INSERT analytics with columns: campaign_id, total_recipients, total_sent, total_bounced, total_opened, total_clicked, total_conversions, conversion_rate, click_through_rate, open_rate')
+            
+            const { data: insertData, error: analyticsError } = await serviceRoleClient
               .from('campaign_analytics')
               .insert({
                 campaign_id: campaign.id,
@@ -167,22 +176,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 click_through_rate: 0,
                 open_rate: 0,
               })
+              .select()
 
             if (analyticsError) {
-              console.error('Failed to create analytics record:', {
+              console.error('❌ CREATE - Failed to create analytics record:', {
                 campaignId: campaign.id,
-                error: analyticsError.message,
-                code: analyticsError.code,
+                errorMessage: analyticsError.message,
+                errorCode: analyticsError.code,
+                errorDetails: analyticsError.details,
+                errorHint: analyticsError.hint,
               })
               // Don't fail the campaign creation if analytics record creation fails
             } else {
-              console.log('Analytics record created for campaign:', campaign.id)
+              console.log('✅ CREATE - Analytics record created for campaign:', {
+                campaignId: campaign.id,
+                recordId: insertData?.[0]?.id,
+              })
             }
           }
         } catch (err) {
-          console.error('Exception creating analytics record:', {
+          console.error('❌ CREATE - Exception creating analytics record:', {
             campaignId: campaign.id,
-            error: (err as any).message,
+            errorMessage: (err as any).message,
+            errorStack: (err as any).stack,
           })
           // Don't fail campaign creation
         }
