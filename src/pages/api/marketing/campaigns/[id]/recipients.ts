@@ -337,6 +337,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           if (!serviceRoleKey) {
             console.warn('⚠️ Recipients POST - SUPABASE_SERVICE_ROLE_KEY not configured, skipping analytics update')
           } else {
+            console.log('📊 Recipients POST - Attempting analytics update with SERVICE_ROLE_KEY...', {
+              campaignId: id,
+              totalCount,
+              serviceRoleKeyLength: serviceRoleKey.length,
+            })
+            
             const srClient = createClient(
               process.env.NEXT_PUBLIC_SUPABASE_URL!,
               serviceRoleKey,
@@ -350,7 +356,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
             // Simply try to update the analytics record
             // If it doesn't exist, we'll insert it
-            console.log('Recipients POST - Updating analytics record...')
+            console.log('📊 Recipients POST - Attempting UPDATE campaign_analytics...')
             const { data: updateResult, error: updateError } = await srClient
               .from('campaign_analytics')
               .update({ 
@@ -360,11 +366,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               .eq('campaign_id', id as string)
               .select()
 
+            console.log('📊 Recipients POST - UPDATE result:', {
+              rowsUpdated: updateResult?.length || 0,
+              updateError: updateError ? { code: updateError.code, message: updateError.message, details: updateError.details } : null,
+            })
+
             if (updateError) {
-              console.warn('Recipients POST - UPDATE failed (non-blocking):', updateError.message)
+              console.warn('⚠️ Recipients POST - UPDATE failed (non-blocking):', {
+                code: updateError.code,
+                message: updateError.message,
+              })
               // Try INSERT as fallback
               try {
-                const { error: insertError } = await srClient
+                console.log('📊 Recipients POST - Attempting INSERT campaign_analytics as fallback...')
+                const { error: insertError, data: insertData } = await srClient
                   .from('campaign_analytics')
                   .insert({
                     campaign_id: id as string,
@@ -376,19 +391,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     total_clicked: 0,
                     total_conversions: 0,
                   })
+                  .select()
 
                 if (insertError) {
-                  console.warn('Recipients POST - INSERT failed (non-blocking):', insertError.message)
+                  console.warn('⚠️ Recipients POST - INSERT failed (non-blocking):', {
+                    code: insertError.code,
+                    message: insertError.message,
+                    details: insertError.details,
+                  })
                 } else {
-                  console.log('✓ Analytics record inserted (fallback)')
+                  console.log('✅ Recipients POST - Analytics record inserted (fallback)', {
+                    campaignId: id,
+                    totalRecipients: totalCount,
+                  })
                 }
               } catch (insertErr) {
-                console.warn('Recipients POST - INSERT exception (non-blocking):', (insertErr as any).message)
+                console.warn('⚠️ Recipients POST - INSERT exception (non-blocking):', (insertErr as any).message)
               }
             } else if (!updateResult || updateResult.length === 0) {
-              console.log('Recipients POST - No existing analytics record, inserting new one...')
+              console.log('📊 Recipients POST - No existing analytics record, attempting INSERT...')
               try {
-                const { error: insertError } = await srClient
+                const { error: insertError, data: insertData } = await srClient
                   .from('campaign_analytics')
                   .insert({
                     campaign_id: id as string,
@@ -400,23 +423,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     total_clicked: 0,
                     total_conversions: 0,
                   })
+                  .select()
 
                 if (insertError) {
-                  console.warn('Recipients POST - INSERT failed (non-blocking):', insertError.message)
+                  console.warn('⚠️ Recipients POST - INSERT failed (non-blocking):', {
+                    code: insertError.code,
+                    message: insertError.message,
+                    details: insertError.details,
+                  })
                 } else {
-                  console.log('✓ Analytics record inserted')
+                  console.log('✅ Recipients POST - Analytics record inserted', {
+                    campaignId: id,
+                    totalRecipients: totalCount,
+                  })
                 }
               } catch (insertErr) {
-                console.warn('Recipients POST - INSERT exception (non-blocking):', (insertErr as any).message)
+                console.warn('⚠️ Recipients POST - INSERT exception (non-blocking):', (insertErr as any).message)
               }
             } else {
-              console.log('✓ Analytics record updated:', {
+              console.log('✅ Recipients POST - Analytics record updated:', {
+                campaignId: id,
                 totalRecipients: updateResult[0].total_recipients,
               })
             }
           }
         } catch (analyticsErr: any) {
-          console.warn('⚠️ Recipients POST - Analytics non-blocking error (request will still succeed):', analyticsErr.message)
+          console.warn('⚠️ Recipients POST - Analytics non-blocking error:', analyticsErr.message)
           // DO NOT return error - analytics update is secondary to recipient insertion
         }
 
