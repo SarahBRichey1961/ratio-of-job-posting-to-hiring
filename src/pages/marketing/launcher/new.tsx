@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import axios from 'axios'
-import { getSupabase } from '@/lib/supabase'
+import { useAuth } from '@/context/AuthContext'
 
 export default function NewCampaign() {
   const router = useRouter()
+  const { session, isLoading: authLoading } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [userId, setUserId] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -21,26 +21,13 @@ export default function NewCampaign() {
   })
 
   useEffect(() => {
-    const getUser = async () => {
-      try {
-        const supabase = getSupabase()
-        if (!supabase) {
-          router.push('/marketing/launcher')
-          return
-        }
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user?.id) {
-          setUserId(session.user.id)
-        } else {
-          router.push('/hub/login?redirect=/marketing/launcher/new')
-        }
-      } catch (err) {
-        console.error('Error getting user:', err)
-        router.push('/hub/login?redirect=/marketing/launcher/new')
-      }
+    console.log('📝 NewCampaign useEffect: session=', !!session, 'authLoading=', authLoading)
+    
+    if (!authLoading && !session?.user?.id) {
+      console.log('🔴 No authenticated user found, redirecting to login')
+      router.push('/hub/login?redirect=/marketing/launcher/new')
     }
-    getUser()
-  }, [router])
+  }, [session, authLoading, router])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -53,8 +40,16 @@ export default function NewCampaign() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (!userId) {
-      setError('User ID not available. Please refresh the page.')
+    console.log('📤 Form submit: session=', !!session, 'access_token=', !!session?.access_token)
+
+    if (!session?.access_token) {
+      console.error('❌ No access token available', { 
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        hasAccessToken: !!session?.access_token,
+        accessTokenLength: session?.access_token?.length
+      })
+      setError('Authentication token not available. Please log in again.')
       return
     }
 
@@ -67,19 +62,7 @@ export default function NewCampaign() {
     setError('')
 
     try {
-      const supabase = getSupabase()
-      if (!supabase) {
-        setError('Connection error. Please try again.')
-        return
-      }
-
-      const { data: { session } } = await supabase.auth.getSession()
-
-      if (!session?.access_token) {
-        setError('Authentication token not available. Please log in again.')
-        return
-      }
-
+      console.log('🚀 Creating campaign with token length:', session.access_token.length)
       const response = await axios.post('/api/marketing/campaigns', formData, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -87,9 +70,10 @@ export default function NewCampaign() {
         },
       })
 
+      console.log('✅ Campaign created:', response.data.id)
       router.push(`/marketing/launcher/${response.data.id}`)
     } catch (err) {
-      console.error('Error creating campaign:', err)
+      console.error('❌ Error creating campaign:', err)
       setError((err as any).response?.data?.error || 'Failed to create campaign')
     } finally {
       setLoading(false)
@@ -116,6 +100,13 @@ export default function NewCampaign() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-12">
+        {authLoading && (
+          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-6 py-4 rounded-lg mb-6">
+            <p className="font-semibold">🔄 Initializing authentication...</p>
+            <p className="text-sm mt-1">Please wait while we verify your session.</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-8 space-y-8">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -242,10 +233,10 @@ export default function NewCampaign() {
           <div className="flex gap-4 pt-6">
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || authLoading}
               className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-semibold transition"
             >
-              {loading ? 'Creating...' : '✓ Create Campaign'}
+              {loading ? 'Creating...' : authLoading ? 'Loading...' : '✓ Create Campaign'}
             </button>
             <button
               type="button"
