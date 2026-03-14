@@ -58,6 +58,10 @@ export default function CampaignDetail() {
     utm_campaign: '',
   })
 
+  const [showRecipientsModal, setShowRecipientsModal] = useState(false)
+  const [recipients, setRecipients] = useState<any[]>([])
+  const [loadingRecipients, setLoadingRecipients] = useState(false)
+
   useEffect(() => {
     if (!id || typeof id !== 'string') return
 
@@ -200,6 +204,32 @@ export default function CampaignDetail() {
       setError((err as any).response?.data?.error || 'Failed to save campaign')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const fetchRecipients = async () => {
+    if (!id || !accessToken) return
+
+    setLoadingRecipients(true)
+    try {
+      console.log('📨 Fetching recipients for campaign:', id)
+      const response = await axios.get(
+        `/api/marketing/campaigns/${id}/recipients?limit=1000`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+          timeout: 10000,
+        }
+      )
+      console.log('✅ Recipients fetched:', response.data.recipients?.length)
+      setRecipients(response.data.recipients || [])
+      setShowRecipientsModal(true)
+    } catch (err) {
+      console.error('Error fetching recipients:', err)
+      setError((err as any).response?.data?.error || 'Failed to load recipients')
+    } finally {
+      setLoadingRecipients(false)
     }
   }
 
@@ -646,15 +676,21 @@ export default function CampaignDetail() {
                 )}
 
                 {campaign.status === 'sent' && (
-                  <button
-                    onClick={() => {
-                      // TODO: View recipients
-                      alert('View recipients - coming soon')
-                    }}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition"
-                  >
-                    👥 View Recipients
-                  </button>
+                  <>
+                    <button
+                      onClick={() => setEditMode(true)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition"
+                    >
+                      ✎ Edit Campaign
+                    </button>
+                    <button
+                      onClick={fetchRecipients}
+                      disabled={loadingRecipients}
+                      className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-semibold transition"
+                    >
+                      {loadingRecipients ? '⏳ Loading...' : '👥 View Recipients'}
+                    </button>
+                  </>
                 )}
 
                 <button
@@ -665,6 +701,71 @@ export default function CampaignDetail() {
                 </button>
               </div>
             </div>
+
+            {/* Recipients Modal */}
+            {showRecipientsModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg shadow-2xl p-8 max-w-2xl max-h-96 overflow-y-auto w-full mx-4">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-900">Campaign Recipients ({recipients.length})</h3>
+                    <button
+                      onClick={() => setShowRecipientsModal(false)}
+                      className="text-gray-500 hover:text-gray-700 text-2xl"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {recipients.length === 0 ? (
+                    <p className="text-gray-600">No recipients found for this campaign.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full border-collapse">
+                        <thead>
+                          <tr className="bg-gray-100 border-b">
+                            <th className="text-left p-3 font-semibold text-gray-900">Email</th>
+                            <th className="text-left p-3 font-semibold text-gray-900">Name</th>
+                            <th className="text-left p-3 font-semibold text-gray-900">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {recipients.map((recipient: any, idx: number) => (
+                            <tr key={idx} className="border-b hover:bg-gray-50">
+                              <td className="p-3 text-gray-700">{recipient.email}</td>
+                              <td className="p-3 text-gray-700">
+                                {recipient.first_name || recipient.last_name
+                                  ? `${recipient.first_name || ''} ${recipient.last_name || ''}`.trim()
+                                  : '—'}
+                              </td>
+                              <td className="p-3">
+                                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                                  recipient.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  recipient.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                                  recipient.status === 'opened' ? 'bg-purple-100 text-purple-800' :
+                                  recipient.status === 'clicked' ? 'bg-green-100 text-green-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {recipient.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  <div className="mt-6">
+                    <button
+                      onClick={() => setShowRecipientsModal(false)}
+                      className="w-full bg-gray-300 hover:bg-gray-400 text-gray-900 px-4 py-2 rounded font-semibold transition"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Delete Confirmation */}
             {showDeleteConfirm && (
