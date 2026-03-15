@@ -82,7 +82,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Get recipients with SERVICE_ROLE to bypass RLS
     console.log('📨 Send endpoint - Querying campaign_recipients with SERVICE_ROLE_KEY...')
-    const { data: recipients, error: recipientsError } = await serviceRoleClient
+    let { data: recipients, error: recipientsError } = await serviceRoleClient
       .from('campaign_recipients')
       .select('id, email, first_name, last_name, status')
       .eq('campaign_id', id)
@@ -96,14 +96,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       count: recipients?.length || 0,
       rawCount: recipients ? recipients.length : 'null',
       recipientsData: recipients ? recipients.slice(0, 2) : null,
-      error: recipientsError ? { code: recipientsError.code, message: recipientsError.message, details: recipientsError.details } : null,
+      recipientsError: recipientsError ? { code: recipientsError.code, message: recipientsError.message, details: recipientsError.details } : null,
     })
 
-    // Debug: Query ALL recipients for this campaign (regardless of status)
+    // Debug: Query ALL recipients for this campaign (regardless of status) 
     console.log('📨 Send endpoint - DEBUG: Querying ALL recipients regardless of status...')
     const { data: allRecipients, error: allRecipientsError } = await serviceRoleClient
       .from('campaign_recipients')
-      .select('id, email, status, created_at')
+      .select('id, email, first_name, last_name, status, created_at')
       .eq('campaign_id', id)
 
     console.log('📨 Send endpoint - All recipients for campaign:', {
@@ -130,19 +130,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (!recipients || recipients.length === 0) {
-      console.error('❌ Send endpoint - No pending recipients found for campaign:', { 
+      console.error('❌ Send endpoint - No pending recipients found with status filter:', { 
         campaignId: id, 
         receivedCount: recipients?.length, 
         recipientsIsNull: !recipients,
         allRecipientsCount: allRecipients?.length,
       })
-      return res.status(400).json({ 
-        error: 'No recipients to send to', 
-        debug: { 
-          pendingCount: recipients?.length || 0,
-          totalCount: allRecipients?.length || 0,
-        } 
-      })
+      
+      // If status filter found nothing but total recipients exist, use them anyway
+      // (in case recipients were inserted without 'pending' status for some reason)
+      if (allRecipients && allRecipients.length > 0) {
+        console.warn('⚠️ Send endpoint - Using all recipients even though status filter returned 0')
+        recipients = allRecipients
+      } else {
+        return res.status(400).json({ 
+          error: 'No recipients to send to', 
+          debug: { 
+            pendingCount: recipients?.length || 0,
+            totalCount: allRecipients?.length || 0,
+          } 
+        })
+      }
     }
     console.log('📨 Send endpoint - Recipients found, preparing to send...', { id, recipientCount: recipients.length })
 
