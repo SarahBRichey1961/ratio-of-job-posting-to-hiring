@@ -40,14 +40,16 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
   // Use singleton browser client instead of creating a new one
   const supabase = useMemo(() => getSupabase(), [])
 
-  // Fetch active ads on mount
+  // Fetch active ads on mount with retry logic for auth locks
   useEffect(() => {
-    const fetchAds = async () => {
+    let retries = 0
+    const maxRetries = 3
+    const fetchAdsWithRetry = async () => {
       try {
         setIsLoading(true)
         const now = new Date().toISOString()
         
-        // Fetch all active ads (ignoring expiry for now to debug)
+        // Fetch all active ads
         const { data, error } = await supabase
           .from('advertisements')
           .select('id, title, description, banner_image_url, banner_height, click_url, alt_text, impressions, clicks, is_active, expires_at, created_at')
@@ -56,25 +58,41 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
           .limit(maxAds)
 
         if (error) {
-          console.error('Error fetching ads:', error)
+          // Check if it's a lock timeout error
+          if (error.message?.includes('LockManager') && retries < maxRetries) {
+            console.warn(`[AdRotationBanner] Lock timeout, retrying (attempt ${retries + 1}/${maxRetries})...`)
+            retries++
+            // Wait and retry
+            setTimeout(fetchAdsWithRetry, 1000 * (retries + 1))
+            return
+          }
+          console.error('[AdRotationBanner] Error fetching ads:', error)
           setAds([])
         } else {
           // Filter expired ads client-side
           const activeAds = (data || []).filter(ad => 
             !ad.expires_at || new Date(ad.expires_at) > new Date(now)
           )
-          console.log(`Fetched ${data?.length || 0} ads, ${activeAds.length} are active and not expired`)
+          console.log(`[AdRotationBanner] Fetched ${data?.length || 0} ads, ${activeAds.length} are active and not expired`)
           setAds(activeAds)
         }
       } catch (err) {
-        console.error('Failed to fetch ads:', err)
+        // Check if it's a lock timeout error
+        if (err instanceof Error && err.message?.includes('LockManager') && retries < maxRetries) {
+          console.warn(`[AdRotationBanner] Lock timeout, retrying (attempt ${retries + 1}/${maxRetries})...`)
+          retries++
+          // Wait and retry
+          setTimeout(fetchAdsWithRetry, 1000 * (retries + 1))
+          return
+        }
+        console.error('[AdRotationBanner] Failed to fetch ads:', err)
         setAds([])
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchAds()
+    fetchAdsWithRetry()
   }, [supabase, pageType, maxAds])
 
   // Track impression when ad is displayed
