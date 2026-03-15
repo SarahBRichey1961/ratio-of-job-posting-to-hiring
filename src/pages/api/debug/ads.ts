@@ -27,7 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const [
       { count: advertisersCount, error: advertiserError },
       { count: adsCount, error: adsError },
-      { count: usersCount, error: usersError },
+      { data: usersData, error: usersError },
     ] = await Promise.all([
       supabase
         .from('advertiser_accounts')
@@ -37,6 +37,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .select('*', { count: 'exact', head: true }),
       supabase.auth.admin.listUsers(),
     ])
+
+    const usersCount = usersData?.users?.length ?? 0
 
     // Get sample data
     const { data: sampleAdvertisers, error: sampleAdvertiserError } = await supabase
@@ -55,7 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .eq('is_active', true)
 
     // Get sample users (first 3)
-    const sampleUsers = usersCount instanceof Array ? usersCount.users?.slice(0, 3) : []
+    const sampleUsers = usersData?.users?.slice(0, 3) || []
 
     // Try the exact query that AdRotationBanner uses
     const { data: bannerAds, error: bannerError } = await supabase
@@ -71,7 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         advertisers_count: advertisersCount || 0,
         ads_total_count: adsCount || 0,
         ads_active_count: activeAds?.length || 0,
-        users_count: usersCount?.users?.length || 0,
+        users_count: usersCount,
       },
       component_query_result: {
         query: "from('advertisements').select(...).eq('is_active', true).order('created_at').limit(50)",
@@ -93,7 +95,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         (adsCount || 0) === 0 ? '🔴 NO ADS IN DATABASE - Create ads to fix this' : '✅ Ads exist in database',
         (activeAds?.length || 0) === 0 ? '🔴 NO ACTIVE ADS - Set is_active=true on ads' : '✅ Active ads exist',
         (advertisersCount || 0) === 0 ? '🔴 NO ADVERTISER ACCOUNTS - Create admin advertiser account' : '✅ Advertiser accounts exist',
-        (usersCount?.users?.length || 0) === 0 ? '🔴 NO USERS IN AUTH - Invalid state' : '✅ Users exist in auth',
+        usersCount === 0 ? '🔴 NO USERS IN AUTH - Invalid state' : '✅ Users exist in auth',
         bannerError ? `🔴 COMPONENT QUERY FAILED: ${bannerError.message}` : '✅ Component query works',
       ],
       next_steps:
