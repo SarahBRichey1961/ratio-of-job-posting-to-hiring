@@ -173,11 +173,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: process.env.RESEND_FROM_EMAIL || 'noreply@takethereigns.com',
+            from: 'onboarding@resend.dev',
             to: recipient.email,
             subject: campaign.email_subject,
             html: htmlBody,
-            reply_to: campaign.reply_to_email || process.env.RESEND_REPLY_TO || 'support@takethereigns.com',
+            reply_to: campaign.reply_to_email || 'onboarding@resend.dev',
           }),
         })
 
