@@ -185,7 +185,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log(`📧 Resend response for ${recipient.email}:`, {
           status: emailResponse.status,
           ok: emailResponse.ok,
-          bodyPreview: emailResponseText.substring(0, 200),
+          fullResponse: emailResponseText,
         })
 
         if (emailResponse.ok) {
@@ -273,6 +273,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(200).json({
       success: true,
       message: `Campaign sent successfully`,
+      sent: sentCount,
+      failed: failedCount,
+      total_recipients: recipients.length,
       stats: {
         total_recipients: recipients.length,
         sent: sentCount,
