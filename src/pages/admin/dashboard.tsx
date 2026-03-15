@@ -37,7 +37,7 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Advertisement Management */}
           <Link href="/admin/advertisements">
             <div className="bg-slate-800 hover:bg-slate-700 rounded-lg p-6 cursor-pointer transition">
@@ -66,8 +66,22 @@ export default function AdminDashboard() {
             </div>
           </Link>
 
+          {/* Manifestos Management */}
+          <Link href="/admin/manifestos">
+            <div className="bg-slate-800 hover:bg-slate-700 rounded-lg p-6 cursor-pointer transition">
+              <h2 className="text-2xl font-bold mb-2">📝 Manifestos Management</h2>
+              <p className="text-gray-400 mb-4">View all published user manifestos.</p>
+              <ul className="text-sm text-gray-400 space-y-1">
+                <li>✓ Count of published manifestos</li>
+                <li>✓ Author email addresses</li>
+                <li>✓ Direct links to manifestos</li>
+                <li>✓ Creation and update dates</li>
+              </ul>
+            </div>
+          </Link>
+
           {/* Placeholder for future features */}
-          <div className="bg-slate-800 rounded-lg p-6 opacity-50">
+          <div className="bg-slate-800 rounded-lg p-6 opacity-50 md:col-span-3">
             <h2 className="text-2xl font-bold mb-2">📊 Analytics</h2>
             <p className="text-gray-400 mb-4">Coming soon...</p>
             <ul className="text-sm text-gray-400 space-y-1">
