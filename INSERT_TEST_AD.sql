@@ -1,12 +1,53 @@
 -- INSERT TEST AD FOR SARAH
--- This script creates a test advertisement for Sarah's account so ads display on pages
+-- This script creates a test advertisement to enable ads display on pages
 
--- Step 1: Get Sarah's advertiser account ID
-SELECT id, user_id, company_name, payment_status FROM advertiser_accounts 
-WHERE user_id = '2ed41b8e-d4a5-40cc-ae8c-a27d68c4b562';
+-- Step 0: Find existing users in auth.users table
+-- You'll need to use one of these user IDs for the advertiser account
+SELECT id, email FROM auth.users LIMIT 10;
 
--- Step 2: Create a test ad
--- Use Sarah's advertiser_id from Step 1
+-- Step 1: Check if any advertiser accounts already exist
+SELECT id, user_id, company_name, payment_status FROM advertiser_accounts LIMIT 5;
+
+-- Step 2: Create advertiser account for the first available user
+-- Replace 'YOUR_USER_ID_HERE' with an actual user_id from auth.users
+INSERT INTO advertiser_accounts (
+  user_id,
+  company_name,
+  website,
+  contact_email,
+  payment_status,
+  subscription_type,
+  created_at,
+  updated_at
+)
+SELECT
+  u.id,
+  'WebSepic Admin',
+  'https://websepic.com',
+  u.email,
+  'paid',
+  'premium',
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP
+FROM auth.users u
+WHERE NOT EXISTS (
+  SELECT 1 FROM advertiser_accounts WHERE user_id = u.id
+)
+LIMIT 1
+ON CONFLICT (user_id) DO UPDATE SET
+  company_name = 'WebSepic Admin',
+  website = 'https://websepic.com',
+  payment_status = 'paid',
+  subscription_type = 'premium',
+  updated_at = CURRENT_TIMESTAMP;
+
+-- Step 3: Verify advertiser account was created
+SELECT id, user_id, company_name, payment_status FROM advertiser_accounts LIMIT 1;
+
+-- Step 4: Create a test ad using the first available advertiser account
+WITH first_advertiser AS (
+  SELECT id FROM advertiser_accounts LIMIT 1
+)
 INSERT INTO advertisements (
   advertiser_id,
   title,
@@ -21,8 +62,8 @@ INSERT INTO advertisements (
   created_at,
   updated_at
 )
-VALUES (
-  (SELECT id FROM advertiser_accounts WHERE user_id = '2ed41b8e-d4a5-40cc-ae8c-a27d68c4b562' LIMIT 1),
+SELECT
+  fa.id,
   'WebSepic - Your Job Analytics Platform',
   'Discover trends in job postings and hiring patterns. Track industry insights in real time.',
   'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=80&fit=crop',
@@ -34,12 +75,14 @@ VALUES (
   0,
   CURRENT_TIMESTAMP,
   CURRENT_TIMESTAMP
-)
-ON CONFLICT DO NOTHING;
+FROM first_advertiser fa
+WHERE NOT EXISTS (
+  SELECT 1 FROM advertisements 
+  WHERE advertiser_id = fa.id AND title = 'WebSepic - Your Job Analytics Platform'
+);
 
--- Step 3: Verify the ad was created
-SELECT id, title, advertiser_id, is_active, created_at FROM advertisements 
-WHERE advertiser_id = (SELECT id FROM advertiser_accounts WHERE user_id = '2ed41b8e-d4a5-40cc-ae8c-a27d68c4b562' LIMIT 1);
+-- Step 5: Verify the ad was created
+SELECT id, title, advertiser_id, is_active, created_at FROM advertisements WHERE is_active = true;
 
--- Step 4: Count total active ads
+-- Step 6: Count total active ads
 SELECT COUNT(*) as total_active_ads FROM advertisements WHERE is_active = true;
