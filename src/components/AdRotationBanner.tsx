@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabase } from '@/lib/supabase'
 
 interface Ad {
   id: string
@@ -26,8 +26,6 @@ interface AdRotationBannerProps {
  * Rotating advertisement banner component
  * Displays active ads cycling through every 2 minutes (or custom interval)
  * Supports up to 50 ads
- * 
- * Uses anonymous Supabase client to avoid auth lock contention
  */
 export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({ 
   pageType, 
@@ -39,23 +37,23 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
   const [isLoading, setIsLoading] = useState(true)
   const [sessionId] = useState(() => Math.random().toString(36).substring(7))
 
-  // Create anonymous Supabase client (no auth tokens, pure RLS)
-  // This avoids LockManager issues entirely since ads are public-readable
-  const anonSupabase = useMemo(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-    return createClient(url, anonKey)
-  }, [])
+  // Use singleton browser client with proper error handling
+  const supabase = useMemo(() => getSupabase(), [])
 
-  // Fetch active ads on mount using anonymous client
+  // Fetch active ads on mount using singleton client
+  // Wait briefly for auth to settle to avoid LockManager contention
   useEffect(() => {
     const fetchAds = async () => {
       try {
         setIsLoading(true)
+        
+        // Wait 500ms for auth init to settle and reduce lock contention
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
         const now = new Date().toISOString()
         
-        // Fetch all active ads using anon client (no auth lock issues)
-        const { data, error } = await anonSupabase
+        // Fetch all active ads
+        const { data, error } = await supabase
           .from('advertisements')
           .select('id, title, description, banner_image_url, banner_height, click_url, alt_text, impressions, clicks, is_active, expires_at, created_at')
           .eq('is_active', true)
@@ -82,7 +80,7 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
     }
 
     fetchAds()
-  }, [anonSupabase, pageType, maxAds])
+  }, [supabase, pageType, maxAds])
 
   // Track impression when ad is displayed
   useEffect(() => {
@@ -91,14 +89,14 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
     const trackImpression = async () => {
       const currentAd = ads[currentAdIndex]
       try {
-        await anonSupabase.from('ad_impressions').insert({
+        await supabase.from('ad_impressions').insert({
           ad_id: currentAd.id,
           page_type: pageType,
           user_session_id: sessionId
         })
 
         // Update impression count
-        await anonSupabase
+        await supabase
           .from('advertisements')
           .update({ impressions: (ads[currentAdIndex]?.impressions || 0) + 1 })
           .eq('id', currentAd.id)
@@ -108,7 +106,7 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
     }
 
     trackImpression()
-  }, [currentAdIndex, ads, anonSupabase, pageType, sessionId])
+  }, [currentAdIndex, ads, supabase, pageType, sessionId])
 
   // Handle ad rotation timer
   useEffect(() => {
@@ -125,14 +123,14 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
   const handleAdClick = async (ad: Ad) => {
     try {
       // Track click
-      await anonSupabase.from('ad_clicks').insert({
+      await supabase.from('ad_clicks').insert({
         ad_id: ad.id,
         page_type: pageType,
         user_session_id: sessionId
       })
 
       // Update click count
-      await anonSupabase
+      await supabase
         .from('advertisements')
         .update({ clicks: (ad.clicks || 0) + 1 })
         .eq('id', ad.id)
