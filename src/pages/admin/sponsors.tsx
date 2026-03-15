@@ -94,12 +94,20 @@ export default function AdminSponsorsPage() {
               <p className="text-gray-400">View and manage all platform sponsors</p>
               <p className="text-sm text-gray-500 mt-2">Logged in as: <strong>{adminUser}</strong></p>
             </div>
-            <Link
-              href="/admin/dashboard"
-              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition"
-            >
-              Back to Admin
-            </Link>
+            <div className="flex gap-2">
+              <Link
+                href="/dashboard/comparison"
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition"
+              >
+                ← Back to Dashboard
+              </Link>
+              <Link
+                href="/admin/dashboard"
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition"
+              >
+                Back to Admin
+              </Link>
+            </div>
           </div>
         </div>
 
