@@ -1,15 +1,27 @@
--- INSERT TEST AD FOR SARAH
--- This script creates a test advertisement to enable ads display on pages
+-- INSERT TEST AD - SIMPLE AND FOOLPROOF
+-- This script creates a working advertiser account and test ad
 
--- Step 0: Find existing users in auth.users table
--- You'll need to use one of these user IDs for the advertiser account
+-- IMPORTANT: Run queries one at a time in Supabase SQL Editor
+
+-- =============================================
+-- STEP 1: Check what users exist in your system
+-- =============================================
 SELECT id, email FROM auth.users LIMIT 10;
 
--- Step 1: Check if any advertiser accounts already exist
-SELECT id, user_id, company_name, payment_status FROM advertiser_accounts LIMIT 5;
+-- =============================================
+-- STEP 2: Check existing advertiser accounts
+-- =============================================
+SELECT id, user_id, company_name, payment_status FROM advertiser_accounts LIMIT 10;
 
--- Step 2: Create advertiser account for the first available user
--- Replace 'YOUR_USER_ID_HERE' with an actual user_id from auth.users
+-- =============================================
+-- STEP 3: Delete any incomplete advertiser accounts (if needed to start fresh)
+-- =============================================
+-- DELETE FROM advertiser_accounts WHERE company_name IS NULL;
+
+-- =============================================
+-- STEP 4: Create advertiser account for the FIRST user in auth.users
+-- This will auto-link to any existing user without breaking FK constraints
+-- =============================================
 INSERT INTO advertiser_accounts (
   user_id,
   company_name,
@@ -22,8 +34,8 @@ INSERT INTO advertiser_accounts (
 )
 SELECT
   u.id,
-  'WebSepic Admin',
-  'https://websepic.com',
+  'Test Advertiser',
+  'https://example.com',
   u.email,
   'paid',
   'premium',
@@ -31,23 +43,24 @@ SELECT
   CURRENT_TIMESTAMP
 FROM auth.users u
 WHERE NOT EXISTS (
-  SELECT 1 FROM advertiser_accounts WHERE user_id = u.id
+  SELECT 1 FROM advertiser_accounts aa WHERE aa.user_id = u.id
 )
+ORDER BY u.created_at
 LIMIT 1
 ON CONFLICT (user_id) DO UPDATE SET
-  company_name = 'WebSepic Admin',
-  website = 'https://websepic.com',
+  company_name = 'Test Advertiser',
   payment_status = 'paid',
-  subscription_type = 'premium',
   updated_at = CURRENT_TIMESTAMP;
 
--- Step 3: Verify advertiser account was created
-SELECT id, user_id, company_name, payment_status FROM advertiser_accounts LIMIT 1;
+-- =============================================
+-- STEP 5: Verify advertiser account was created
+-- =============================================
+SELECT id, user_id, company_name, payment_status FROM advertiser_accounts;
 
--- Step 4: Create a test ad using the first available advertiser account
-WITH first_advertiser AS (
-  SELECT id FROM advertiser_accounts LIMIT 1
-)
+-- =============================================
+-- STEP 6: Create a test ad 
+-- Uses the first available advertiser account
+-- =============================================
 INSERT INTO advertisements (
   advertiser_id,
   title,
@@ -63,26 +76,31 @@ INSERT INTO advertisements (
   updated_at
 )
 SELECT
-  fa.id,
-  'WebSepic - Your Job Analytics Platform',
+  aa.id,
+  'Welcome to WebSepic - Job Analytics Platform',
   'Discover trends in job postings and hiring patterns. Track industry insights in real time.',
   'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=80&fit=crop',
   80,
   'https://websepic.com',
-  'WebSepic platform banner',
+  'WebSepic Platform',
   true,
   0,
   0,
   CURRENT_TIMESTAMP,
   CURRENT_TIMESTAMP
-FROM first_advertiser fa
+FROM advertiser_accounts aa
 WHERE NOT EXISTS (
-  SELECT 1 FROM advertisements 
-  WHERE advertiser_id = fa.id AND title = 'WebSepic - Your Job Analytics Platform'
-);
+  SELECT 1 FROM advertisements a 
+  WHERE a.advertiser_id = aa.id AND a.title = 'Welcome to WebSepic - Job Analytics Platform'
+)
+LIMIT 1;
 
--- Step 5: Verify the ad was created
-SELECT id, title, advertiser_id, is_active, created_at FROM advertisements WHERE is_active = true;
+-- =============================================
+-- STEP 7: Verify the test ad was created
+-- =============================================
+SELECT id, title, advertiser_id, is_active, created_at FROM advertisements;
 
--- Step 6: Count total active ads
-SELECT COUNT(*) as total_active_ads FROM advertisements WHERE is_active = true;
+-- =============================================
+-- STEP 8: Count active ads (should be > 0 for ads to display)
+-- =============================================
+SELECT COUNT(*) as active_ada_count FROM advertisements WHERE is_active = true;
