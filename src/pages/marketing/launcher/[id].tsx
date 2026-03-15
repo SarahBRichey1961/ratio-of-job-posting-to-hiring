@@ -302,6 +302,7 @@ export default function CampaignDetail() {
       console.error('❌ handleSendCampaign: Error sending campaign:', {
         status: (err as any).response?.status,
         error: (err as any).response?.data?.error,
+        responseData: (err as any).response?.data,
         message: (err as any).message,
         fullError: err,
       })
@@ -311,6 +312,7 @@ export default function CampaignDetail() {
         (err as any).message ||
         'Failed to send campaign'
       setError(errorMessage)
+      alert(`Error sending campaign: ${errorMessage}`)
     } finally {
       setSending(false)
     }
