@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getAuthenticatedSupabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -42,18 +43,115 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       error: analyticsError ? { code: analyticsError.code, message: analyticsError.message } : null,
     })
 
-    // If no analytics record, that's an error (should have been created when campaign was created)
-    if (analyticsError || !analytics) {
-      if (analyticsError?.code === 'PGRST116') {
-        // No rows returned - analytics record wasn't found
-        // This could mean RLS is blocking or record doesn't exist
-        console.warn('Analytics - No analytics record found for campaign:', {
+    let analyticsData = analytics
+
+    // If no analytics record found, create one (lazy creation)
+    if (analyticsError?.code === 'PGRST116' || !analytics) {
+      console.log('Analytics - Record not found, creating with lazy creation...')
+      
+      // First, verify the campaign belongs to this user
+      const { data: campaign, error: campaignError } = await supabase
+        .from('marketing_campaigns')
+        .select('id, creator_id')
+        .eq('id', id)
+        .single()
+      
+      if (campaignError || !campaign) {
+        console.error('Analytics - Campaign not found or access denied:', campaignError?.message)
+        return res.status(404).json({ error: 'Campaign not found' })
+      }
+
+      // Get actual recipient count for this campaign
+      console.log('Analytics - Fetching actual recipient count from database...')
+      const { count: actualRecipientCount, error: countError } = await supabase
+        .from('campaign_recipients')
+        .select('*', { count: 'exact', head: true })
+        .eq('campaign_id', id as string)
+      
+      const recipientCount = actualRecipientCount || 0
+      console.log('Analytics - Actual recipients in database:', recipientCount)
+
+      // Create analytics record with SERVICE_ROLE_KEY to bypass RLS
+      try {
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+        if (!serviceRoleKey) {
+          console.warn('Analytics - SUPABASE_SERVICE_ROLE_KEY not configured, cannot create record')
+          // Return empty analytics instead of failing
+          return res.status(200).json({
+            total_recipients: recipientCount,
+            total_sent: 0,
+            total_bounced: 0,
+            total_opened: 0,
+            total_clicked: 0,
+            total_conversions: 0,
+            open_rate: 0,
+            click_through_rate: 0,
+            conversion_rate: 0,
+          })
+        }
+
+        console.log('📊 Analytics - Creating missing record with SERVICE_ROLE_KEY', {
           campaignId: id,
-          hint: 'Record may not exist or RLS is blocking access'
+          recipientCount,
         })
-        // Return 0 recipients to avoid breaking frontend
+
+        const serviceRoleClient = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          serviceRoleKey,
+          {
+            auth: {
+              persistSession: false,
+              autoRefreshToken: false,
+            },
+          }
+        )
+
+        const { data: createdAnalytics, error: createError } = await serviceRoleClient
+          .from('campaign_analytics')
+          .insert({
+            campaign_id: id as string,
+            total_recipients: recipientCount,
+            total_sent: 0,
+            total_bounced: 0,
+            total_opened: 0,
+            total_clicked: 0,
+            total_conversions: 0,
+            conversion_rate: 0,
+            click_through_rate: 0,
+            open_rate: 0,
+          })
+          .select()
+
+        if (createError) {
+          console.warn('⚠️ Analytics - Failed to create record (will return recipientCount):', {
+            code: createError.code,
+            message: createError.message,
+          })
+          // Even if create fails, return the recipient count we calculated
+          return res.status(200).json({
+            total_recipients: recipientCount,
+            total_sent: 0,
+            total_bounced: 0,
+            total_opened: 0,
+            total_clicked: 0,
+            total_conversions: 0,
+            open_rate: 0,
+            click_through_rate: 0,
+            conversion_rate: 0,
+          })
+        }
+
+        console.log('✅ Analytics - Record created successfully:', {
+          campaignId: id,
+          totalRecipients: recipientCount,
+        })
+
+        analyticsData = createdAnalytics?.[0]
+      } catch (err) {
+        console.error('Analytics - Exception creating record:', (err as any).message)
+        // Return calculated count even if creation fails
         return res.status(200).json({
-          total_recipients: 0,
+          total_recipients: recipientCount,
           total_sent: 0,
           total_bounced: 0,
           total_opened: 0,
@@ -64,12 +162,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           conversion_rate: 0,
         })
       }
-      console.error('Analytics - Error fetching analytics:', analyticsError)
-      return res.status(400).json({ error: 'Failed to fetch analytics', details: analyticsError?.message })
     }
 
-    // Use total_recipients from analytics table
-    const totalRecipients = analytics?.total_recipients || 0
+    // Use total_recipients from analytics table (or created record)
+    const totalRecipients = analyticsData?.total_recipients || 0
 
     console.log('Analytics - Returning data:', { 
       campaignId: id,
@@ -79,14 +175,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Return analytics data
     const responseData = {
       total_recipients: totalRecipients,
-      total_sent: analytics?.total_sent || 0,
-      total_bounced: analytics?.total_bounced || 0,
-      total_opened: analytics?.total_opened || 0,
-      total_clicked: analytics?.total_clicked || 0,
-      total_conversions: analytics?.total_conversions || 0,
-      open_rate: analytics?.open_rate || 0,
-      click_through_rate: analytics?.click_through_rate || 0,
-      conversion_rate: analytics?.conversion_rate || 0,
+      total_sent: analyticsData?.total_sent || 0,
+      total_bounced: analyticsData?.total_bounced || 0,
+      total_opened: analyticsData?.total_opened || 0,
+      total_clicked: analyticsData?.total_clicked || 0,
+      total_conversions: analyticsData?.total_conversions || 0,
+      open_rate: analyticsData?.open_rate || 0,
+      click_through_rate: analyticsData?.click_through_rate || 0,
+      conversion_rate: analyticsData?.conversion_rate || 0,
     }
 
     res.status(200).json(responseData)
