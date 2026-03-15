@@ -143,6 +143,27 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             )
           })}
 
+          {/* Admin Dashboard - Sarah only */}
+          {mounted && session?.user?.email === 'sarah@websepic.com' && (
+            <Link href="/admin/dashboard">
+              <div
+                className={`p-3 rounded-lg transition-colors cursor-pointer border-l-4 ${
+                  router.pathname.startsWith('/admin')
+                    ? 'bg-red-900 border-red-600 text-red-100 shadow-lg'
+                    : 'text-red-300 hover:bg-red-900/30 hover:text-red-200 border-red-700'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-xl flex-shrink-0">🔐</span>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm">Admin Panel</p>
+                    <p className="text-xs text-red-400">Manage platform</p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          )}
+
           {/* Manage Ads - Special handling for auth/payment checks */}
           <div
             onClick={handleManageAds}
