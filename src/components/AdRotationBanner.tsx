@@ -140,12 +140,21 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
   }
 
   // Don't render if no ads or still loading
-  if (isLoading || ads.length === 0) {
+  if (isLoading) {
+    return null
+  }
+
+  if (ads.length === 0) {
+    // Log for debugging
+    console.warn('[AdRotationBanner] No active advertisements found for pageType:', pageType)
     return null
   }
 
   const currentAd = ads[currentAdIndex]
-  if (!currentAd) return null
+  if (!currentAd) {
+    console.warn('[AdRotationBanner] Current ad not found at index:', currentAdIndex)
+    return null
+  }
 
   return (
     <div className="w-full bg-gradient-to-r from-slate-800 to-slate-900 border-b border-slate-700">
