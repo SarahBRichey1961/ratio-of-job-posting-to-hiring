@@ -42,14 +42,28 @@ export default function AdminDashboard() {
             </div>
           </Link>
 
+          {/* Sponsors Management */}
+          <Link href="/admin/sponsors">
+            <div className="bg-slate-800 hover:bg-slate-700 rounded-lg p-6 cursor-pointer transition">
+              <h2 className="text-2xl font-bold mb-2">👥 Sponsors Management</h2>
+              <p className="text-gray-400 mb-4">View and manage platform sponsors.</p>
+              <ul className="text-sm text-gray-400 space-y-1">
+                <li>✓ View all sponsors</li>
+                <li>✓ See sponsor tier and status</li>
+                <li>✓ View sponsor contact email</li>
+                <li>✓ Track sponsor join dates</li>
+              </ul>
+            </div>
+          </Link>
+
           {/* Placeholder for future features */}
           <div className="bg-slate-800 rounded-lg p-6 opacity-50">
-            <h2 className="text-2xl font-bold mb-2">👥 User Management</h2>
+            <h2 className="text-2xl font-bold mb-2">📊 Analytics</h2>
             <p className="text-gray-400 mb-4">Coming soon...</p>
             <ul className="text-sm text-gray-400 space-y-1">
-                <li>• Manage user accounts</li>
-                <li>• Review account status</li>
-                <li>• Handle disputes</li>
+                <li>• Platform metrics</li>
+                <li>• Revenue tracking</li>
+                <li>• User growth</li>
               </ul>
           </div>
         </div>
