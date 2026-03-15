@@ -1,6 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getAuthenticatedSupabase } from '@/lib/supabase'
-import { createClient } from '@supabase/supabase-js'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -44,10 +43,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
 
     let analyticsData = analytics
+    let totalRecipients = analytics?.total_recipients || 0
 
-    // If no analytics record found, create one (lazy creation)
+    // If no analytics record found, calculate from recipients table
     if (analyticsError?.code === 'PGRST116' || !analytics) {
-      console.log('Analytics - Record not found, creating with lazy creation...')
+      console.log('Analytics - Record not found, calculating from recipients table...')
       
       // First, verify the campaign belongs to this user
       const { data: campaign, error: campaignError } = await supabase
@@ -68,104 +68,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .select('*', { count: 'exact', head: true })
         .eq('campaign_id', id as string)
       
-      const recipientCount = actualRecipientCount || 0
-      console.log('Analytics - Actual recipients in database:', recipientCount)
-
-      // Create analytics record with SERVICE_ROLE_KEY to bypass RLS
-      try {
-        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-        if (!serviceRoleKey) {
-          console.warn('Analytics - SUPABASE_SERVICE_ROLE_KEY not configured, cannot create record')
-          // Return empty analytics instead of failing
-          return res.status(200).json({
-            total_recipients: recipientCount,
-            total_sent: 0,
-            total_bounced: 0,
-            total_opened: 0,
-            total_clicked: 0,
-            total_conversions: 0,
-            open_rate: 0,
-            click_through_rate: 0,
-            conversion_rate: 0,
-          })
-        }
-
-        console.log('📊 Analytics - Creating missing record with SERVICE_ROLE_KEY', {
-          campaignId: id,
-          recipientCount,
-        })
-
-        const serviceRoleClient = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          serviceRoleKey,
-          {
-            auth: {
-              persistSession: false,
-              autoRefreshToken: false,
-            },
-          }
-        )
-
-        const { data: createdAnalytics, error: createError } = await serviceRoleClient
-          .from('campaign_analytics')
-          .insert({
-            campaign_id: id as string,
-            total_recipients: recipientCount,
-            total_sent: 0,
-            total_bounced: 0,
-            total_opened: 0,
-            total_clicked: 0,
-            total_conversions: 0,
-            conversion_rate: 0,
-            click_through_rate: 0,
-            open_rate: 0,
-          })
-          .select()
-
-        if (createError) {
-          console.warn('⚠️ Analytics - Failed to create record (will return recipientCount):', {
-            code: createError.code,
-            message: createError.message,
-          })
-          // Even if create fails, return the recipient count we calculated
-          return res.status(200).json({
-            total_recipients: recipientCount,
-            total_sent: 0,
-            total_bounced: 0,
-            total_opened: 0,
-            total_clicked: 0,
-            total_conversions: 0,
-            open_rate: 0,
-            click_through_rate: 0,
-            conversion_rate: 0,
-          })
-        }
-
-        console.log('✅ Analytics - Record created successfully:', {
-          campaignId: id,
-          totalRecipients: recipientCount,
-        })
-
-        analyticsData = createdAnalytics?.[0]
-      } catch (err) {
-        console.error('Analytics - Exception creating record:', (err as any).message)
-        // Return calculated count even if creation fails
-        return res.status(200).json({
-          total_recipients: recipientCount,
-          total_sent: 0,
-          total_bounced: 0,
-          total_opened: 0,
-          total_clicked: 0,
-          total_conversions: 0,
-          open_rate: 0,
-          click_through_rate: 0,
-          conversion_rate: 0,
-        })
-      }
+      totalRecipients = actualRecipientCount || 0
+      console.log('✅ Analytics - Calculated recipients from recipients table:', totalRecipients)
+    } else {
+      // Use the value from analytics table if it exists
+      totalRecipients = analyticsData?.total_recipients || 0
     }
-
-    // Use total_recipients from analytics table (or created record)
-    const totalRecipients = analyticsData?.total_recipients || 0
 
     console.log('Analytics - Returning data:', { 
       campaignId: id,
