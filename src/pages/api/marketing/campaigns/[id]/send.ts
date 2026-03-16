@@ -5,7 +5,23 @@ import { getSupabase, getAuthenticatedSupabase, getUserIdFromToken } from '@/lib
 // Resend email service - add your API key to environment variables
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 
+// Helper function to set CORS headers
+function setCORSHeaders(res: NextApiResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  res.setHeader('Access-Control-Max-Age', '86400')
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Set CORS headers for all responses
+  setCORSHeaders(res)
+
+  // Handle preflight OPTIONS request
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end()
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
