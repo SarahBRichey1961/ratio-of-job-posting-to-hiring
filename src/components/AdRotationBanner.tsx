@@ -41,14 +41,15 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
   const supabase = useMemo(() => getSupabase(), [])
 
   // Fetch active ads on mount using singleton client
-  // Wait briefly for auth to settle to avoid LockManager contention
+  // Wait longer for auth to fully settle and unlock the auth token manager
   useEffect(() => {
     const fetchAds = async () => {
       try {
         setIsLoading(true)
         
-        // Wait 500ms for auth init to settle and reduce lock contention
-        await new Promise(resolve => setTimeout(resolve, 500))
+        // Wait 2000ms (2 seconds) for auth initialization to fully complete
+        // This ensures Supabase's LockManager has released all locks before we query
+        await new Promise(resolve => setTimeout(resolve, 2000))
         
         const now = new Date().toISOString()
         
