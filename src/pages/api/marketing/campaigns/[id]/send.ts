@@ -203,11 +203,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: 'onboarding@resend.dev',
+            from: 'Info@Take-The-Reigns.ai',
             to: recipient.email,
             subject: campaign.email_subject,
             html: htmlBody,
-            reply_to: campaign.reply_to_email || 'onboarding@resend.dev',
+            reply_to: campaign.reply_to_email || 'Info@Take-The-Reigns.ai',
           }),
         })
 
