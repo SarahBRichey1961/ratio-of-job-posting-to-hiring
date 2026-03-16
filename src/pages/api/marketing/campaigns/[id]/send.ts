@@ -180,7 +180,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Replace personalization tokens
         const recipientName = recipient.first_name || (recipient.first_name && `${recipient.first_name} ${recipient.last_name}`.trim()) || recipient.email
         let htmlBody = campaign.email_body_html
+          // Support multiple parameter formats
           .replace(/\[RECIPIENT_NAME\]/g, recipientName)
+          .replace(/\[First_Name\]/g, recipient.first_name || '')
+          .replace(/\[LastName\]/g, recipient.last_name || '')
+          .replace(/\[Last_Name\]/g, recipient.last_name || '')
+          .replace(/\[Email\]/g, recipient.email)
+          .replace(/\[email\]/g, recipient.email)
           .replace(/\[CAMPAIGN_ID\]/g, id as string)
           .replace(/\[RECIPIENT_ID\]/g, recipient.id)
 
