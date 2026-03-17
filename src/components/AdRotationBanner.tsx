@@ -36,83 +36,60 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
   const [currentAdIndex, setCurrentAdIndex] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [sessionId] = useState(() => Math.random().toString(36).substring(7))
-  const [fetchAttempt, setFetchAttempt] = useState(0)
 
-  // Use singleton browser client with proper error handling
+  // Keep Supabase client for tracking (impressions/clicks)
   const supabase = useMemo(() => getSupabase(), [])
-
-  // Fetch active ads on mount using singleton client with timeout fallback
   useEffect(() => {
     let isMounted = true
-    let timeoutId: NodeJS.Timeout | null = null
 
     const fetchAds = async (attempt: number = 0) => {
       if (!isMounted) return
 
       try {
-        setIsLoading(true)
-        console.log(`[AdRotationBanner] Starting ad fetch (attempt ${attempt + 1})...`)
-        
-        // Progressive delay: 2000ms on first attempt, 1500ms on retry (db might be settling)
-        const delay = attempt === 0 ? 2000 : 1500
-        await new Promise(resolve => setTimeout(resolve, delay))
-        
-        if (!isMounted) return
-        
-        const now = new Date().toISOString()
-        
-        // Fetch all active ads with 5-second timeout
-        const fetchPromise = supabase
-          .from('advertisements')
-          .select('id, title, description, banner_image_url, banner_height, click_url, alt_text, impressions, clicks, is_active, expires_at, created_at')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(maxAds)
-
-        // Create a timeout promise that rejects after 5 seconds
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Ad fetch timeout after 5 seconds')), 5000)
-        )
-
-        const { data, error } = await Promise.race([
-          fetchPromise,
-          timeoutPromise as any
-        ]) as any
-
-        if (!isMounted) return
-
-        if (error) {
-          console.error(`[AdRotationBanner] Error fetching ads (attempt ${attempt + 1}):`, error)
-          if (attempt < 1) {
-            // Retry once on error
-            console.log('[AdRotationBanner] Retrying ad fetch...')
-            setFetchAttempt(attempt + 1)
-            await fetchAds(attempt + 1)
-          } else {
-            setAds([])
-            setIsLoading(false)
-          }
-        } else {
-          // Filter expired ads client-side
-          const activeAds = (data || []).filter(ad => 
-            !ad.expires_at || new Date(ad.expires_at) > new Date(now)
-          )
-          console.log(`[AdRotationBanner] ✅ Fetched ${data?.length || 0} ads, ${activeAds.length} are active and not expired`)
-          setAds(activeAds)
-          setIsLoading(false)
+        if (attempt === 0) {
+          setIsLoading(true)
         }
+        console.log(`[AdRotationBanner] Fetching ads from API (attempt ${attempt + 1})...`)
+
+        // Fetch from server API (uses SERVICE_ROLE_KEY, bypasses RLS and auth issues)
+        const response = await fetch('/api/ads', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          // 10 second timeout (generous compared to 5 second client-side timeout)
+          signal: AbortSignal.timeout(10000)
+        })
+
+        if (!isMounted) return
+
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}: ${response.statusText}`)
+        }
+
+        const result = await response.json()
+
+        if (!isMounted) return
+
+        if (result.ads && Array.isArray(result.ads)) {
+          console.log(`[AdRotationBanner] ✅ Fetched ${result.ads.length} active ads from API`)
+          setAds(result.ads)
+        } else {
+          console.warn('[AdRotationBanner] API returned no ads')
+          setAds([])
+        }
+        setIsLoading(false)
       } catch (err) {
         if (!isMounted) return
-        
+
         console.error(`[AdRotationBanner] Failed to fetch ads (attempt ${attempt + 1}):`, err)
-        
-        // Retry once on timeout or network error
+
+        // Retry once on network/timeout error
         if (attempt < 1) {
-          console.log('[AdRotationBanner] ⚠️ Retrying ad fetch after failure...')
-          setFetchAttempt(attempt + 1)
+          console.log('[AdRotationBanner] ⚠️ Retrying ad fetch...')
+          // Exponential backoff: wait 1 second before retry
+          await new Promise(resolve => setTimeout(resolve, 1000))
           await fetchAds(attempt + 1)
         } else {
-          console.error('[AdRotationBanner] ❌ Ad fetch failed after 2 attempts, showing fallback (no ads)')
+          console.error('[AdRotationBanner] ❌ Ad fetch failed after 2 attempts')
           setAds([])
           setIsLoading(false)
         }
@@ -124,9 +101,8 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
     // Cleanup on unmount
     return () => {
       isMounted = false
-      if (timeoutId) clearTimeout(timeoutId)
     }
-  }, [supabase, pageType, maxAds])
+  }, [pageType, maxAds])
 
   // Track impression when ad is displayed
   useEffect(() => {
@@ -190,19 +166,12 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
     }
   }
 
-  // Don't render if no ads and not loading - show minimal placeholder on load attempt
+  // Don't render anything during loading or if no ads found
   if (ads.length === 0) {
+    // Don't show placeholder - just return null to avoid blank space
     if (isLoading) {
-      // Show subtle loading placeholder during initial fetch
-      return (
-        <div className="w-full bg-gradient-to-r from-slate-800 to-slate-900 border-b border-slate-700 animate-pulse">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="h-32 bg-slate-700/50 rounded-lg" />
-          </div>
-        </div>
-      )
+      return null
     }
-    // Log for debugging
     console.warn('[AdRotationBanner] No active advertisements found for pageType:', pageType)
     return null
   }
