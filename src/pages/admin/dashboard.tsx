@@ -1,43 +1,29 @@
 import React from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
+import { AdminPageGuard } from '@/hooks/useAdminCheck'
 
 export default function AdminDashboard() {
-  const { session, isAuthenticated } = useAuth()
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-slate-900 text-white p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-red-900/30 border border-red-700 rounded-lg p-6">
-            <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-            <p>You must be logged in to access the admin panel.</p>
-            <Link href="/login" className="text-blue-400 hover:underline mt-4 inline-block">
-              Go to Login
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const { session } = useAuth()
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Admin Dashboard</h1>
-            <p className="text-gray-400">Logged in as: <strong>{session?.user?.email}</strong></p>
+    <AdminPageGuard>
+      <div className="min-h-screen bg-slate-900 text-white p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-start mb-8">
+            <div>
+              <h1 className="text-4xl font-bold mb-2">Admin Dashboard</h1>
+              <p className="text-gray-400">Logged in as: <strong>{session?.user?.email}</strong></p>
+            </div>
+            <Link
+              href="/dashboard/comparison"
+              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition"
+            >
+              ← Back to Dashboard
+            </Link>
           </div>
-          <Link
-            href="/dashboard/comparison"
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition"
-          >
-            ← Back to Dashboard
-          </Link>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Advertisement Management */}
           <Link href="/admin/advertisements">
             <div className="bg-slate-800 hover:bg-slate-700 rounded-lg p-6 cursor-pointer transition">
@@ -93,5 +79,6 @@ export default function AdminDashboard() {
         </div>
       </div>
     </div>
+    </AdminPageGuard>
   )
 }

@@ -2,6 +2,7 @@ import React, { ReactNode, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useAuth } from '@/context/AuthContext'
+import { useAdminCheck } from '@/hooks/useAdminCheck'
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -41,13 +42,10 @@ const navItems: NavItem[] = [
   },
 ]
 
-/**
- * DashboardLayout Component
- * Pure CSS layout - no state = no hydration mismatches
- */
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
   const { session, isAuthenticated } = useAuth()
+  const { isAdmin } = useAdminCheck()
   const [mounted, setMounted] = useState(false)
   const [showBanner, setShowBanner] = useState(false)
   const [isLoadingManageAds, setIsLoadingManageAds] = useState(false)
@@ -143,8 +141,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             )
           })}
 
-          {/* Admin Dashboard - Sarah only */}
-          {mounted && session?.user?.email === 'sarah@websepic.com' && (
+          {/* Admin Dashboard - Only show to admin users (sarah@websepic.com) */}
+          {mounted && isAdmin && (
             <Link href="/admin/dashboard">
               <div
                 className={`p-3 rounded-lg transition-colors cursor-pointer border-l-4 ${
