@@ -7,22 +7,21 @@ import React, { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 
 export function useAdminCheck() {
-  const { session, isAuthenticated } = useAuth()
+  const { session, isAuthenticated, isLoading: authLoading } = useAuth()
   const [isAdmin, setIsAdmin] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    setIsLoading(true)
-    
-    // Check if user is authenticated and is admin (hardcoded admin email)
-    const adminEmail = 'sarah@websepic.com'
-    const isUserAdmin = isAuthenticated && session?.user?.email === adminEmail
-    
-    setIsAdmin(isUserAdmin)
-    setIsLoading(false)
-  }, [session, isAuthenticated])
+    // Only check admin status when auth is done loading
+    if (!authLoading) {
+      const adminEmail = 'sarah@websepic.com'
+      const isUserAdmin = isAuthenticated && session?.user?.email === adminEmail
+      setIsAdmin(isUserAdmin)
+    } else {
+      setIsAdmin(false)
+    }
+  }, [session, isAuthenticated, authLoading])
 
-  return { isAdmin, isLoading, userEmail: session?.user?.email }
+  return { isAdmin, isLoading: authLoading, userEmail: session?.user?.email }
 }
 
 /**

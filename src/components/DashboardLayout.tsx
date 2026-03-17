@@ -45,7 +45,7 @@ const navItems: NavItem[] = [
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
   const { session, isAuthenticated } = useAuth()
-  const { isAdmin } = useAdminCheck()
+  const { isAdmin, isLoading: isAuthLoading } = useAdminCheck()
   const [mounted, setMounted] = useState(false)
   const [showBanner, setShowBanner] = useState(false)
   const [isLoadingManageAds, setIsLoadingManageAds] = useState(false)
@@ -142,7 +142,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           })}
 
           {/* Admin Dashboard - Only show to admin users (sarah@websepic.com) */}
-          {mounted && isAdmin && (
+          {mounted && isAdmin && !isAuthLoading && (
             <Link href="/admin/dashboard">
               <div
                 className={`p-3 rounded-lg transition-colors cursor-pointer border-l-4 ${
