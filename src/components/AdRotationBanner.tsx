@@ -37,10 +37,14 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
   const [isLoading, setIsLoading] = useState(false)
   const [sessionId] = useState(() => Math.random().toString(36).substring(7))
 
-  // Keep Supabase client for tracking (impressions/clicks)
+  // Keep Supabase client for tracking impressions/clicks
   const supabase = useMemo(() => getSupabase(), [])
+
+  // Fetch active ads from server API (avoids RLS issues, uses SERVICE_ROLE_KEY on server)
+  // Server-side fetch doesn't wait for client auth initialization
   useEffect(() => {
     let isMounted = true
+    let timeoutId: NodeJS.Timeout | null = null
 
     const fetchAds = async (attempt: number = 0) => {
       if (!isMounted) return
@@ -51,13 +55,20 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
         }
         console.log(`[AdRotationBanner] Fetching ads from API (attempt ${attempt + 1})...`)
 
+        // Create abort controller for timeout (Node 14+ compatible)
+        const controller = new AbortController()
+        const timeoutMs = 15000 // 15 second timeout - very generous
+        timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
         // Fetch from server API (uses SERVICE_ROLE_KEY, bypasses RLS and auth issues)
         const response = await fetch('/api/ads', {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
-          // 10 second timeout (generous compared to 5 second client-side timeout)
-          signal: AbortSignal.timeout(10000)
+          signal: controller.signal
         })
+
+        // Clear timeout if fetch completed
+        if (timeoutId) clearTimeout(timeoutId)
 
         if (!isMounted) return
 
@@ -73,7 +84,7 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
           console.log(`[AdRotationBanner] ✅ Fetched ${result.ads.length} active ads from API`)
           setAds(result.ads)
         } else {
-          console.warn('[AdRotationBanner] API returned no ads')
+          console.warn('[AdRotationBanner] API returned no ads or invalid format')
           setAds([])
         }
         setIsLoading(false)
@@ -85,8 +96,8 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
         // Retry once on network/timeout error
         if (attempt < 1) {
           console.log('[AdRotationBanner] ⚠️ Retrying ad fetch...')
-          // Exponential backoff: wait 1 second before retry
-          await new Promise(resolve => setTimeout(resolve, 1000))
+          // Wait 500ms before retry
+          await new Promise(resolve => setTimeout(resolve, 500))
           await fetchAds(attempt + 1)
         } else {
           console.error('[AdRotationBanner] ❌ Ad fetch failed after 2 attempts')
@@ -101,6 +112,7 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
     // Cleanup on unmount
     return () => {
       isMounted = false
+      if (timeoutId) clearTimeout(timeoutId)
     }
   }, [pageType, maxAds])
 

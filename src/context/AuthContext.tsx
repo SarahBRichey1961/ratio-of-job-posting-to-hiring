@@ -326,18 +326,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const client = getSupabase()
       if (!client) {
-        console.error('Supabase client not initialized. Check environment variables NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY')
+        console.error('Supabase client not initialized')
         throw new Error('Authentication service is not available. Please try again or contact support.')
       }
-      
-      const { error } = await client.auth.signOut()
-      if (error) throw error
+
+      // Create abort controller for timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
+      try {
+        const { error } = await client.auth.signOut({ scope: 'local' })
+        clearTimeout(timeoutId)
+        
+        if (error) {
+          console.warn('SignOut warning (non-blocking):', error)
+          // Don't throw - still clear local state even if remote signout fails
+        }
+      } catch (err) {
+        clearTimeout(timeoutId)
+        console.warn('SignOut network error (non-blocking):', err)
+        // Continue - we'll clear local state anyway
+      }
+
+      // Clear local state regardless of remote signout result
       setUser(null)
       setSession(null)
       setProfile(null)
+      console.log('✅ Signed out successfully')
     } catch (error: any) {
       console.error('Sign-out error:', error)
-      throw error
+      // Still clear state on error so user can proceed
+      setUser(null)
+      setSession(null)
+      setProfile(null)
     } finally {
       setIsLoading(false)
     }
