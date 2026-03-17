@@ -205,6 +205,7 @@ export const AdRotationBanner: React.FC<AdRotationBannerProps> = ({
     // Log for debugging
     console.warn('[AdRotationBanner] No active advertisements found for pageType:', pageType)
     return null
+  }
 
   const currentAd = ads[currentAdIndex]
   if (!currentAd) {
