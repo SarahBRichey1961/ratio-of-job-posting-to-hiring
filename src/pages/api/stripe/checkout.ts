@@ -87,7 +87,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
       payment_method_types: ['card'],
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/monetization/success?userType=${userType}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/monetization/pricing`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing`,
     }
 
     if (planType === 'onetime') {

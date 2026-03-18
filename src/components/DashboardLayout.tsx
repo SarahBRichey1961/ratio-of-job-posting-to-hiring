@@ -184,7 +184,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-700 flex-shrink-0 space-y-3">
-          <Link href="/auth/signup">
+          <Link href="/pricing">
             <div className="p-3 rounded-lg transition-colors cursor-pointer text-gray-300 hover:bg-gray-700 hover:text-white text-center font-semibold">
               + Sign Up for Advertising
             </div>
