@@ -183,12 +183,32 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-700 flex-shrink-0 space-y-2">
+        <div className="p-4 border-t border-gray-700 flex-shrink-0 space-y-3">
           <Link href="/auth/signup">
             <div className="p-3 rounded-lg transition-colors cursor-pointer text-gray-300 hover:bg-gray-700 hover:text-white text-center font-semibold">
               + Sign Up for Advertising
             </div>
           </Link>
+
+          {/* Legal Links */}
+          <div className="space-y-1 pt-2 border-t border-gray-700">
+            <Link href="/dashboard/terms-and-conditions">
+              <div className="p-2 rounded transition-colors cursor-pointer text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-700">
+                Terms & Conditions
+              </div>
+            </Link>
+            <Link href="/dashboard/privacy-policy">
+              <div className="p-2 rounded transition-colors cursor-pointer text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-700">
+                Privacy Policy
+              </div>
+            </Link>
+            <Link href="/dashboard/refund-policy">
+              <div className="p-2 rounded transition-colors cursor-pointer text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-700">
+                Refund Policy
+              </div>
+            </Link>
+          </div>
+
           <div className="text-xs text-gray-400 p-3">
             <p className="font-semibold">Job Board Analytics</p>
             <p className="text-gray-500 mt-1">v1.0.0</p>
