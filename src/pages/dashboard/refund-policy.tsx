@@ -8,195 +8,253 @@ export default function RefundPolicy() {
     <DashboardLayout>
       <PageHeader
         title="Refund Policy"
-        description="Our refund and refund cancellation policy"
+        description="Our refund policy and withdrawal rights"
       />
 
       <div className="max-w-4xl mx-auto py-8 px-6 space-y-6">
         <Section title="Overview">
           <Card>
             <div className="prose prose-invert max-w-none">
+              <p className="text-gray-300 mb-4">
+                Thank you for purchasing services from Take The Reins. This refund policy outlines when you may be 
+                entitled to withdraw a transaction and/or receive a refund, and how to request one.
+              </p>
               <p className="text-gray-300">
-                Take The Reins is committed to customer satisfaction. This refund policy outlines how we handle
-                refunds for subscription plans and one-time purchases.
+                If local consumer protection laws provide you with rights that are more favorable than this policy, 
+                those rights will apply. Nothing in this policy limits your mandatory consumer rights.
               </p>
             </div>
           </Card>
         </Section>
 
-        <Section title="Refund Eligibility">
+        <Section title="1. Global Refund Policy">
           <Card>
             <div className="prose prose-invert max-w-none">
-              <p className="text-gray-300 mb-4">
-                <strong>Monthly and Annual Subscriptions:</strong>
-              </p>
-              <ul className="list-disc list-inside text-gray-300 space-y-2 mb-4">
-                <li>
-                  Full refund available within 30 days of initial purchase if you request cancellation
-                </li>
-                <li>
-                  After 30 days, you can cancel your subscription at any time, with no additional charges for the
-                  following billing cycle
-                </li>
-                <li>
-                  Partial refunds for the current billing period are not available unless required by applicable law
-                </li>
-              </ul>
-
-              <p className="text-gray-300 mb-4">
-                <strong>One-Time Purchases:</strong>
-              </p>
               <ul className="list-disc list-inside text-gray-300 space-y-2">
                 <li>
-                  Full refund available within 30 days of purchase if the service was not used
+                  <strong>Non-Refundable Transactions:</strong> Unless required by applicable law, all transactions are 
+                  non-refundable and non-exchangeable.
                 </li>
                 <li>
-                  After 30 days, one-time purchases are generally non-refundable unless there is a service failure or
-                  technical issue
+                  <strong>Discretionary Refunds:</strong> Take The Reins may issue refunds on a discretionary basis or 
+                  if you exercise an applicable statutory withdrawal right.
+                </li>
+                <li>
+                  <strong>Fraud Prevention:</strong> Refunds will not be issued where there is evidence of fraud, refund 
+                  abuse, or other manipulative behavior.
+                </li>
+                <li>
+                  <strong>Access Termination:</strong> If you receive a refund, access to the relevant service will 
+                  cease immediately.
+                </li>
+                <li>
+                  <strong>Request Timeline:</strong> Refund requests must be made within the applicable statutory or 
+                  discretionary period.
                 </li>
               </ul>
             </div>
           </Card>
         </Section>
 
-        <Section title="Subscription Cancellation">
+        <Section title="2. Country-Specific Withdrawal Rights">
           <Card>
             <div className="prose prose-invert max-w-none">
               <p className="text-gray-300 mb-4">
-                You can cancel your subscription at any time through your account settings. Upon cancellation:
+                <strong>European Union / EEA / Switzerland / United Kingdom:</strong>
               </p>
               <ul className="list-disc list-inside text-gray-300 space-y-2 mb-4">
-                <li>Your access continues through the end of your current billing period</li>
-                <li>You will not be charged for the next billing cycle</li>
-                <li>You can reactivate your subscription at any time</li>
+                <li>14-day statutory withdrawal right from digital content and service contracts</li>
+                <li>Applies to first payments and one-off purchases</li>
+                <li>Does not apply to subsequent subscription payments (except for annual UK subscriptions)</li>
+                <li>Does not apply to partially consumed digital content when you've consented to waive withdrawal rights</li>
               </ul>
 
               <p className="text-gray-300 mb-4">
-                <strong>Refund Request Process:</strong>
+                <strong>Turkey & Israel:</strong>
               </p>
-              <ol className="list-decimal list-inside text-gray-300 space-y-2">
-                <li>
-                  Log into your account and navigate to your subscription settings, or
-                </li>
-                <li>
-                  Contact our support team at support@takethereins.com with your request
-                </li>
-                <li>
-                  Provide your account email and reason for the refund request
-                </li>
-                <li>
-                  We will review your request and respond within 5-10 business days
-                </li>
+              <ul className="list-disc list-inside text-gray-300 space-y-2 mb-4">
+                <li>14-day statutory withdrawal right from digital content and service contracts</li>
+              </ul>
+
+              <p className="text-gray-300 mb-4">
+                <strong>South Korea, Brazil, China & Canada:</strong>
+              </p>
+              <ul className="list-disc list-inside text-gray-300 space-y-2 mb-4">
+                <li>7-day unconditional right to cancel digital services and receive a full refund</li>
+              </ul>
+
+              <p className="text-gray-300">
+                <strong>Singapore:</strong>
+              </p>
+              <ul className="list-disc list-inside text-gray-300 space-y-2">
+                <li>5-day unconditional right to cancel digital services and receive a full refund</li>
+              </ul>
+            </div>
+          </Card>
+        </Section>
+
+        <Section title="3. How to Request a Refund or Withdrawal">
+          <Card>
+            <div className="prose prose-invert max-w-none">
+              <p className="text-gray-300 mb-4 font-semibold">
+                To withdraw, cancel, and/or request a refund, contact support:
+              </p>
+              <ul className="list-disc list-inside text-gray-300 space-y-2 mb-4">
+                <li>Email: support@takethereins.com</li>
+                <li>Reference your transaction or receipt details</li>
+                <li>Clearly state the reason for your refund request</li>
+              </ul>
+
+              <p className="text-gray-300 mb-4">
+                <strong>Processing:</strong>
+              </p>
+              <ul className="list-disc list-inside text-gray-300 space-y-2">
+                <li>Refunds will be processed using the same payment method where possible</li>
+                <li>Processing occurs within 14 days of approval</li>
+                <li>Your transaction records will be reviewed to verify eligibility</li>
+              </ul>
+            </div>
+          </Card>
+        </Section>
+
+        <Section title="4. Subscription Cancellation">
+          <Card>
+            <div className="prose prose-invert max-w-none">
+              <p className="text-gray-300 mb-4">
+                You may cancel your subscription at any time to prevent future billing:
+              </p>
+              <ul className="list-disc list-inside text-gray-300 space-y-2 mb-4">
+                <li>Cancellation takes effect at the end of your current billing period</li>
+                <li>No further payments will be taken after cancellation</li>
+                <li>This does not affect your eligibility for withdrawal rights during statutory periods</li>
+              </ul>
+
+              <p className="text-gray-300">
+                To cancel, contact support@takethereins.com at any time.
+              </p>
+            </div>
+          </Card>
+        </Section>
+
+        <Section title="5. Technical or Product Defects">
+          <Card>
+            <div className="prose prose-invert max-w-none">
+              <p className="text-gray-300 mb-4">
+                If you experience persistent technical issues or material defects that prevent access to services as 
+                described:
+              </p>
+              <ol className="list-decimal list-inside text-gray-300 space-y-2 mb-4">
+                <li>Contact our support team at support@takethereins.com</li>
+                <li>Provide detailed information about the issue</li>
+                <li>Allow us to attempt to resolve the issue first</li>
+                <li>If unresolved, you may be eligible for a refund</li>
               </ol>
+
+              <p className="text-gray-300">
+                Where there is evidence of a material technical defect, refunds will be issued in accordance with 
+                applicable consumer protection laws.
+              </p>
             </div>
           </Card>
         </Section>
 
-        <Section title="Non-Refundable Items">
+        <Section title="6. Discretionary Refunds">
           <Card>
             <div className="prose prose-invert max-w-none">
+              <p className="text-gray-300 mb-4">
+                Take The Reins may, at its sole discretion, issue a refund if requested within 14 days of your 
+                transaction date. Such requests are reviewed on a case-by-case basis.
+              </p>
+              <p className="text-gray-300 mb-4">
+                We may consider factors including:
+              </p>
+              <ul className="list-disc list-inside text-gray-300 space-y-2 mb-4">
+                <li>The nature of the service</li>
+                <li>The reason for your request</li>
+                <li>Usage or consumption of the service</li>
+                <li>Any applicable contractual terms</li>
+              </ul>
+
               <p className="text-gray-300">
-                The following are non-refundable unless required by law:
+                We may approve a refund in full, approve a partial refund, or decline the request. Any discretionary 
+                refund is voluntary and does not create an obligation to provide refunds in the future.
+              </p>
+            </div>
+          </Card>
+        </Section>
+
+        <Section title="7. Add-Ons and One-Time Transactions">
+          <Card>
+            <div className="prose prose-invert max-w-none">
+              <ul className="list-disc list-inside text-gray-300 space-y-2">
+                <li>Refund eligibility for add-ons and one-time transactions follows the same criteria as primary transactions</li>
+                <li>Add-ons expire when the main subscription ends unless otherwise stated</li>
+                <li>Items delivered and fully accessible immediately may be non-refundable once delivered (except where required by law)</li>
+              </ul>
+            </div>
+          </Card>
+        </Section>
+
+        <Section title="8. Chargebacks and Payment Disputes">
+          <Card>
+            <div className="prose prose-invert max-w-none">
+              <p className="text-gray-300 mb-4">
+                We encourage you to contact us before raising a chargeback or payment dispute:
+              </p>
+              <ul className="list-disc list-inside text-gray-300 space-y-2 mb-4">
+                <li>Contact support@takethereins.com first</li>
+                <li>Allow us to resolve the matter</li>
+                <li>This helps avoid service suspension and faster resolution</li>
+              </ul>
+
+              <p className="text-gray-300 mb-4">
+                If you initiate a chargeback or payment dispute, your access to services may be temporarily suspended 
+                while we review the matter. This does not affect your lawful rights to dispute a charge under applicable law.
+              </p>
+            </div>
+          </Card>
+        </Section>
+
+        <Section title="9. Consumer Rights Protection">
+          <Card>
+            <div className="prose prose-invert max-w-none">
+              <p className="text-gray-300 mb-4">
+                This policy does not affect your consumer rights in relation to services that are:
               </p>
               <ul className="list-disc list-inside text-gray-300 space-y-2">
-                <li>Services that have been fully accessed or consumed</li>
-                <li>Purchases made more than 30 days ago (unless specified otherwise)</li>
-                <li>Charges for services canceled due to user violation of terms of service</li>
-                <li>Any promotional or discounted purchases (unless otherwise stated in the promotion)</li>
+                <li>Not as described</li>
+                <li>Faulty or defective</li>
+                <li>Not fit for the purpose described</li>
               </ul>
             </div>
           </Card>
         </Section>
 
-        <Section title="Refund Exceptions">
+        <Section title="10. Policy Updates">
           <Card>
             <div className="prose prose-invert max-w-none">
               <p className="text-gray-300 mb-4">
-                We may refuse or delay a refund if:
+                Take The Reins may update this policy at any time. The policy in effect at the time of your transaction 
+                governs that transaction.
               </p>
-              <ul className="list-disc list-inside text-gray-300 space-y-2 mb-4">
-                <li>The request is made on behalf of another person without authorization</li>
-                <li>Repeated refund requests are made in a pattern we deem abusive</li>
-                <li>The user's account was used in violation of our Terms and Conditions</li>
-                <li>The purchase was made using fraudulent payment methods</li>
-              </ul>
-
               <p className="text-gray-300">
-                In such cases, we will contact you to discuss your refund request.
+                We recommend saving or printing a copy of this policy for your records.
               </p>
             </div>
           </Card>
         </Section>
 
-        <Section title="Payment Method Refunds">
-          <Card>
-            <div className="prose prose-invert max-w-none">
-              <p className="text-gray-300">
-                Refunds will be credited back to the original payment method used for the purchase. Depending on your
-                financial institution, it may take 5-10 business days for the refund to appear in your account. Refund
-                processing times are dependent on your payment provider and are outside our control.
-              </p>
-            </div>
-          </Card>
-        </Section>
-
-        <Section title="Service Issues and Credits">
+        <Section title="Contact & Support">
           <Card>
             <div className="prose prose-invert max-w-none">
               <p className="text-gray-300 mb-4">
-                If you experience technical issues or service failures, we will:
+                For questions about this refund policy or to request a refund:
               </p>
-              <ul className="list-disc list-inside text-gray-300 space-y-2 mb-4">
-                <li>Work with you to resolve the issue as quickly as possible</li>
-                <li>
-                  Provide service credits for downtime if the issue was on our end
-                </li>
-                <li>
-                  Offer a full or partial refund if the issue cannot be resolved
-                </li>
-              </ul>
-
-              <p className="text-gray-300">
-                Please report any service issues to support@takethereins.com immediately.
-              </p>
-            </div>
-          </Card>
-        </Section>
-
-        <Section title="International Refunds">
-          <Card>
-            <div className="prose prose-invert max-w-none">
-              <p className="text-gray-300">
-                Customers in the European Union and other jurisdictions with consumer protection laws may be entitled
-                to additional rights beyond this policy. We comply with all applicable local and international
-                consumer protection regulations.
-              </p>
-            </div>
-          </Card>
-        </Section>
-
-        <Section title="Contact Us">
-          <Card>
-            <div className="prose prose-invert max-w-none">
-              <p className="text-gray-300 mb-4">
-                If you have questions about our refund policy or would like to request a refund, please contact:
-              </p>
-              <p className="text-gray-300">
+              <p className="text-gray-300 font-semibold">
                 Email: support@takethereins.com
               </p>
-              <p className="text-gray-300 mt-4">
-                We will respond to all refund requests within 5 business days.
-              </p>
-            </div>
-          </Card>
-        </Section>
-
-        <Section title="Policy Changes">
-          <Card>
-            <div className="prose prose-invert max-w-none">
-              <p className="text-gray-300">
-                Take The Reins reserves the right to modify this refund policy at any time. Changes will be effective
-                immediately upon posting to our website. Continued use of our service after changes constitutes
-                acceptance of the updated policy.
+              <p className="text-gray-300 mt-4 text-sm">
+                Last Updated: March 18, 2026
               </p>
             </div>
           </Card>
