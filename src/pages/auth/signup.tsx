@@ -78,7 +78,7 @@ const SignupPage = () => {
 
       // Redirect to pricing if monetization option selected, otherwise go to redirect param or hub
       if (isSponsor || isAdvertiser) {
-        router.push('/monetization/pricing')
+        router.push('/pricing')
       } else {
         const redirectUrl = (router.query.redirect as string) || '/hub'
         router.push(redirectUrl)
