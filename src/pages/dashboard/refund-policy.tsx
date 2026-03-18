@@ -16,7 +16,7 @@ export default function RefundPolicy() {
           <Card>
             <div className="prose prose-invert max-w-none">
               <p className="text-gray-300">
-                Job Board Score is committed to customer satisfaction. This refund policy outlines how we handle
+                Take The Reins is committed to customer satisfaction. This refund policy outlines how we handle
                 refunds for subscription plans and one-time purchases.
               </p>
             </div>
@@ -78,7 +78,7 @@ export default function RefundPolicy() {
                   Log into your account and navigate to your subscription settings, or
                 </li>
                 <li>
-                  Contact our support team at support@joboardscore.com with your request
+                  Contact our support team at support@takethereins.com with your request
                 </li>
                 <li>
                   Provide your account email and reason for the refund request
@@ -156,7 +156,7 @@ export default function RefundPolicy() {
               </ul>
 
               <p className="text-gray-300">
-                Please report any service issues to support@joboardscore.com immediately.
+                Please report any service issues to support@takethereins.com immediately.
               </p>
             </div>
           </Card>
@@ -181,7 +181,7 @@ export default function RefundPolicy() {
                 If you have questions about our refund policy or would like to request a refund, please contact:
               </p>
               <p className="text-gray-300">
-                Email: support@joboardscore.com
+                Email: support@takethereins.com
               </p>
               <p className="text-gray-300 mt-4">
                 We will respond to all refund requests within 5 business days.
@@ -194,7 +194,7 @@ export default function RefundPolicy() {
           <Card>
             <div className="prose prose-invert max-w-none">
               <p className="text-gray-300">
-                Job Board Score reserves the right to modify this refund policy at any time. Changes will be effective
+                Take The Reins reserves the right to modify this refund policy at any time. Changes will be effective
                 immediately upon posting to our website. Continued use of our service after changes constitutes
                 acceptance of the updated policy.
               </p>

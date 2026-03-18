@@ -16,7 +16,7 @@ export default function PrivacyPolicy() {
           <Card>
             <div className="prose prose-invert max-w-none">
               <p className="text-gray-300">
-                Job Board Score ("we," "us," "our," or "Company") is committed to protecting your privacy. This Privacy
+                Take The Reins ("we," "us," "our," or "Company") is committed to protecting your privacy. This Privacy
                 Policy explains how we collect, use, disclose, and safeguard your information when you visit our
                 website and service.
               </p>
@@ -154,7 +154,7 @@ export default function PrivacyPolicy() {
               </ul>
 
               <p className="text-gray-300">
-                To exercise these rights, please contact us at support@joboardscore.com with your request.
+                To exercise these rights, please contact us at support@takethereins.com with your request.
               </p>
             </div>
           </Card>
@@ -203,7 +203,7 @@ export default function PrivacyPolicy() {
                 If you have questions about this Privacy Policy or our privacy practices, please contact us:
               </p>
               <p className="text-gray-300">
-                Email: support@joboardscore.com
+                Email: support@takethereins.com
               </p>
             </div>
           </Card>

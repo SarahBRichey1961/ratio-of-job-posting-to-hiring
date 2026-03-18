@@ -16,7 +16,7 @@ export default function TermsAndConditions() {
           <Card>
             <div className="prose prose-invert max-w-none">
               <p className="text-gray-300 mb-4">
-                By accessing and using the Job Board Score website and service, you accept and agree to be bound by
+                By accessing and using the Take The Reins website and service, you accept and agree to be bound by
                 the terms and provision of this agreement. If you do not agree to abide by the above, please do not
                 use this service.
               </p>
@@ -29,14 +29,14 @@ export default function TermsAndConditions() {
             <div className="prose prose-invert max-w-none">
               <p className="text-gray-300 mb-4">
                 Permission is granted to temporarily download one copy of the materials (information or software) on
-                Job Board Score for personal, non-commercial transitory viewing only. This is the grant of a license,
+                Take The Reins for personal, non-commercial transitory viewing only. This is the grant of a license,
                 not a transfer of title, and under this license you may not:
               </p>
               <ul className="list-disc list-inside text-gray-300 space-y-2 mb-4">
                 <li>Modify or copy the materials</li>
                 <li>Use the materials for any commercial purpose or for any public display</li>
                 <li>
-                  Attempt to decompile or reverse engineer any software contained on Job Board Score
+                  Attempt to decompile or reverse engineer any software contained on Take The Reins
                 </li>
                 <li>Remove any copyright or other proprietary notations from the materials</li>
                 <li>
@@ -45,7 +45,7 @@ export default function TermsAndConditions() {
               </ul>
               <p className="text-gray-300">
                 This license shall automatically terminate if you violate any of these restrictions and may be
-                terminated by Job Board Score at any time. Upon terminating your viewing of these materials or upon
+                terminated by Take The Reins at any time. Upon terminating your viewing of these materials or upon
                 the termination of this license, you must destroy any downloaded materials in your possession whether
                 in electronic or printed format.
               </p>
@@ -57,13 +57,13 @@ export default function TermsAndConditions() {
           <Card>
             <div className="prose prose-invert max-w-none">
               <p className="text-gray-300 mb-4">
-                The materials on Job Board Score are provided "as is". Job Board Score makes no warranties, expressed
+                The materials on Take The Reins are provided "as is". Take The Reins makes no warranties, expressed
                 or implied, and hereby disclaims and negates all other warranties including, without limitation, implied
                 warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of
                 intellectual property or other violation of rights.
               </p>
               <p className="text-gray-300">
-                Further, Job Board Score does not warrant or make any representations concerning the accuracy,
+                Further, Take The Reins does not warrant or make any representations concerning the accuracy,
                 likely results, or reliability of the use of the materials on its website or otherwise relating to
                 such materials or on any sites linked to this site.
               </p>
@@ -75,9 +75,9 @@ export default function TermsAndConditions() {
           <Card>
             <div className="prose prose-invert max-w-none">
               <p className="text-gray-300">
-                In no event shall Job Board Score or its suppliers be liable for any damages (including, without
+                In no event shall Take The Reins or its suppliers be liable for any damages (including, without
                 limitation, damages for loss of data or profit, or due to business interruption) arising out of the
-                use or inability to use the materials on Job Board Score, even if Job Board Score or an authorized
+                use or inability to use the materials on Take The Reins, even if Take The Reins or an authorized
                 representative has been notified orally or in writing of the possibility of such damage.
               </p>
             </div>
@@ -88,10 +88,10 @@ export default function TermsAndConditions() {
           <Card>
             <div className="prose prose-invert max-w-none">
               <p className="text-gray-300">
-                The materials appearing on Job Board Score could include technical, typographical, or photographic
-                errors. Job Board Score does not warrant that any of the materials on its website are accurate,
-                complete, or current. Job Board Score may make changes to the materials contained on its website at
-                any time without notice. However, Job Board Score does not make any commitment to update the materials.
+                The materials appearing on Take The Reins could include technical, typographical, or photographic
+                errors. Take The Reins does not warrant that any of the materials on its website are accurate,
+                complete, or current. Take The Reins may make changes to the materials contained on its website at
+                any time without notice. However, Take The Reins does not make any commitment to update the materials.
               </p>
             </div>
           </Card>
@@ -101,9 +101,9 @@ export default function TermsAndConditions() {
           <Card>
             <div className="prose prose-invert max-w-none">
               <p className="text-gray-300">
-                Job Board Score has not reviewed all of the sites linked to its website and is not responsible for
-                the contents of any such linked site. The inclusion of any link does not imply endorsement by Job Board
-                Score of the site. Use of any such linked website is at the user's own risk.
+                Take The Reins has not reviewed all of the sites linked to its website and is not responsible for
+                the contents of any such linked site. The inclusion of any link does not imply endorsement by Take The
+                Reins of the site. Use of any such linked website is at the user's own risk.
               </p>
             </div>
           </Card>
@@ -113,7 +113,7 @@ export default function TermsAndConditions() {
           <Card>
             <div className="prose prose-invert max-w-none">
               <p className="text-gray-300">
-                Job Board Score may revise these terms of service for its website at any time without notice. By using
+                Take The Reins may revise these terms of service for its website at any time without notice. By using
                 this website, you are agreeing to be bound by the then current version of these terms of service.
               </p>
             </div>
@@ -135,12 +135,12 @@ export default function TermsAndConditions() {
           <Card>
             <div className="prose prose-invert max-w-none">
               <p className="text-gray-300 mb-4">
-                If you create an account on Job Board Score, you are responsible for maintaining the confidentiality
+                If you create an account on Take The Reins, you are responsible for maintaining the confidentiality
                 of your account and password and for restricting access to your computer. You agree to accept
                 responsibility for all activities that occur under your account or password.
               </p>
               <p className="text-gray-300">
-                You must notify Job Board Score immediately of any unauthorized use of your account or any other
+                You must notify Take The Reins immediately of any unauthorized use of your account or any other
                 breaches of security.
               </p>
             </div>
@@ -151,12 +151,12 @@ export default function TermsAndConditions() {
           <Card>
             <div className="prose prose-invert max-w-none">
               <p className="text-gray-300 mb-4">
-                Any content you submit, post, or display on or through Job Board Score is at your own risk. You retain
-                all rights to any content you submit, post or display on or through Job Board Score and you are
+                Any content you submit, post, or display on or through Take The Reins is at your own risk. You retain
+                all rights to any content you submit, post or display on or through Take The Reins and you are
                 responsible for the consequences of its submission or publication.
               </p>
               <p className="text-gray-300">
-                By submitting content to Job Board Score, you grant us a worldwide, non-exclusive, royalty-free
+                By submitting content to Take The Reins, you grant us a worldwide, non-exclusive, royalty-free
                 license to use, copy, reproduce, process, adapt, modify, publish, transmit, display and distribute
                 such content in any media or medium.
               </p>
@@ -171,7 +171,7 @@ export default function TermsAndConditions() {
                 If you have any questions about these Terms and Conditions, please contact us at:
               </p>
               <p className="text-gray-300">
-                Email: support@joboardscore.com
+                Email: support@takethereins.com
               </p>
             </div>
           </Card>
