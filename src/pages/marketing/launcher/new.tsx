@@ -164,6 +164,62 @@ export default function NewCampaign() {
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">CSV Email Parameters</label>
+              <p className="text-gray-600 text-sm mb-3">When uploading a CSV file, you can include these columns to personalize emails:</p>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-300">
+                      <th className="text-left px-3 py-2 font-semibold text-gray-700">Parameter</th>
+                      <th className="text-left px-3 py-2 font-semibold text-gray-700">Type</th>
+                      <th className="text-left px-3 py-2 font-semibold text-gray-700">Required</th>
+                      <th className="text-left px-3 py-2 font-semibold text-gray-700">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-gray-200">
+                      <td className="px-3 py-2 font-mono text-purple-600">email</td>
+                      <td className="px-3 py-2">String</td>
+                      <td className="px-3 py-2"><span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs">Yes</span></td>
+                      <td className="px-3 py-2 text-gray-600">Must be a valid email address</td>
+                    </tr>
+                    <tr className="border-b border-gray-200">
+                      <td className="px-3 py-2 font-mono text-purple-600">name</td>
+                      <td className="px-3 py-2">String</td>
+                      <td className="px-3 py-2"><span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">Optional</span></td>
+                      <td className="px-3 py-2 text-gray-600">Full name - splits into first/last</td>
+                    </tr>
+                    <tr className="border-b border-gray-200">
+                      <td className="px-3 py-2 font-mono text-purple-600">first_name</td>
+                      <td className="px-3 py-2">String</td>
+                      <td className="px-3 py-2"><span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">Optional</span></td>
+                      <td className="px-3 py-2 text-gray-600">First name only (auto-extracted from name)</td>
+                    </tr>
+                    <tr className="border-b border-gray-200">
+                      <td className="px-3 py-2 font-mono text-purple-600">last_name</td>
+                      <td className="px-3 py-2">String</td>
+                      <td className="px-3 py-2"><span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">Optional</span></td>
+                      <td className="px-3 py-2 text-gray-600">Last name only (auto-extracted from name)</td>
+                    </tr>
+                    <tr className="border-b border-gray-200">
+                      <td className="px-3 py-2 font-mono text-purple-600">target_role</td>
+                      <td className="px-3 py-2">String</td>
+                      <td className="px-3 py-2"><span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">Optional</span></td>
+                      <td className="px-3 py-2 text-gray-600">Job role/title of recipient</td>
+                    </tr>
+                    <tr>
+                      <td className="px-3 py-2 font-mono text-purple-600">target_industry</td>
+                      <td className="px-3 py-2">String</td>
+                      <td className="px-3 py-2"><span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">Optional</span></td>
+                      <td className="px-3 py-2 text-gray-600">Industry of the recipient</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-gray-600 text-sm mb-3"><strong>Example CSV:</strong> <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">email,name,target_role</span></p>
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Email Body (HTML) *</label>
               <textarea
                 name="email_body_html"
