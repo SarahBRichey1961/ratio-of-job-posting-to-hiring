@@ -25,14 +25,14 @@ export const getSupabase = () => {
           autoRefreshToken: true,
           detectSessionInUrl: true, // Required for email confirmation links to work
           flowType: 'pkce', // Use PKCE flow to avoid lock manager issues
-          lock: () => ({
-            async acquire() {
+          lock: {
+            async acquireLock() {
               return true
             },
-            async release() {
-              return
+            async releaseLock() {
+              // no-op
             },
-          }),
+          },
         },
       })
       return browserClient
