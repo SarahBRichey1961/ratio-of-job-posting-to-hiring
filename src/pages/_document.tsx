@@ -7,6 +7,20 @@ export default class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head>
+          {/* Paddle.js for Overlay Checkout */}
+          <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                if (window.Paddle) {
+                  window.Paddle.Initialize({
+                    token: '${process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || 'test_'}'
+                  });
+                }
+              `,
+            }}
+          ></script>
+
           {/* Google Analytics 4 */}
           {gaId && (
             <>
