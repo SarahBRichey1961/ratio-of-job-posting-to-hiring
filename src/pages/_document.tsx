@@ -12,11 +12,15 @@ export default class MyDocument extends Document {
           <script
             dangerouslySetInnerHTML={{
               __html: `
-                if (window.Paddle && '${process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || ''}') {
-                  window.Paddle.Initialize({
-                    token: '${process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || ''}'
-                  });
-                }
+                (function() {
+                  var token = '${process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || ''}';
+                  if (window.Paddle && token) {
+                    if (token.startsWith('test_')) {
+                      window.Paddle.Environment.set('sandbox');
+                    }
+                    window.Paddle.Initialize({ token: token });
+                  }
+                })();
               `,
             }}
           ></script>
