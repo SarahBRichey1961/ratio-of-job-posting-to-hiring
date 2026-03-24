@@ -1,7 +1,14 @@
 import { createClient } from '@supabase/supabase-js'
+import type { AuthLockAdapter } from '@supabase/auth-js'
 
 // Browser client - single instance for client-side auth
 let browserClient: any = null
+
+// Custom lock adapter that doesn't use Navigator LockManager
+const lockAdapter: AuthLockAdapter = {
+  acquire: async (_lease, callback) => callback(),
+  release: async () => undefined,
+}
 
 export const getSupabase = () => {
   // Browser-side: use persistent session for auth state tracking
@@ -25,9 +32,7 @@ export const getSupabase = () => {
           autoRefreshToken: true,
           detectSessionInUrl: true, // Required for email confirmation links to work
           flowType: 'pkce', // Use PKCE flow to avoid lock manager issues
-          lock: {
-            acquire: async (_lease, callback) => callback(),
-          },
+          lock: () => lockAdapter,
         },
       })
       return browserClient
