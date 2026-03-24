@@ -4,13 +4,27 @@ import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/router'
 
+// Map userType + planType to Paddle price IDs from environment
+const PADDLE_PRICE_IDS = {
+  sponsor: {
+    monthly: process.env.NEXT_PUBLIC_PADDLE_SPONSOR_MONTHLY_PRICE_ID || '',
+    annual: process.env.NEXT_PUBLIC_PADDLE_SPONSOR_ANNUAL_PRICE_ID || '',
+    onetime: process.env.NEXT_PUBLIC_PADDLE_SPONSOR_ONETIME_PRICE_ID || '',
+  },
+  advertiser: {
+    monthly: process.env.NEXT_PUBLIC_PADDLE_ADVERTISER_MONTHLY_PRICE_ID || '',
+    annual: process.env.NEXT_PUBLIC_PADDLE_ADVERTISER_ANNUAL_PRICE_ID || '',
+    onetime: process.env.NEXT_PUBLIC_PADDLE_ADVERTISER_ONETIME_PRICE_ID || '',
+  },
+}
+
 export default function PricingPage() {
   const { session, isAuthenticated } = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState('')
 
-  const handleCheckout = async (userType: 'sponsor' | 'advertiser', planType: 'monthly' | 'annual' | 'onetime') => {
+  const handleCheckout = (userType: 'sponsor' | 'advertiser', planType: 'monthly' | 'annual' | 'onetime') => {
     if (!isAuthenticated) {
       router.push('/auth/signup')
       return
@@ -20,25 +34,31 @@ export default function PricingPage() {
     setError('')
 
     try {
-      const response = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({
-          userType,
-          planType,
-        }),
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to create checkout')
+      const priceId = PADDLE_PRICE_IDS[userType][planType]
+      
+      if (!priceId) {
+        throw new Error('Price not configured. Please contact support.')
       }
 
-      const { url } = await response.json()
-      window.location.href = url
+      // Open Paddle Overlay Checkout
+      if (window.Paddle) {
+        window.Paddle.Checkout.open({
+          items: [
+            {
+              priceId: priceId,
+              quantity: 1,
+            },
+          ],
+          customData: {
+            userId: session?.user?.id,
+            userType: userType,
+            planType: planType,
+          },
+        })
+        setLoading(null)
+      } else {
+        throw new Error('Paddle checkout is not available')
+      }
     } catch (err) {
       setError((err as Error).message)
       setLoading(null)
@@ -228,7 +248,7 @@ export default function PricingPage() {
 
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">What payment methods do you accept?</h3>
-              <p className="text-slate-400">We accept all major credit and debit cards through Stripe. Your payment information is secure and encrypted.</p>
+              <p className="text-slate-400">We accept all major credit and debit cards through Paddle. Your payment information is secure and encrypted.</p>
             </div>
 
             <div>
