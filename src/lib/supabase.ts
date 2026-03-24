@@ -35,7 +35,8 @@ export const getSupabase = () => {
     try {
       browserClient = createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
-          persistSession: true, // Enable session persistence for login/logout
+          persistSession: true,
+          storage: window.sessionStorage, // Use sessionStorage so login doesn't persist across new tabs/browsers
           autoRefreshToken: true,
           detectSessionInUrl: true, // Required for email confirmation links to work
           flowType: 'pkce', // Use PKCE flow to avoid lock manager issues
