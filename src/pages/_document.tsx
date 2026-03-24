@@ -12,9 +12,9 @@ export default class MyDocument extends Document {
           <script
             dangerouslySetInnerHTML={{
               __html: `
-                if (window.Paddle) {
+                if (window.Paddle && '${process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || ''}') {
                   window.Paddle.Initialize({
-                    token: '${process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || 'test_'}'
+                    token: '${process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || ''}'
                   });
                 }
               `,
