@@ -17,10 +17,21 @@ const LoginPage = () => {
   useEffect(() => {
     if (!session || !isSubmitting) return
 
-    // Check if there's a redirect parameter
-    const redirectUrl = (router.query.redirect as string) || '/hub'
-    
-    router.push(redirectUrl)
+    // Add small delay to ensure router query params are ready
+    const redirectTimeout = setTimeout(() => {
+      // Priority: explicit redirect param > referrer > default /hub
+      const redirectUrl = (router.query.redirect as string) || 
+                          (router.query.ref as string) ||
+                          (document.referrer && document.referrer.includes(window.location.hostname) 
+                            ? new URL(document.referrer).pathname 
+                            : '/hub') ||
+                          '/hub'
+      
+      console.log('🔄 Redirecting after login to:', redirectUrl)
+      router.push(redirectUrl)
+    }, 100)
+
+    return () => clearTimeout(redirectTimeout)
   }, [session, router, isSubmitting])
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -78,24 +78,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
               console.log('👤 Attempting to fetch profile for user:', session.user.id)
 
-              // Add timeout wrapper for profile fetch (prevent RLS hanging)
+              // Create abort controller for profile fetch
+              const abortController = new AbortController()
               let profileFetchCompleted = false
+
+              // Set timeout to abort profile fetch (prevent RLS hanging)
               const profileFetchTimeout = setTimeout(() => {
-                if (!profileFetchCompleted && isMounted) {
-                  console.warn('⏱️ Profile fetch timeout (2s) - using fallback profile')
-                  setProfile({
-                    id: session.user.id,
-                    email: session.user.email || '',
-                    role: 'viewer',
-                    created_at: new Date().toISOString(),
-                  })
-                  setIsLoading(false)
-                  console.log('✅ Auth isLoading set to false (fetch timeout fallback)')
+                if (!profileFetchCompleted) {
+                  abortController.abort()
+                  console.warn('⏱️ Profile fetch timeout (2s) - using fallback and continuing')
+                  if (isMounted) {
+                    setProfile({
+                      id: session.user.id,
+                      email: session.user.email || '',
+                      role: 'viewer',
+                      created_at: new Date().toISOString(),
+                    })
+                    setIsLoading(false)
+                    console.log('✅ Auth isLoading set to false (timeout fallback)')
+                  }
                 }
               }, 2000)
 
               try {
-                // Fetch user profile
+                // Fetch user profile with timeout protection
                 const { data: profileData, error: fetchError } = await dbClient
                   .from('user_profiles')
                   .select('*')
@@ -116,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (!isMounted) return
 
                 if (!profileData && fetchError && fetchError.code !== 'PGRST116') {
-                  // Table might not exist yet - use anon client
+                  // Table might not exist yet - use default profile
                   console.log('⚠️ Profile fetch error:', fetchError.code, '- setting default profile')
                   // Set default profile and continue
                   if (isMounted) {
