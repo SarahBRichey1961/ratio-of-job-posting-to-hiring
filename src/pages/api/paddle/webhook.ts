@@ -4,9 +4,7 @@ import crypto from 'crypto'
 
 export const config = {
   api: {
-    bodyParser: {
-      sizeLimit: '1mb',
-    },
+    bodyParser: false, // Must be false to get raw body for HMAC signature verification
   },
 }
 
@@ -22,21 +20,55 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: 'Server configuration error' })
   }
 
+  // Read raw body as buffer (required for correct HMAC)
+  let rawBody: string
   try {
-    // Verify webhook signature
-    const signature = req.headers['paddle-signature'] as string
-    if (!signature) {
-      console.error('Missing Paddle signature')
+    rawBody = await new Promise<string>((resolve, reject) => {
+      let data = ''
+      req.on('data', (chunk: Buffer) => { data += chunk.toString('utf8') })
+      req.on('end', () => resolve(data))
+      req.on('error', reject)
+    })
+  } catch (e) {
+    console.error('Failed to read request body:', e)
+    return res.status(400).json({ error: 'Failed to read body' })
+  }
+
+  // Parse raw body for event processing
+  let parsedBody: any
+  try {
+    parsedBody = JSON.parse(rawBody)
+  } catch (e) {
+    return res.status(400).json({ error: 'Invalid JSON body' })
+  }
+
+  try {
+    // Verify Paddle webhook signature
+    // Paddle v2 format: 'ts=1671552777;h1=<hex_hash>'
+    const signatureHeader = req.headers['paddle-signature'] as string
+    if (!signatureHeader) {
+      console.error('Missing Paddle-Signature header')
       return res.status(400).json({ error: 'Missing signature' })
     }
 
-    const body = JSON.stringify(req.body)
-    const hash = crypto
+    const parts = Object.fromEntries(
+      signatureHeader.split(';').map(part => part.split('=') as [string, string])
+    )
+    const ts = parts['ts']
+    const h1 = parts['h1']
+
+    if (!ts || !h1) {
+      console.error('Invalid Paddle-Signature format:', signatureHeader)
+      return res.status(400).json({ error: 'Invalid signature format' })
+    }
+
+    const signedPayload = `${ts}:${rawBody}`
+    const computedHash = crypto
       .createHmac('sha256', paddleWebhookSecret)
-      .update(body)
+      .update(signedPayload)
       .digest('hex')
 
-    if (hash !== signature) {
+    if (computedHash !== h1) {
       console.error('Invalid Paddle webhook signature')
       return res.status(400).json({ error: 'Invalid signature' })
     }
@@ -51,7 +83,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const supabase = createClient(supabaseUrl, supabaseAdminKey)
 
-    const event = req.body
+    const event = parsedBody
 
     try {
       switch (event.event_type) {
