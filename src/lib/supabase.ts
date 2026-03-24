@@ -1,12 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
-import type { AuthLockAdapter } from '@supabase/auth-js'
+
+// Define our own lock adapter type - AuthLockAdapter doesn't exist in @supabase/auth-js
+type LockAdapter = {
+  acquire: (lease?: any, callback?: () => void | Promise<void>) => Promise<void>
+  release: () => Promise<void>
+}
 
 // Browser client - single instance for client-side auth
 let browserClient: any = null
 
 // Custom lock adapter that doesn't use Navigator LockManager
-const lockAdapter: AuthLockAdapter = {
-  acquire: async (_lease, callback) => callback(),
+const lockAdapter: LockAdapter = {
+  acquire: async (_lease, callback) => {
+    if (callback) await callback()
+  },
   release: async () => undefined,
 }
 
