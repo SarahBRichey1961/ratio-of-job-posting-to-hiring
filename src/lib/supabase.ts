@@ -1,17 +1,20 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Define our own lock adapter type - AuthLockAdapter doesn't exist in @supabase/auth-js
+type LockAdapter = {
+  acquire: (lease?: any, callback?: () => void | Promise<void>) => Promise<void>
+  release: () => Promise<void>
+}
+
 // Browser client - single instance for client-side auth
 let browserClient: any = null
 
-// Custom lock function for Supabase auth
-// Implements the LockFunc signature: <R>(name: string, acquireTimeout: number, fn: () => Promise<R>): Promise<R>
-// This is a no-op lock that just executes the function directly (appropriate for serverless)
-const lock = async <R>(
-  _name: string,
-  _acquireTimeout: number,
-  fn: () => Promise<R>
-): Promise<R> => {
-  return fn()
+// Custom lock adapter that doesn't use Navigator LockManager
+const lockAdapter: LockAdapter = {
+  acquire: async (_lease, callback) => {
+    if (callback) await callback()
+  },
+  release: async () => undefined,
 }
 
 export const getSupabase = () => {
@@ -36,7 +39,7 @@ export const getSupabase = () => {
           autoRefreshToken: true,
           detectSessionInUrl: true, // Required for email confirmation links to work
           flowType: 'pkce', // Use PKCE flow to avoid lock manager issues
-          lock: lock,
+          lock: async () => lockAdapter,
         },
       })
       return browserClient
