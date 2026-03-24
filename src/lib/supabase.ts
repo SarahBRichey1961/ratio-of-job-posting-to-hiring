@@ -26,11 +26,12 @@ export const getSupabase = () => {
           detectSessionInUrl: true, // Required for email confirmation links to work
           flowType: 'pkce', // Use PKCE flow to avoid lock manager issues
           lock: {
-            async acquireLock() {
-              return true
-            },
-            async releaseLock() {
-              // no-op
+            async acquire() {
+              return {
+                async release() {
+                  // no-op
+                },
+              }
             },
           },
         },
