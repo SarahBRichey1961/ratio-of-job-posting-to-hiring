@@ -42,6 +42,12 @@ export default function PricingPage() {
 
       // Open Paddle Overlay Checkout
       if (window.Paddle) {
+        console.log('[Paddle] Opening checkout with:', {
+          priceId,
+          userId: session?.user?.id,
+          paddleInitialized: !!window.Paddle,
+          tokenPrefix: (process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || '').slice(0, 8) || '(empty)',
+        })
         window.Paddle.Checkout.open({
           items: [
             {
@@ -50,7 +56,7 @@ export default function PricingPage() {
             },
           ],
           customData: {
-            userId: session?.user?.id,
+            userId: session?.user?.id || null,
             userType: userType,
             planType: planType,
           },

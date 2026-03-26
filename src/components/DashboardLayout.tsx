@@ -40,6 +40,12 @@ const navItems: NavItem[] = [
     icon: '🚀',
     description: 'Learn, build & collaborate',
   },
+  {
+    label: 'Target Market Finder',
+    href: '/tools/target-market',
+    icon: '🎯',
+    description: 'AI-powered market analysis',
+  },
 ]
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
