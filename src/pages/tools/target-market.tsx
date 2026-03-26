@@ -66,6 +66,11 @@ export default function TargetMarketPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
+      const contentType = res.headers.get('content-type') || ''
+      if (!contentType.includes('application/json')) {
+        const text = await res.text()
+        throw new Error(`Server error (${res.status}). The analysis took too long — please try again.`)
+      }
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Analysis failed')
       setResult(data)
