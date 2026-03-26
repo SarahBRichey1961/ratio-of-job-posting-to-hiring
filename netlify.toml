@@ -3,9 +3,6 @@
   functions = "netlify/functions"
   publish = ".next"
 
-[functions]
-  timeout = 26
-
 [dev]
   command = "npm run dev"
   port = 3000
