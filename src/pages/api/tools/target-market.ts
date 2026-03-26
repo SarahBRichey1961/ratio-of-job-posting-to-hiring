@@ -44,7 +44,7 @@ async function fetchTopGainingStocks(): Promise<string> {
           'X-RapidAPI-Key': process.env.RAPIDAPI_KEY || '',
           'X-RapidAPI-Host': 'yahoo-finance15.p.rapidapi.com',
         },
-        timeout: 8000,
+        timeout: 5000,
       }
     )
     const quotes = response.data?.body?.quotes || []
@@ -67,7 +67,7 @@ async function fetchHousingData(): Promise<string> {
           'X-RapidAPI-Key': process.env.RAPIDAPI_KEY || '',
           'X-RapidAPI-Host': 'yahoo-finance15.p.rapidapi.com',
         },
-        timeout: 8000,
+        timeout: 5000,
       }
     )
     const quotes = response.data?.body?.quotes || []
@@ -160,7 +160,7 @@ Include 6-8 specific company recommendations. Prioritize companies that are grow
   try {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
+      max_tokens: 2500,
       messages: [
         {
           role: 'user',
