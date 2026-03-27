@@ -129,19 +129,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: 'Name, email subject, and email body are required' })
       }
 
-      const insertData = {
+      const insertData: Record<string, any> = {
         project_id: project_id || null,
         creator_id: user.id,
         name,
         description: description || '',
         email_subject,
-        reply_to_email: reply_to_email || null,
         email_body_html,
         target_audience_segment: target_audience_segment || 'custom',
         list_source: list_source || 'imported',
         utm_campaign: utm_campaign || name,
         status: 'draft',
       }
+      if (reply_to_email) insertData.reply_to_email = reply_to_email
 
       const { data, error } = await authenticatedSupabase
         .from('marketing_campaigns')
