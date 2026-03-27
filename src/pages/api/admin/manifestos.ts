@@ -2,9 +2,11 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+// Service role client for data queries and admin operations
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -20,10 +22,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const token = authHeader.slice(7)
 
-    // Verify user is admin (sarah@websepic.com)
-    const { data: userData, error: userError } = await supabase.auth.getUser(token)
+    // Validate token by creating a user-context client with the access token
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    })
+    const { data: userData, error: userError } = await supabaseUser.auth.getUser()
 
     if (userError || !userData.user) {
+      console.error('[admin/manifestos] Token validation error:', userError?.message)
       return res.status(401).json({ error: 'Invalid token' })
     }
 
@@ -37,7 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Fetch all published manifestos with user email
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('manifestos')
       .select(
         `
@@ -64,7 +70,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     for (const manifesto of data || []) {
       // Get user email from auth.users
-      const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(manifesto.user_id)
+      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(manifesto.user_id)
 
       if (!authError && authUser?.user?.email) {
         manifestosWithEmails.push({
