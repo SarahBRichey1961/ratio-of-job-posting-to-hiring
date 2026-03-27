@@ -143,10 +143,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       if (reply_to_email) insertData.reply_to_email = reply_to_email
 
-      const { data, error } = await authenticatedSupabase
+      let { data, error } = await authenticatedSupabase
         .from('marketing_campaigns')
         .insert(insertData)
         .select()
+
+      // If insert failed due to missing reply_to_email column (migration not run yet), retry without it
+      if (error && reply_to_email && error.message?.includes('reply_to_email')) {
+        console.warn('⚠️ reply_to_email column not found — retrying without it. Run ADD_REPLY_TO_EMAIL_COLUMN.sql migration.')
+        delete insertData.reply_to_email
+        const retry = await authenticatedSupabase
+          .from('marketing_campaigns')
+          .insert(insertData)
+          .select()
+        data = retry.data
+        error = retry.error
+      }
 
       if (error) {
         console.error('Database error:', error)
