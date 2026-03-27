@@ -110,7 +110,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(403).json({ error: 'Unauthorized to update this campaign' })
       }
 
-      const updateData = {
+      const updateData: Record<string, any> = {
         ...req.body,
         updated_at: new Date().toISOString(),
       }
@@ -121,11 +121,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         updateData.status = 'draft'
       }
 
-      const { data, error } = await authenticatedSupabase
+      let { data, error } = await authenticatedSupabase
         .from('marketing_campaigns')
         .update(updateData)
         .eq('id', id)
         .select()
+
+      // If update failed due to missing reply_to_email column, retry without it
+      if (error && updateData.reply_to_email !== undefined && error.message?.includes('reply_to_email')) {
+        console.warn('⚠️ reply_to_email column not found — retrying without it. Run ADD_REPLY_TO_EMAIL_COLUMN.sql migration.')
+        delete updateData.reply_to_email
+        const retry = await authenticatedSupabase
+          .from('marketing_campaigns')
+          .update(updateData)
+          .eq('id', id)
+          .select()
+        data = retry.data
+        error = retry.error
+      }
 
       if (error) {
         console.error('Database error:', error)
