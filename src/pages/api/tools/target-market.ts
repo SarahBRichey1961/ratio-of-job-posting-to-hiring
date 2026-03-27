@@ -7,8 +7,11 @@ export const config = {
 
 export interface TargetMarketRequest {
   productService: string
+  problemSolved: string
   productCategory: string
   customerType: 'b2b' | 'b2c' | 'both'
+  pricePoint: string
+  buyerJobTitle: string
   ageRange: string
   incomeLevel: string
   interests: string[]
@@ -77,8 +80,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 ## Profile
 - Offering: ${input.productService}
+- Problem it solves: ${input.problemSolved || 'Not specified'}
 - Category: ${input.productCategory || 'Not specified'}
 - Customer type: ${input.customerType.toUpperCase()}
+- Price point: ${input.pricePoint || 'Not specified'}
+- Buyer job title/role: ${input.buyerJobTitle || 'Not specified'}
 - Geography: ${input.geographicFocus || 'National (US)'}
 - Preferred industry: ${input.industryPreference || 'Open to all'}
 - Age range of end customer: ${input.ageRange || 'Not specified'}
