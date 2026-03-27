@@ -14,6 +14,14 @@ export interface TargetMarketRequest {
   additionalContext: string
 }
 
+export interface StockPick {
+  ticker: string
+  name: string
+  sector: string
+  relevance: string
+  momentumReason: string
+}
+
 export interface CompanyRecommendation {
   name: string
   ticker: string
@@ -28,6 +36,7 @@ export interface TargetMarketResult {
   summary: string
   targetPersona: string
   companies: CompanyRecommendation[]
+  stockPicks: StockPick[]
   housingMarketInsight: string
   economicContext: string
   actionableNextSteps: string[]
@@ -68,9 +77,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 Using your knowledge of current market trends, growing companies, housing market conditions, and economic context as of early 2026, provide a target market analysis.
 
 Return ONLY valid JSON (no markdown, no code blocks) matching this structure exactly:
-{"summary":"2-3 sentence overview","targetPersona":"detailed persona description","companies":[{"name":"Company name","ticker":"ticker or Private","sector":"sector","whyItFits":"2-3 sentences","marketTrend":"current trend","approachSuggestion":"specific actionable advice","growthSignal":"key growth indicator"}],"housingMarketInsight":"housing market relevance","economicContext":"broader economic context","actionableNextSteps":["step1","step2","step3","step4","step5"]}
+{"summary":"2-3 sentence overview","targetPersona":"detailed persona description","companies":[{"name":"Company name","ticker":"ticker or Private","sector":"sector","whyItFits":"2-3 sentences","marketTrend":"current trend","approachSuggestion":"specific actionable advice","growthSignal":"key growth indicator"}],"stockPicks":[{"ticker":"REAL_TICKER","name":"Full company name","sector":"sector","relevance":"1 sentence why relevant to this person's product/market","momentumReason":"1 sentence describing growth momentum as of early 2026"}],"housingMarketInsight":"housing market relevance","economicContext":"broader economic context","actionableNextSteps":["step1","step2","step3","step4","step5"]}
 
-Include 6 company recommendations. Be specific and actionable — this person needs concrete targets.`
+Include 6 company recommendations. For stockPicks include exactly 5 PUBLICLY TRADED companies (real NYSE/NASDAQ tickers) that are showing strong upward momentum in the relevant sector as of early 2026 — companies whose growth aligns with this person's product/service/industry. Use only real valid US stock tickers.`
 
   try {
     const message = await client.messages.create({
