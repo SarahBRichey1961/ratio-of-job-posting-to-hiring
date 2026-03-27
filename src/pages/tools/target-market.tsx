@@ -18,6 +18,7 @@ const INDUSTRIES = [
   'Open to all', 'Technology (SaaS/Software)', 'Healthcare', 'Finance & Banking',
   'Retail & E-commerce', 'Real Estate', 'Manufacturing', 'Education', 'Media & Entertainment',
   'Logistics & Supply Chain', 'Energy & Utilities', 'Government/Public Sector',
+  'Agriculture & Farming', 'Other (specify)',
 ]
 const CATEGORIES = [
   'Software / App', 'Physical Product', 'Professional Service', 'Consulting',
@@ -33,6 +34,7 @@ export default function TargetMarketPage() {
   const [step, setStep] = useState(0)
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState('')
+  const [customIndustry, setCustomIndustry] = useState('')
   const [result, setResult] = useState<TargetMarketResult | null>(null)
 
   const [form, setForm] = useState<TargetMarketRequest>({
@@ -61,10 +63,16 @@ export default function TargetMarketPage() {
     setAnalyzing(true)
     setError('')
     try {
+      const payload = {
+        ...form,
+        industryPreference: form.industryPreference === 'Other (specify)'
+          ? (customIndustry.trim() || 'Other')
+          : form.industryPreference,
+      }
       const res = await fetch('/api/tools/target-market', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
       const contentType = res.headers.get('content-type') || ''
       if (!contentType.includes('application/json')) {
@@ -214,6 +222,15 @@ export default function TargetMarketPage() {
                 >
                   {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
                 </select>
+                {form.industryPreference === 'Other (specify)' && (
+                  <input
+                    type="text"
+                    placeholder="e.g. Farming, Agriculture, Veterinary..."
+                    value={customIndustry}
+                    onChange={e => setCustomIndustry(e.target.value)}
+                    className="mt-2 w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-indigo-500 placeholder-slate-500"
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-slate-300 text-sm font-medium mb-2">Geographic focus</label>
@@ -350,7 +367,7 @@ export default function TargetMarketPage() {
                   <p><span className="text-slate-500">Offering:</span> {form.productService.slice(0, 80)}{form.productService.length > 80 ? '...' : ''}</p>
                   <p><span className="text-slate-500">Category:</span> {form.productCategory || 'Not set'}</p>
                   <p><span className="text-slate-500">Customer type:</span> {form.customerType.toUpperCase()}</p>
-                  <p><span className="text-slate-500">Industry target:</span> {form.industryPreference}</p>
+                  <p><span className="text-slate-500">Industry target:</span> {form.industryPreference === 'Other (specify)' ? (customIndustry.trim() || 'Other') : form.industryPreference}</p>
                   <p><span className="text-slate-500">Age range:</span> {form.ageRange}</p>
                   <p><span className="text-slate-500">Income level:</span> {form.incomeLevel}</p>
                   <p><span className="text-slate-500">Interests:</span> {form.interests.join(', ') || 'None selected'}</p>
