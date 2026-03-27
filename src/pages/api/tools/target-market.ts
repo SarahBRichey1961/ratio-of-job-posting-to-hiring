@@ -1,6 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import Anthropic from '@anthropic-ai/sdk'
 
+export const config = {
+  maxDuration: 26,
+}
+
 export interface TargetMarketRequest {
   productService: string
   productCategory: string
