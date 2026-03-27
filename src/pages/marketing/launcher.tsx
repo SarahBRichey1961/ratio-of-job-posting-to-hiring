@@ -19,6 +19,7 @@ export default function MarketingLauncher() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     console.log('🚀 MarketingLauncher useEffect: session=', !!session, 'authLoading=', authLoading)
@@ -44,7 +45,6 @@ export default function MarketingLauncher() {
   }, [session, authLoading])
 
   const fetchCampaigns = async (token: string) => {
-    try {
       console.log('📨 Fetching campaigns with token...')
       console.log('🔐 Token length:', token.length)
       console.log('📝 API endpoint: /api/marketing/campaigns')
@@ -86,6 +86,25 @@ export default function MarketingLauncher() {
       setCampaigns([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDelete = async (e: React.MouseEvent, campaignId: string, campaignName: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!session?.access_token) return
+    if (!confirm(`Delete "${campaignName}"? This cannot be undone.`)) return
+
+    setDeletingId(campaignId)
+    try {
+      await axios.delete(`/api/marketing/campaigns/${campaignId}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      setCampaigns(prev => prev.filter(c => c.id !== campaignId))
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to delete campaign')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -163,8 +182,8 @@ export default function MarketingLauncher() {
         ) : (
           <div className="grid gap-6">
             {campaigns.map((campaign) => (
-              <Link key={campaign.id} href={`/marketing/launcher/${campaign.id}`}>
-                <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition cursor-pointer p-6">
+              <div key={campaign.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition p-6">
+                <Link href={`/marketing/launcher/${campaign.id}`} className="block">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h3 className="text-xl font-semibold text-gray-900">{campaign.name}</h3>
@@ -178,8 +197,17 @@ export default function MarketingLauncher() {
                       {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
                     </span>
                   </div>
+                </Link>
+                <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+                  <button
+                    onClick={(e) => handleDelete(e, campaign.id, campaign.name)}
+                    disabled={deletingId === campaign.id}
+                    className="text-sm text-red-500 hover:text-red-700 font-medium disabled:opacity-50 transition"
+                  >
+                    {deletingId === campaign.id ? 'Deleting...' : '🗑 Delete'}
+                  </button>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}
