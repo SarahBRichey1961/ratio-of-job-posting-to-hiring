@@ -9,7 +9,7 @@ const INTERESTS = [
   'Technology', 'Health & Wellness', 'Finance', 'Real Estate', 'E-commerce',
   'Education', 'Travel', 'Food & Beverage', 'Fashion & Apparel', 'Sports & Fitness',
   'Home Improvement', 'Entertainment', 'Automotive', 'Sustainability/Green',
-  'Pet Products', 'Beauty & Personal Care', 'Gaming', 'Parenting & Family',
+  'Pet Products', 'Beauty & Personal Care', 'Gaming', 'Parenting & Family', 'Other',
 ]
 
 const AGE_RANGES = ['18-24', '25-34', '35-44', '45-54', '55-64', '65+', 'All ages']
@@ -36,6 +36,7 @@ export default function TargetMarketPage() {
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState('')
   const [customIndustry, setCustomIndustry] = useState('')
+  const [customInterest, setCustomInterest] = useState('')
   const [result, setResult] = useState<TargetMarketResult | null>(null)
   const [stockQuotes, setStockQuotes] = useState<StockQuoteResult[]>([])
   const [stockLoading, setStockLoading] = useState(false)
@@ -71,6 +72,9 @@ export default function TargetMarketPage() {
         industryPreference: form.industryPreference === 'Other (specify)'
           ? (customIndustry.trim() || 'Other')
           : form.industryPreference,
+        interests: form.interests.map(i =>
+          i === 'Other' ? (customInterest.trim() || 'Other') : i
+        ),
       }
       const res = await fetch('/api/tools/target-market', {
         method: 'POST',
@@ -356,6 +360,15 @@ export default function TargetMarketPage() {
                     </button>
                   ))}
                 </div>
+                {form.interests.includes('Other') && (
+                  <input
+                    type="text"
+                    placeholder="e.g. Beekeeping, Model trains, Home brewing…"
+                    value={customInterest}
+                    onChange={e => setCustomInterest(e.target.value)}
+                    className="mt-2 w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500 placeholder-slate-500 text-sm"
+                  />
+                )}
               </div>
             </div>
             <NavButtons onBack={() => setStep(1)} onNext={() => setStep(3)} />
@@ -400,7 +413,7 @@ export default function TargetMarketPage() {
                   <p><span className="text-slate-500">Industry target:</span> {form.industryPreference === 'Other (specify)' ? (customIndustry.trim() || 'Other') : form.industryPreference}</p>
                   <p><span className="text-slate-500">Age range:</span> {form.ageRange}</p>
                   <p><span className="text-slate-500">Income level:</span> {form.incomeLevel}</p>
-                  <p><span className="text-slate-500">Interests:</span> {form.interests.join(', ') || 'None selected'}</p>
+                  <p><span className="text-slate-500">Interests:</span> {form.interests.map(i => i === 'Other' ? (customInterest.trim() || 'Other') : i).join(', ') || 'None selected'}</p>
                   <p><span className="text-slate-500">Geography:</span> {form.geographicFocus}</p>
                 </div>
               </div>
