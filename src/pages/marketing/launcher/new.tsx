@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import axios from 'axios'
@@ -9,6 +9,9 @@ export default function NewCampaign() {
   const { session, isLoading: authLoading } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [csvRecipients, setCsvRecipients] = useState<{ email: string; name: string }[]>([])
+  const [csvFileName, setCsvFileName] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -36,6 +39,37 @@ export default function NewCampaign() {
       ...prev,
       [name]: value,
     }))
+  }
+
+  const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.name.endsWith('.csv')) {
+      setError('Please select a .csv file')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (evt) => {
+      const text = evt.target?.result as string
+      const lines = text.split('\n').filter(line => line.trim())
+      const parsed = lines
+        .slice(1)
+        .map(line => {
+          const cols = line.split(',').map(s => s.trim().replace(/^"|"$/g, ''))
+          const email = cols[0]?.toLowerCase()
+          const name = cols[1] || email?.split('@')[0] || ''
+          return { email, name }
+        })
+        .filter(r => r.email && r.email.includes('@'))
+      if (parsed.length === 0) {
+        setError('No valid email addresses found in CSV')
+        return
+      }
+      setCsvRecipients(parsed)
+      setCsvFileName(file.name)
+      setError('')
+    }
+    reader.readAsText(file)
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -72,6 +106,22 @@ export default function NewCampaign() {
       })
 
       console.log('✅ Campaign created:', response.data.id)
+
+      // Upload recipients if a CSV was parsed
+      if (csvRecipients.length > 0) {
+        try {
+          await axios.post(
+            `/api/marketing/campaigns/${response.data.id}/recipients`,
+            { recipients: csvRecipients },
+            { headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' } }
+          )
+          console.log('✅ Recipients uploaded:', csvRecipients.length)
+        } catch (uploadErr) {
+          console.warn('⚠️ Campaign created but recipient upload failed:', uploadErr)
+          // Still redirect — user can re-upload on the detail page
+        }
+      }
+
       router.push(`/marketing/launcher/${response.data.id}`)
     } catch (err) {
       console.error('❌ Error creating campaign:', err)
@@ -299,6 +349,47 @@ export default function NewCampaign() {
             </div>
           </fieldset>
 
+          {/* CSV Upload */}
+          <fieldset className="space-y-4">
+            <legend className="text-xl font-bold text-gray-900">Upload Recipients (CSV)</legend>
+            <p className="text-gray-600 text-sm">Upload your recipient list now, or you can do it after creating the campaign.</p>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-5 space-y-4">
+              <div className="bg-white p-3 rounded border border-blue-100">
+                <p className="text-sm font-semibold text-gray-700 mb-1">CSV Format:</p>
+                <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">{`email,name\njohn@example.com,John Doe\njane@example.com,Jane Smith`}</pre>
+                <p className="text-xs text-gray-500 mt-1">Header row required. Name and other columns are optional.</p>
+              </div>
+
+              <div>
+                <label className="block">
+                  <span className="sr-only">Choose CSV file</span>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleCsvUpload}
+                    disabled={loading}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+                  />
+                </label>
+              </div>
+
+              {csvFileName && csvRecipients.length > 0 && (
+                <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+                  <span className="text-green-800 text-sm font-medium">✓ {csvRecipients.length} recipients ready — {csvFileName}</span>
+                  <button
+                    type="button"
+                    onClick={() => { setCsvRecipients([]); setCsvFileName(''); if (fileInputRef.current) fileInputRef.current.value = '' }}
+                    className="text-green-600 hover:text-green-900 text-xs underline ml-4"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+            </div>
+          </fieldset>
+
           {/* Submit */}
           <div className="flex gap-4 pt-6">
             <button
@@ -306,7 +397,7 @@ export default function NewCampaign() {
               disabled={loading || authLoading}
               className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-semibold transition"
             >
-              {loading ? 'Creating...' : authLoading ? 'Loading...' : '✓ Create Campaign'}
+              {loading ? (csvRecipients.length > 0 ? 'Creating & uploading recipients...' : 'Creating...') : authLoading ? 'Loading...' : '✓ Create Campaign'}
             </button>
             <button
               type="button"
