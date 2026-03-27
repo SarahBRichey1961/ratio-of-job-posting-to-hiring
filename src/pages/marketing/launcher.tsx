@@ -45,6 +45,7 @@ export default function MarketingLauncher() {
   }, [session, authLoading])
 
   const fetchCampaigns = async (token: string) => {
+    try {
       console.log('📨 Fetching campaigns with token...')
       console.log('🔐 Token length:', token.length)
       console.log('📝 API endpoint: /api/marketing/campaigns')
