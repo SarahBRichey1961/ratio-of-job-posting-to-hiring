@@ -62,25 +62,26 @@ export default function MarketingLauncher() {
       
       setCampaigns(campaignsList)
       setError('')
-    } catch (err: any) {
+    } catch (err) {
+      const e = err as any
       console.error('❌ Error fetching campaigns:')
-      console.error('   - Error type:', err?.code)
-      console.error('   - Status:', err?.response?.status)
-      console.error('   - Status text:', err?.response?.statusText)
-      console.error('   - Response data:', err?.response?.data)
-      console.error('   - Full error:', err)
+      console.error('   - Error type:', e?.code)
+      console.error('   - Status:', e?.response?.status)
+      console.error('   - Status text:', e?.response?.statusText)
+      console.error('   - Response data:', e?.response?.data)
+      console.error('   - Full error:', e)
       
       // Provide meaningful error messages
-      if (err?.response?.status === 401) {
+      if (e?.response?.status === 401) {
         setError('Authentication failed - please log in again')
-      } else if (err?.response?.status === 403) {
+      } else if (e?.response?.status === 403) {
         setError('You do not have permission to access campaigns')
-      } else if (err?.response?.status === 404) {
+      } else if (e?.response?.status === 404) {
         setError('Campaigns endpoint not found')
-      } else if (err?.code === 'ECONNABORTED') {
+      } else if (e?.code === 'ECONNABORTED') {
         setError('Request timed out - please try again')
       } else {
-        setError(`Failed to load campaigns: ${err?.message || 'Unknown error'}`)
+        setError(`Failed to load campaigns: ${e?.message || 'Unknown error'}`)
       }
       
       setCampaigns([])
@@ -101,8 +102,8 @@ export default function MarketingLauncher() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
       setCampaigns(prev => prev.filter(c => c.id !== campaignId))
-    } catch (err: any) {
-      setError(err?.response?.data?.error || 'Failed to delete campaign')
+    } catch (err) {
+      setError((err as any)?.response?.data?.error || 'Failed to delete campaign')
     } finally {
       setDeletingId(null)
     }
