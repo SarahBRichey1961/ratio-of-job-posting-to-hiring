@@ -11,6 +11,7 @@ interface Campaign {
   name: string
   description?: string
   email_subject: string
+  reply_to_email?: string
   email_body_html: string
   status: 'draft' | 'scheduled' | 'sent' | 'completed' | 'paused'
   target_audience_segment: string
@@ -52,6 +53,7 @@ export default function CampaignDetail() {
     name: '',
     description: '',
     email_subject: '',
+    reply_to_email: '',
     email_body_html: '',
     target_audience_segment: '',
     list_source: '',
@@ -94,6 +96,7 @@ export default function CampaignDetail() {
           name: response.data.name,
           description: response.data.description || '',
           email_subject: response.data.email_subject,
+          reply_to_email: response.data.reply_to_email || '',
           email_body_html: response.data.email_body_html,
           target_audience_segment: response.data.target_audience_segment,
           list_source: response.data.list_source,
@@ -459,6 +462,19 @@ export default function CampaignDetail() {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Reply-To Email Address</label>
+                <input
+                  type="email"
+                  name="reply_to_email"
+                  value={editData.reply_to_email || ''}
+                  onChange={handleInputChange}
+                  placeholder="e.g., hello@yourcompany.com"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                />
+                <p className="text-gray-500 text-xs mt-1">When recipients hit Reply, their response goes here. Defaults to Info@take-the-reins.ai if blank.</p>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email Body (HTML)</label>
                 <textarea
                   name="email_body_html"
@@ -530,6 +546,7 @@ export default function CampaignDetail() {
                       name: campaign.name,
                       description: campaign.description || '',
                       email_subject: campaign.email_subject,
+                      reply_to_email: campaign.reply_to_email || '',
                       email_body_html: campaign.email_body_html,
                       target_audience_segment: campaign.target_audience_segment,
                       list_source: campaign.list_source,
@@ -560,6 +577,13 @@ export default function CampaignDetail() {
                   <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Email Subject</p>
                   <p className="text-gray-900 mt-1">{campaign.email_subject}</p>
                 </div>
+
+                {campaign.reply_to_email && (
+                  <div>
+                    <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Reply-To Email</p>
+                    <p className="text-gray-900 mt-1">{campaign.reply_to_email}</p>
+                  </div>
+                )}
 
                 <div>
                   <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Target Audience</p>

@@ -14,6 +14,7 @@ export default function NewCampaign() {
     name: '',
     description: '',
     email_subject: '',
+    reply_to_email: '',
     email_body_html: '',
     target_audience_segment: 'custom',
     list_source: 'imported',
@@ -161,6 +162,19 @@ export default function NewCampaign() {
                 required
               />
               <p className="text-gray-500 text-sm mt-1">Recipients will see this in their inbox</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Reply-To Email Address</label>
+              <input
+                type="email"
+                name="reply_to_email"
+                value={formData.reply_to_email}
+                onChange={handleInputChange}
+                placeholder="e.g., hello@yourcompany.com"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+              <p className="text-gray-500 text-sm mt-1">When recipients hit Reply, their response goes here. Defaults to Info@take-the-reins.ai if left blank.</p>
             </div>
 
             <div>
