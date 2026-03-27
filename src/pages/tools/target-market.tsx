@@ -26,6 +26,7 @@ const CATEGORIES = [
   'Creative / Marketing', 'Health / Medical', 'Financial Service', 'Training / Education',
   'Food / Beverage', 'Other',
 ]
+const PRICE_POINTS = ['Under $50', '$50–$500', '$500–$5k', '$5k–$50k', '$50k+', 'Varies']
 
 const STEPS = ['What You Offer', 'Target Customer', 'Demographics', 'Shopping Behavior', 'Review & Analyze']
 
@@ -44,8 +45,11 @@ export default function TargetMarketPage() {
 
   const [form, setForm] = useState<TargetMarketRequest>({
     productService: '',
+    problemSolved: '',
     productCategory: '',
     customerType: 'b2c',
+    pricePoint: 'Varies',
+    buyerJobTitle: '',
     ageRange: '25-34',
     incomeLevel: '$35k–$75k',
     interests: [],
@@ -211,6 +215,18 @@ export default function TargetMarketPage() {
                 />
               </div>
               <div>
+                <label className="block text-slate-300 text-sm font-medium mb-2">
+                  What problem does it solve? *
+                </label>
+                <textarea
+                  value={form.problemSolved}
+                  onChange={e => setForm(f => ({ ...f, problemSolved: e.target.value }))}
+                  placeholder="e.g. Small businesses waste hours on manual invoicing — we automate it in seconds..."
+                  rows={3}
+                  className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-indigo-500 placeholder-slate-500"
+                />
+              </div>
+              <div>
                 <label className="block text-slate-300 text-sm font-medium mb-2">Category</label>
                 <select
                   value={form.productCategory}
@@ -248,6 +264,24 @@ export default function TargetMarketPage() {
                   ))}
                 </div>
               </div>
+              <div>
+                <label className="block text-slate-300 text-sm font-medium mb-2">Price point</label>
+                <div className="flex flex-wrap gap-2">
+                  {PRICE_POINTS.map(pp => (
+                    <button
+                      key={pp}
+                      onClick={() => setForm(f => ({ ...f, pricePoint: pp }))}
+                      className={`py-2 px-4 rounded-lg border text-sm font-medium transition ${
+                        form.pricePoint === pp
+                          ? 'bg-indigo-600 border-indigo-500 text-white'
+                          : 'bg-slate-700 border-slate-600 text-slate-300 hover:border-indigo-500/50'
+                      }`}
+                    >
+                      {pp}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
             <NavButtons
               onNext={() => setStep(1)}
@@ -279,6 +313,20 @@ export default function TargetMarketPage() {
                   />
                 )}
               </div>
+              {(form.customerType === 'b2b' || form.customerType === 'both') && (
+                <div>
+                  <label className="block text-slate-300 text-sm font-medium mb-2">
+                    Buyer's job title or role <span className="text-slate-500">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={form.buyerJobTitle}
+                    onChange={e => setForm(f => ({ ...f, buyerJobTitle: e.target.value }))}
+                    placeholder="e.g. VP of Marketing, Operations Manager, Small business owner..."
+                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-indigo-500 placeholder-slate-500"
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-slate-300 text-sm font-medium mb-2">Geographic focus</label>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -421,8 +469,11 @@ export default function TargetMarketPage() {
                 <h3 className="text-white font-semibold mb-3">📋 Your Profile Summary</h3>
                 <div className="space-y-2 text-sm text-slate-300">
                   <p><span className="text-slate-500">Offering:</span> {form.productService.slice(0, 80)}{form.productService.length > 80 ? '...' : ''}</p>
+                  {form.problemSolved && <p><span className="text-slate-500">Problem solved:</span> {form.problemSolved.slice(0, 80)}{form.problemSolved.length > 80 ? '...' : ''}</p>}
                   <p><span className="text-slate-500">Category:</span> {form.productCategory === 'Other' ? (customCategory.trim() || 'Other') : (form.productCategory || 'Not set')}</p>
                   <p><span className="text-slate-500">Customer type:</span> {form.customerType.toUpperCase()}</p>
+                  <p><span className="text-slate-500">Price point:</span> {form.pricePoint}</p>
+                  {form.buyerJobTitle && <p><span className="text-slate-500">Buyer role:</span> {form.buyerJobTitle}</p>}
                   <p><span className="text-slate-500">Industry target:</span> {form.industryPreference === 'Other (specify)' ? (customIndustry.trim() || 'Other') : form.industryPreference}</p>
                   <p><span className="text-slate-500">Age range:</span> {form.ageRange}</p>
                   <p><span className="text-slate-500">Income level:</span> {form.incomeLevel}</p>
@@ -607,7 +658,7 @@ export default function TargetMarketPage() {
             {/* Start Over */}
             <div className="text-center pt-4">
               <button
-                onClick={() => { setStep(0); setResult(null); setError(''); setStockQuotes([]); setStockLoading(false); setCustomCategory(''); setCustomInterest(''); setCustomIndustry('') }}
+                onClick={() => { setStep(0); setResult(null); setError(''); setStockQuotes([]); setStockLoading(false); setCustomCategory(''); setCustomInterest(''); setCustomIndustry(''); setForm(f => ({ ...f, problemSolved: '', pricePoint: 'Varies', buyerJobTitle: '' })) }}
                 className="bg-slate-700 hover:bg-slate-600 text-slate-300 font-medium px-6 py-3 rounded-lg transition"
               >
                 🔄 Run Another Analysis
