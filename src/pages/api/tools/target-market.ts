@@ -32,11 +32,20 @@ export interface CompanyRecommendation {
   growthSignal: string
 }
 
+export interface CompetitorInsight {
+  name: string
+  whatTheyDoWell: string
+  gapOrWeakness: string
+  yourOpportunity: string
+}
+
 export interface TargetMarketResult {
   summary: string
   targetPersona: string
   companies: CompanyRecommendation[]
   stockPicks: StockPick[]
+  competitiveLandscape: CompetitorInsight[]
+  marketGapSummary: string
   housingMarketInsight: string
   economicContext: string
   actionableNextSteps: string[]
@@ -77,9 +86,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 Using your knowledge of current market trends, growing companies, housing market conditions, and economic context as of early 2026, provide a target market analysis.
 
 Return ONLY valid JSON (no markdown, no code blocks) matching this structure exactly:
-{"summary":"2-3 sentence overview","targetPersona":"detailed persona description","companies":[{"name":"Company name","ticker":"ticker or Private","sector":"sector","whyItFits":"2-3 sentences","marketTrend":"current trend","approachSuggestion":"specific actionable advice","growthSignal":"key growth indicator"}],"stockPicks":[{"ticker":"REAL_TICKER","name":"Full company name","sector":"sector","relevance":"1 sentence why relevant to this person's product/market","momentumReason":"1 sentence describing growth momentum as of early 2026"}],"housingMarketInsight":"housing market relevance","economicContext":"broader economic context","actionableNextSteps":["step1","step2","step3","step4","step5"]}
+{"summary":"2-3 sentence overview","targetPersona":"detailed persona description","companies":[{"name":"Company name","ticker":"ticker or Private","sector":"sector","whyItFits":"2-3 sentences","marketTrend":"current trend","approachSuggestion":"specific actionable advice","growthSignal":"key growth indicator"}],"stockPicks":[{"ticker":"REAL_TICKER","name":"Full company name","sector":"sector","relevance":"1 sentence why relevant to this person's product/market","momentumReason":"1 sentence describing growth momentum as of early 2026"}],"competitiveLandscape":[{"name":"Competitor or category leader name","whatTheyDoWell":"1-2 sentences on their strengths","gapOrWeakness":"1-2 sentences on what they are missing or doing poorly","yourOpportunity":"1-2 sentences on how this person can exploit that gap"}],"marketGapSummary":"2-3 sentences summarizing the biggest unmet need in this space and why this person is positioned to fill it","housingMarketInsight":"housing market relevance","economicContext":"broader economic context","actionableNextSteps":["step1","step2","step3","step4","step5"]}
 
-Include 6 company recommendations. For stockPicks include exactly 5 PUBLICLY TRADED companies (real NYSE/NASDAQ tickers) that are showing strong upward momentum in the relevant sector as of early 2026 — companies whose growth aligns with this person's product/service/industry. Use only real valid US stock tickers.`
+Include 6 company recommendations. For stockPicks include exactly 5 PUBLICLY TRADED companies (real NYSE/NASDAQ tickers) that are showing strong upward momentum in the relevant sector as of early 2026 — companies whose growth aligns with this person's product/service/industry. Use only real valid US stock tickers. For competitiveLandscape include 3-4 key players (established companies, platforms, or categories) who are already addressing this same product/service space — be specific about what each does well, what gap or weakness exists, and how the user can exploit it.`
 
   try {
     const message = await client.messages.create({
