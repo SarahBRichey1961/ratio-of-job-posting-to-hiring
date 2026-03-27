@@ -119,6 +119,19 @@ export default function TargetMarketPage() {
       </Head>
 
       <div className="max-w-3xl mx-auto px-4 py-10">
+        {/* Back to Dashboard */}
+        <div className="mb-6">
+          <button
+            onClick={() => router.push('/hub')}
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition text-sm"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Dashboard
+          </button>
+        </div>
+
         {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-white mb-3">🎯 Target Market Finder</h1>
