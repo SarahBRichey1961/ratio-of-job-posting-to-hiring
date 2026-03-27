@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import Head from 'next/head'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/router'
-import type { TargetMarketRequest, TargetMarketResult, CompanyRecommendation } from '../api/tools/target-market'
+import type { TargetMarketRequest, TargetMarketResult, CompanyRecommendation, StockPick } from '../api/tools/target-market'
+import type { StockQuoteResult } from '../api/tools/stock-quotes'
 
 const INTERESTS = [
   'Technology', 'Health & Wellness', 'Finance', 'Real Estate', 'E-commerce',
@@ -36,6 +37,8 @@ export default function TargetMarketPage() {
   const [error, setError] = useState('')
   const [customIndustry, setCustomIndustry] = useState('')
   const [result, setResult] = useState<TargetMarketResult | null>(null)
+  const [stockQuotes, setStockQuotes] = useState<StockQuoteResult[]>([])
+  const [stockLoading, setStockLoading] = useState(false)
 
   const [form, setForm] = useState<TargetMarketRequest>({
     productService: '',
@@ -83,6 +86,20 @@ export default function TargetMarketPage() {
       if (!res.ok) throw new Error(data.error || 'Analysis failed')
       setResult(data)
       setStep(5)
+      // Fetch live stock quotes for AI-selected picks
+      if (data.stockPicks?.length) {
+        setStockLoading(true)
+        setStockQuotes([])
+        fetch('/api/tools/stock-quotes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tickers: data.stockPicks.map((p: StockPick) => p.ticker) }),
+        })
+          .then(r => r.json())
+          .then(quotes => setStockQuotes(Array.isArray(quotes) ? quotes : []))
+          .catch(() => {})
+          .finally(() => setStockLoading(false))
+      }
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -458,6 +475,47 @@ export default function TargetMarketPage() {
               </div>
             </div>
 
+            {/* Rising Market Leaders */}
+            {result.stockPicks?.length > 0 && (
+              <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-xl font-bold text-white">📈 Rising Market Leaders</h3>
+                  {stockLoading && <span className="text-slate-400 text-xs animate-pulse">Loading live prices…</span>}
+                </div>
+                <p className="text-slate-400 text-sm mb-4">Publicly traded companies with strong momentum in your target sector</p>
+                <div className="space-y-3">
+                  {result.stockPicks.map((pick: StockPick, idx: number) => {
+                    const quote = stockQuotes.find(q => q.ticker === pick.ticker)
+                    const up = quote?.changePercent != null && quote.changePercent >= 0
+                    return (
+                      <div key={idx} className="flex items-start gap-4 p-4 bg-slate-700/50 rounded-lg border border-slate-600/50">
+                        <div className="min-w-[72px]">
+                          <div className="text-indigo-400 font-bold text-sm">{pick.ticker}</div>
+                          {!stockLoading && quote?.price != null ? (
+                            <>
+                              <div className="text-white text-xs font-semibold">${quote.price.toLocaleString()}</div>
+                              <div className={`text-xs font-medium ${up ? 'text-green-400' : 'text-red-400'}`}>
+                                {up ? '▲' : '▼'} {Math.abs(quote.changePercent!).toFixed(2)}%
+                              </div>
+                            </>
+                          ) : !stockLoading ? (
+                            <div className="text-slate-500 text-xs">N/A</div>
+                          ) : null}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-white text-sm font-semibold">{pick.name}</div>
+                          <div className="text-slate-400 text-xs mt-0.5">{pick.sector}</div>
+                          <div className="text-slate-300 text-xs mt-1">{pick.relevance}</div>
+                          <div className="text-green-400/80 text-xs mt-1 italic">{pick.momentumReason}</div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <p className="text-slate-500 text-xs mt-3">Prices are live market data. This is not investment advice.</p>
+              </div>
+            )}
+
             {/* Market Context */}
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
@@ -488,7 +546,7 @@ export default function TargetMarketPage() {
             {/* Start Over */}
             <div className="text-center pt-4">
               <button
-                onClick={() => { setStep(0); setResult(null); setError('') }}
+                onClick={() => { setStep(0); setResult(null); setError(''); setStockQuotes([]); setStockLoading(false) }}
                 className="bg-slate-700 hover:bg-slate-600 text-slate-300 font-medium px-6 py-3 rounded-lg transition"
               >
                 🔄 Run Another Analysis
