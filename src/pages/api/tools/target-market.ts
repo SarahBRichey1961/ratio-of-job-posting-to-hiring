@@ -84,21 +84,24 @@ Include 6 company recommendations. For stockPicks include exactly 5 PUBLICLY TRA
   try {
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2500,
+      max_tokens: 4000,
       messages: [{ role: 'user', content: prompt }],
     })
 
     const responseText = message.content[0].type === 'text' ? message.content[0].text : ''
-    const cleaned = responseText
-      .replace(/^```json\s*/i, '')
-      .replace(/^```\s*/i, '')
-      .replace(/\s*```$/i, '')
-      .trim()
+
+    // Extract the outermost JSON object regardless of surrounding markdown/text
+    const firstBrace = responseText.indexOf('{')
+    const lastBrace = responseText.lastIndexOf('}')
+    const cleaned = firstBrace !== -1 && lastBrace > firstBrace
+      ? responseText.slice(firstBrace, lastBrace + 1)
+      : responseText.trim()
 
     let result: TargetMarketResult
     try {
       result = JSON.parse(cleaned)
     } catch {
+      console.error('[target-market] Parse error. Raw response:', responseText.slice(0, 800))
       return res.status(500).json({ error: 'Failed to parse AI response', raw: responseText.slice(0, 500) })
     }
 
