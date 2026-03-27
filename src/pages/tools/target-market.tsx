@@ -37,6 +37,7 @@ export default function TargetMarketPage() {
   const [error, setError] = useState('')
   const [customIndustry, setCustomIndustry] = useState('')
   const [customInterest, setCustomInterest] = useState('')
+  const [customCategory, setCustomCategory] = useState('')
   const [result, setResult] = useState<TargetMarketResult | null>(null)
   const [stockQuotes, setStockQuotes] = useState<StockQuoteResult[]>([])
   const [stockLoading, setStockLoading] = useState(false)
@@ -69,6 +70,9 @@ export default function TargetMarketPage() {
     try {
       const payload = {
         ...form,
+        productCategory: form.productCategory === 'Other'
+          ? (customCategory.trim() || 'Other')
+          : form.productCategory,
         industryPreference: form.industryPreference === 'Other (specify)'
           ? (customIndustry.trim() || 'Other')
           : form.industryPreference,
@@ -216,6 +220,15 @@ export default function TargetMarketPage() {
                   <option value="">Select a category...</option>
                   {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
+                {form.productCategory === 'Other' && (
+                  <input
+                    type="text"
+                    placeholder="e.g. Handmade crafts, Pet grooming, Custom furniture…"
+                    value={customCategory}
+                    onChange={e => setCustomCategory(e.target.value)}
+                    className="mt-2 w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-indigo-500 placeholder-slate-500"
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-slate-300 text-sm font-medium mb-2">Customer type</label>
@@ -408,7 +421,7 @@ export default function TargetMarketPage() {
                 <h3 className="text-white font-semibold mb-3">📋 Your Profile Summary</h3>
                 <div className="space-y-2 text-sm text-slate-300">
                   <p><span className="text-slate-500">Offering:</span> {form.productService.slice(0, 80)}{form.productService.length > 80 ? '...' : ''}</p>
-                  <p><span className="text-slate-500">Category:</span> {form.productCategory || 'Not set'}</p>
+                  <p><span className="text-slate-500">Category:</span> {form.productCategory === 'Other' ? (customCategory.trim() || 'Other') : (form.productCategory || 'Not set')}</p>
                   <p><span className="text-slate-500">Customer type:</span> {form.customerType.toUpperCase()}</p>
                   <p><span className="text-slate-500">Industry target:</span> {form.industryPreference === 'Other (specify)' ? (customIndustry.trim() || 'Other') : form.industryPreference}</p>
                   <p><span className="text-slate-500">Age range:</span> {form.ageRange}</p>
@@ -559,7 +572,7 @@ export default function TargetMarketPage() {
             {/* Start Over */}
             <div className="text-center pt-4">
               <button
-                onClick={() => { setStep(0); setResult(null); setError(''); setStockQuotes([]); setStockLoading(false) }}
+                onClick={() => { setStep(0); setResult(null); setError(''); setStockQuotes([]); setStockLoading(false); setCustomCategory(''); setCustomInterest(''); setCustomIndustry('') }}
                 className="bg-slate-700 hover:bg-slate-600 text-slate-300 font-medium px-6 py-3 rounded-lg transition"
               >
                 🔄 Run Another Analysis
