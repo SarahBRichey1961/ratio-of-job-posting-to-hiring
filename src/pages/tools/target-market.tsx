@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import Head from 'next/head'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/router'
-import type { TargetMarketRequest, TargetMarketResult, CompanyRecommendation, StockPick } from '../api/tools/target-market'
+import type { TargetMarketRequest, TargetMarketResult, CompanyRecommendation, StockPick, CompetitorInsight } from '../api/tools/target-market'
 import type { StockQuoteResult } from '../api/tools/stock-quotes'
 
 const INTERESTS = [
@@ -539,6 +539,41 @@ export default function TargetMarketPage() {
                   })}
                 </div>
                 <p className="text-slate-500 text-xs mt-3">Prices are live market data. This is not investment advice.</p>
+              </div>
+            )}
+
+            {/* Competitive Landscape */}
+            {result.competitiveLandscape?.length > 0 && (
+              <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+                <h3 className="text-xl font-bold text-white mb-1">🔍 Competitive Landscape</h3>
+                <p className="text-slate-400 text-sm mb-4">Who is already addressing this space — and where the gaps are</p>
+                <div className="space-y-4">
+                  {result.competitiveLandscape.map((c: CompetitorInsight, idx: number) => (
+                    <div key={idx} className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/50">
+                      <div className="text-white font-semibold mb-2">{c.name}</div>
+                      <div className="grid sm:grid-cols-3 gap-3 text-xs">
+                        <div>
+                          <div className="text-green-400 font-medium mb-1">✅ What they do well</div>
+                          <div className="text-slate-300 leading-relaxed">{c.whatTheyDoWell}</div>
+                        </div>
+                        <div>
+                          <div className="text-red-400 font-medium mb-1">⚠️ Gap / Weakness</div>
+                          <div className="text-slate-300 leading-relaxed">{c.gapOrWeakness}</div>
+                        </div>
+                        <div>
+                          <div className="text-indigo-400 font-medium mb-1">🎯 Your opportunity</div>
+                          <div className="text-slate-300 leading-relaxed">{c.yourOpportunity}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {result.marketGapSummary && (
+                  <div className="mt-4 p-4 bg-indigo-900/30 border border-indigo-500/30 rounded-lg">
+                    <div className="text-indigo-300 font-medium text-sm mb-1">💡 Market Gap Summary</div>
+                    <p className="text-slate-300 text-sm leading-relaxed">{result.marketGapSummary}</p>
+                  </div>
+                )}
               </div>
             )}
 
