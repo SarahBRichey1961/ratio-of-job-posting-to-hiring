@@ -42,12 +42,7 @@ export default function PricingPage() {
 
       // Open Paddle Overlay Checkout
       if (window.Paddle) {
-        console.log('[Paddle] Opening checkout with:', {
-          priceId,
-          userId: session?.user?.id,
-          paddleInitialized: !!window.Paddle,
-          tokenPrefix: (process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || '').slice(0, 8) || '(empty)',
-        })
+        console.log('[Paddle] Opening checkout — priceId:', priceId, '| userType:', userType, '| planType:', planType)
         window.Paddle.Checkout.open({
           items: [
             {
@@ -59,6 +54,13 @@ export default function PricingPage() {
             userId: session?.user?.id || null,
             userType: userType,
             planType: planType,
+          },
+          eventCallback: (event) => {
+            if (event.name === 'checkout.error') {
+              console.error('[Paddle] Checkout error event:', event.data)
+              setError('Checkout error: ' + (JSON.stringify(event.data) || 'Unknown error from Paddle'))
+              setLoading(null)
+            }
           },
         })
         setLoading(null)

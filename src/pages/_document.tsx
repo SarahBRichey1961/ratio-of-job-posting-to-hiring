@@ -7,23 +7,8 @@ export default class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head>
-          {/* Paddle.js for Overlay Checkout */}
+          {/* Paddle.js for Overlay Checkout — initialized in _app.tsx after load */}
           <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `
-                (function() {
-                  var token = '${process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || ''}';
-                  if (window.Paddle && token) {
-                    if (token.startsWith('test_')) {
-                      window.Paddle.Environment.set('sandbox');
-                    }
-                    window.Paddle.Initialize({ token: token });
-                  }
-                })();
-              `,
-            }}
-          ></script>
 
           {/* Google Analytics 4 */}
           {gaId && (
