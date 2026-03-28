@@ -34,7 +34,6 @@ interface PaddleCheckoutOptions {
   customData?: Record<string, any>
   successUrl?: string
   cancelUrl?: string
-  eventCallback?: (event: PaddleEvent) => void
 }
 
 interface PaddleCheckoutItem {
