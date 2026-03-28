@@ -40,9 +40,15 @@ export default function PricingPage() {
         throw new Error('Price not configured. Please contact support.')
       }
 
+      // Validate that the configured value looks like a Paddle price ID (pri_...)
+      if (!priceId.startsWith('pri_')) {
+        console.error('[Paddle] Misconfigured price ID — expected format pri_xxxx, got prefix:', priceId.slice(0, 12))
+        throw new Error('Checkout is not available right now. Please contact support.')
+      }
+
       // Open Paddle Overlay Checkout
       if (window.Paddle) {
-        console.log('[Paddle] Opening checkout — priceId:', priceId, '| userType:', userType, '| planType:', planType)
+        console.log('[Paddle] Opening checkout — userType:', userType, '| planType:', planType)
         window.Paddle.Checkout.open({
           items: [
             {
