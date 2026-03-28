@@ -7,8 +7,7 @@ export default class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head>
-          {/* Paddle.js for Overlay Checkout — initialized in _app.tsx after load */}
-          <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+          {/* Paddle.js loaded via next/script in _app.tsx */}
 
           {/* Google Analytics 4 */}
           {gaId && (
