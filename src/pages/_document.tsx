@@ -7,8 +7,6 @@ export default class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head>
-          {/* Paddle.js loaded via next/script in _app.tsx */}
-
           {/* Google Analytics 4 */}
           {gaId && (
             <>

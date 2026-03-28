@@ -2,7 +2,6 @@ import '@/styles/globals.css'
 import type { AppProps } from 'next/app'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import Script from 'next/script'
 import { AuthProvider } from '@/context/AuthContext'
 import { initializeGA, trackPageView } from '@/lib/googleAnalytics'
 
@@ -28,36 +27,6 @@ export default function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     initializeGA()
   }, [])
-
-  // Initialize Paddle Billing SDK once paddle.js has loaded
-  const initPaddle = () => {
-    const token = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN
-    if (!token) {
-      console.warn('[Paddle] NEXT_PUBLIC_PADDLE_CLIENT_TOKEN is not set — checkout will not work')
-      return
-    }
-    if (!window.Paddle) {
-      console.warn('[Paddle] window.Paddle not available in onLoad — unexpected')
-      return
-    }
-    try {
-      const isSandbox = token.startsWith('test_')
-      if (isSandbox) {
-        window.Paddle.Environment.set('sandbox')
-      }
-      window.Paddle.Initialize({
-        token,
-        eventCallback: (event) => {
-          if (event.name === 'checkout.error') {
-            console.error('[Paddle] Global checkout error:', event.data)
-          }
-        }
-      })
-      console.log('[Paddle] Initialized. Environment:', isSandbox ? 'sandbox (test_)' : 'live', '| Token prefix:', token.slice(0, 12))
-    } catch (err) {
-      console.error('[Paddle] Initialization error:', err)
-    }
-  }
 
   // Track page views when route changes
   useEffect(() => {
@@ -93,11 +62,6 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <AuthProvider>
-      <Script
-        src="https://cdn.paddle.com/paddle/v2/paddle.js"
-        strategy="afterInteractive"
-        onLoad={initPaddle}
-      />
       <Component {...pageProps} />
     </AuthProvider>
   )
