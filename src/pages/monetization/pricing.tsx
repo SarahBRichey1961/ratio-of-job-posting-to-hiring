@@ -61,13 +61,6 @@ export default function PricingPage() {
             userType: userType,
             planType: planType,
           },
-          eventCallback: (event) => {
-            if (event.name === 'checkout.error') {
-              console.error('[Paddle] Checkout error event:', event.data)
-              setError('Checkout error: ' + (JSON.stringify(event.data) || 'Unknown error from Paddle'))
-              setLoading(null)
-            }
-          },
         })
         setLoading(null)
       } else {
