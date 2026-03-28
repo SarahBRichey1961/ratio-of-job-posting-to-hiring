@@ -3,12 +3,13 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import axios from 'axios'
 import { getSupabase } from '@/lib/supabase'
+import { useAuth } from '@/context/AuthContext'
 
 const NewProject = () => {
   const router = useRouter()
+  const { session, isLoading: authLoading } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [userId, setUserId] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -25,29 +26,12 @@ const NewProject = () => {
   const [newGoal, setNewGoal] = useState('')
   const [newTech, setNewTech] = useState('')
 
-  // Get user ID from Supabase on mount
+  // Redirect to login if not authenticated once auth has loaded
   useEffect(() => {
-    const getUser = async () => {
-      try {
-        const supabase = getSupabase()
-        if (!supabase) {
-          console.error('Supabase client not initialized')
-          router.push('/hub/login?redirect=/hub/projects/new')
-          return
-        }
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user?.id) {
-          setUserId(session.user.id)
-        } else {
-          router.push('/hub/login?redirect=/hub/projects/new')
-        }
-      } catch (err) {
-        console.error('Error getting user:', err)
-        router.push('/hub/login?redirect=/hub/projects/new')
-      }
+    if (!authLoading && !session) {
+      router.push('/hub/login?redirect=/hub/projects/new')
     }
-    getUser()
-  }, [router])
+  }, [authLoading, session, router])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -114,8 +98,8 @@ const NewProject = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     
-    if (!userId) {
-      setError('User ID not available. Please refresh the page.')
+    if (!session?.access_token) {
+      setError('Authentication token not available. Please log in again.')
       return
     }
 
@@ -137,20 +121,6 @@ const NewProject = () => {
     setError('')
 
     try {
-      const supabase = getSupabase()
-      if (!supabase) {
-        setError('Connection error. Please try again.')
-        setLoading(false)
-        return
-      }
-      
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session?.access_token) {
-        setError('Authentication token not available. Please log in again.')
-        setLoading(false)
-        return
-      }
 
       console.log('SENDING TO API - formData payload:')
       console.log(JSON.stringify(formData, null, 2))
