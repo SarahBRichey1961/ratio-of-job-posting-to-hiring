@@ -28,6 +28,28 @@ export default function App({ Component, pageProps }: AppProps) {
     initializeGA()
   }, [])
 
+  // Initialize Paddle Billing SDK after page load
+  useEffect(() => {
+    const token = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN
+    if (!token) {
+      console.warn('[Paddle] NEXT_PUBLIC_PADDLE_CLIENT_TOKEN is not set — checkout will not work')
+      return
+    }
+    if (!window.Paddle) {
+      console.warn('[Paddle] paddle.js not loaded yet — will retry on next render')
+      return
+    }
+    try {
+      if (token.startsWith('test_')) {
+        window.Paddle.Environment.set('sandbox')
+      }
+      window.Paddle.Initialize({ token })
+      console.log('[Paddle] Initialized successfully. Token prefix:', token.slice(0, 8))
+    } catch (err) {
+      console.error('[Paddle] Initialization error:', err)
+    }
+  }, [])
+
   // Track page views when route changes
   useEffect(() => {
     const handleRouteChange = (url: string) => {
