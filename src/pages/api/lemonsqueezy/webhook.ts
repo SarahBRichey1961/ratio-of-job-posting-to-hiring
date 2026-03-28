@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 
 export const config = {
@@ -144,7 +144,7 @@ function getSubscriptionEndDate(planType?: string): string | null {
 }
 
 async function upsertAccount(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   userId: string,
   userType: 'sponsor' | 'advertiser',
   planType: string,
