@@ -50,17 +50,7 @@ export default function PricingPage() {
       if (window.Paddle) {
         console.log('[Paddle] Opening checkout — userType:', userType, '| planType:', planType, '| priceId prefix:', priceId.slice(0, 20))
         window.Paddle.Checkout.open({
-          items: [
-            {
-              priceId: priceId,
-              quantity: 1,
-            },
-          ],
-          customData: {
-            userId: session?.user?.id ?? '',
-            userType: userType,
-            planType: planType,
-          },
+          items: [{ priceId: priceId, quantity: 1 }],
         })
         setLoading(null)
       } else {
