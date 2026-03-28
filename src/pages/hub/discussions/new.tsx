@@ -99,7 +99,13 @@ const NewDiscussion = () => {
       <header className="bg-white shadow">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-4">
-            <div></div>
+            <button
+              type="button"
+              onClick={() => router.push('/hub/projects')}
+              className="text-gray-600 hover:text-gray-900 font-semibold flex items-center gap-2"
+            >
+              ← Back to Projects
+            </button>
             <a
               href="/dashboard/comparison"
               className="text-gray-600 hover:text-gray-900 font-semibold flex items-center gap-2"
@@ -244,7 +250,7 @@ const NewDiscussion = () => {
           <div className="flex justify-between pt-8 border-t">
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => router.push('/hub/projects')}
               className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
             >
               Cancel
