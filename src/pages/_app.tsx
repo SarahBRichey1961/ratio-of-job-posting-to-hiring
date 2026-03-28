@@ -40,11 +40,19 @@ export default function App({ Component, pageProps }: AppProps) {
       return
     }
     try {
-      if (token.startsWith('test_')) {
+      const isSandbox = token.startsWith('test_')
+      if (isSandbox) {
         window.Paddle.Environment.set('sandbox')
       }
-      window.Paddle.Initialize({ token })
-      console.log('[Paddle] Initialized successfully. Token prefix:', token.slice(0, 8))
+      window.Paddle.Initialize({
+        token,
+        eventCallback: (event) => {
+          if (event.name === 'checkout.error') {
+            console.error('[Paddle] Global checkout error:', event.data)
+          }
+        }
+      })
+      console.log('[Paddle] Initialized. Environment:', isSandbox ? 'sandbox (test_)' : 'live', '| Token prefix:', token.slice(0, 12))
     } catch (err) {
       console.error('[Paddle] Initialization error:', err)
     }
