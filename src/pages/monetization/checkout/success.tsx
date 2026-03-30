@@ -7,15 +7,20 @@ export default function CheckoutSuccess() {
   const router = useRouter()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
+  const [dashboardHref, setDashboardHref] = useState('/hub')
 
   useEffect(() => {
     if (!router.isReady) return
 
-    const { token, subscription_id, planType, userType } = router.query as Record<string, string>
+    const { token, planType, userType } = router.query as Record<string, string>
+
+    // Set dashboard link based on what they paid for
+    if (userType === 'advertiser') setDashboardHref('/advertiser/dashboard')
+    else if (userType === 'sponsor') setDashboardHref('/hub')
 
     const process = async () => {
-      if (planType === 'onetime' && token) {
-        // Capture the PayPal order
+      // All plans are now PayPal one-time orders — always capture
+      if (token) {
         try {
           const res = await fetch('/api/paypal/capture', {
             method: 'POST',
@@ -25,22 +30,23 @@ export default function CheckoutSuccess() {
 
           if (res.ok) {
             setStatus('success')
-            setMessage('Payment confirmed! Your account has been activated.')
+            setMessage(
+              userType === 'advertiser'
+                ? 'Payment confirmed! Your advertiser account is now active.'
+                : 'Payment confirmed! Your sponsor membership is now active.'
+            )
           } else {
+            const data = await res.json()
             setStatus('error')
-            setMessage('Payment could not be confirmed. Please contact support.')
+            setMessage(data.error || 'Payment could not be confirmed. Please contact support.')
           }
         } catch {
           setStatus('error')
           setMessage('An error occurred confirming your payment. Please contact support.')
         }
-      } else if (subscription_id) {
-        // Subscription activated — webhook will handle the DB update
-        setStatus('success')
-        setMessage('Subscription activated! Your account is now live.')
       } else {
-        setStatus('success')
-        setMessage('Thank you! Your payment has been received.')
+        setStatus('error')
+        setMessage('No order token found. Please contact support if you were charged.')
       }
     }
 
@@ -68,7 +74,7 @@ export default function CheckoutSuccess() {
             <h1 className="text-3xl font-bold text-white mb-3">All set!</h1>
             <p className="text-slate-400 mb-8">{message}</p>
             <Link
-              href="/hub"
+              href={dashboardHref}
               className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg transition"
             >
               Go to Dashboard
@@ -83,7 +89,7 @@ export default function CheckoutSuccess() {
             <p className="text-slate-400 mb-8">{message}</p>
             <div className="space-y-3">
               <Link
-                href="/hub"
+                href={dashboardHref}
                 className="block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg transition"
               >
                 Go to Dashboard
