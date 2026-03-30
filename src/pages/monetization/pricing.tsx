@@ -20,7 +20,7 @@ export default function PricingPage() {
     setError('')
 
     try {
-      const response = await fetch('/api/lemonsqueezy/checkout', {
+      const response = await fetch('/api/paypal/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -35,7 +35,7 @@ export default function PricingPage() {
         throw new Error(data.error || 'Failed to start checkout')
       }
 
-      // Redirect to Lemon Squeezy hosted checkout page
+      // Redirect to PayPal hosted checkout page
       window.location.href = data.url
     } catch (err) {
       setError((err as Error).message)
@@ -226,7 +226,7 @@ export default function PricingPage() {
 
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">What payment methods do you accept?</h3>
-              <p className="text-slate-400">We accept all major credit and debit cards, processed securely through Lemon Squeezy. Your payment information is never stored on our servers.</p>
+              <p className="text-slate-400">We accept all major credit and debit cards plus PayPal balance, processed securely through PayPal. Your payment information is never stored on our servers.</p>
             </div>
 
             <div>
