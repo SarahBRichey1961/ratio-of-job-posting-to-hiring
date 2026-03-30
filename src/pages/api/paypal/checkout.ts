@@ -20,7 +20,10 @@ async function getAccessToken(): Promise<string> {
     body: 'grant_type=client_credentials',
   })
 
-  if (!res.ok) throw new Error('Failed to get PayPal access token')
+  if (!res.ok) {
+    const errBody = await res.text()
+    throw new Error(`PayPal auth failed (${res.status}): ${errBody}`)
+  }
   const data = await res.json()
   return data.access_token
 }
@@ -46,6 +49,11 @@ const PLAN_IDS: Record<string, Record<string, string | undefined>> = {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
+    console.error('[PayPal] PAYPAL_CLIENT_ID or PAYPAL_CLIENT_SECRET not configured')
+    return res.status(500).json({ error: 'PayPal not configured on server' })
   }
 
   const authHeader = req.headers.authorization
@@ -170,7 +178,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json({ url: approveLink })
     }
   } catch (err) {
-    console.error('[PayPal] Checkout error:', err)
-    return res.status(500).json({ error: 'Internal server error' })
+    const message = err instanceof Error ? err.message : 'Internal server error'
+    console.error('[PayPal] Checkout error:', message)
+    return res.status(500).json({ error: message })
   }
 }
