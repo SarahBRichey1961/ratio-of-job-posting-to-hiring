@@ -28,21 +28,22 @@ async function getAccessToken(): Promise<string> {
   return data.access_token
 }
 
-// Prices in USD
-const ONETIME_PRICE: Record<string, string> = {
-  sponsor: '499.00',
-  advertiser: '499.00',
+// All prices as one-time PayPal orders (no subscription plans needed)
+const PRICES: Record<string, Record<string, string>> = {
+  sponsor:     { monthly: '199.00', annual: '1999.00', onetime: '499.00' },
+  advertiser:  { monthly: '199.00', annual: '1999.00', onetime: '499.00' },
 }
 
-// Pre-created PayPal subscription plan IDs (set in Netlify env vars)
-const PLAN_IDS: Record<string, Record<string, string | undefined>> = {
+const DESCRIPTIONS: Record<string, Record<string, string>> = {
   sponsor: {
-    monthly: process.env.PAYPAL_SPONSOR_MONTHLY_PLAN_ID,
-    annual: process.env.PAYPAL_SPONSOR_ANNUAL_PLAN_ID,
+    monthly: 'Sponsor membership (1 month) — Take The Reins',
+    annual:  'Sponsor membership (1 year) — Take The Reins',
+    onetime: 'Sponsor membership (lifetime) — Take The Reins',
   },
   advertiser: {
-    monthly: process.env.PAYPAL_ADVERTISER_MONTHLY_PLAN_ID,
-    annual: process.env.PAYPAL_ADVERTISER_ANNUAL_PLAN_ID,
+    monthly: 'Advertiser account (1 month) — Take The Reins',
+    annual:  'Advertiser account (1 year) — Take The Reins',
+    onetime: 'Advertiser account (lifetime) — Take The Reins',
   },
 }
 
@@ -89,94 +90,51 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const accessToken = await getAccessToken()
 
-    if (planType === 'onetime') {
-      const amount = ONETIME_PRICE[userType]
-      if (!amount) return res.status(400).json({ error: 'Invalid userType' })
+    const amount = PRICES[userType]?.[planType]
+    if (!amount) return res.status(400).json({ error: 'Invalid userType or planType' })
 
-      const orderRes = await fetch(`${PAYPAL_BASE}/v2/checkout/orders`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          intent: 'CAPTURE',
-          purchase_units: [
-            {
-              amount: { currency_code: 'USD', value: amount },
-              description: `${userType} one-time access — Take The Reins`,
-              custom_id: `${user.id}|${userType}|onetime`,
-            },
-          ],
-          application_context: {
-            return_url: returnUrl,
-            cancel_url: cancelUrl,
-            brand_name: 'Take The Reins',
-            user_action: 'PAY_NOW',
+    const description = DESCRIPTIONS[userType][planType]
+
+    const orderRes = await fetch(`${PAYPAL_BASE}/v2/checkout/orders`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        intent: 'CAPTURE',
+        purchase_units: [
+          {
+            amount: { currency_code: 'USD', value: amount },
+            description,
+            custom_id: `${user.id}|${userType}|${planType}`,
           },
-        }),
-      })
-
-      if (!orderRes.ok) {
-        const err = await orderRes.json()
-        console.error('[PayPal] Order creation error:', err)
-        return res.status(502).json({ error: 'Failed to create PayPal order' })
-      }
-
-      const order = await orderRes.json()
-      const approveLink = order.links?.find(
-        (l: { rel: string }) => l.rel === 'approve'
-      )?.href
-
-      if (!approveLink) {
-        return res.status(502).json({ error: 'No PayPal approval URL returned' })
-      }
-
-      return res.status(200).json({ url: approveLink })
-    } else {
-      // monthly or annual — use pre-created subscription plan
-      const planId = PLAN_IDS[userType]?.[planType]
-      if (!planId) {
-        return res.status(400).json({
-          error: `PayPal plan not configured for ${userType} ${planType}. Set PAYPAL_${userType.toUpperCase()}_${planType.toUpperCase()}_PLAN_ID in env.`,
-        })
-      }
-
-      const subRes = await fetch(`${PAYPAL_BASE}/v1/billing/subscriptions`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+        ],
+        application_context: {
+          return_url: returnUrl,
+          cancel_url: cancelUrl,
+          brand_name: 'Take The Reins',
+          user_action: 'PAY_NOW',
         },
-        body: JSON.stringify({
-          plan_id: planId,
-          custom_id: `${user.id}|${userType}|${planType}`,
-          application_context: {
-            return_url: returnUrl,
-            cancel_url: cancelUrl,
-            brand_name: 'Take The Reins',
-            user_action: 'SUBSCRIBE_NOW',
-          },
-        }),
-      })
+      }),
+    })
 
-      if (!subRes.ok) {
-        const err = await subRes.json()
-        console.error('[PayPal] Subscription creation error:', err)
-        return res.status(502).json({ error: 'Failed to create PayPal subscription' })
-      }
-
-      const sub = await subRes.json()
-      const approveLink = sub.links?.find(
-        (l: { rel: string }) => l.rel === 'approve'
-      )?.href
-
-      if (!approveLink) {
-        return res.status(502).json({ error: 'No PayPal approval URL returned' })
-      }
-
-      return res.status(200).json({ url: approveLink })
+    if (!orderRes.ok) {
+      const err = await orderRes.json()
+      console.error('[PayPal] Order creation error:', err)
+      return res.status(502).json({ error: 'Failed to create PayPal order' })
     }
+
+    const order = await orderRes.json()
+    const approveLink = order.links?.find(
+      (l: { rel: string }) => l.rel === 'approve'
+    )?.href
+
+    if (!approveLink) {
+      return res.status(502).json({ error: 'No PayPal approval URL returned' })
+    }
+
+    return res.status(200).json({ url: approveLink })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal server error'
     console.error('[PayPal] Checkout error:', message)

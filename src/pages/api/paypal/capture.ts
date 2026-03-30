@@ -73,7 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const customId = order.purchase_units?.[0]?.custom_id as string | undefined
 
     if (customId) {
-      const [userId, userType] = customId.split('|')
+      const [userId, userType, planType] = customId.split('|')
 
       if (userId && userType) {
         const supabase = createClient(
@@ -81,11 +81,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           process.env.SUPABASE_SERVICE_ROLE_KEY!
         )
 
+        // Calculate end date based on plan type
+        let endDate: string | null = null
+        if (planType === 'monthly') {
+          const d = new Date(); d.setMonth(d.getMonth() + 1)
+          endDate = d.toISOString()
+        } else if (planType === 'annual') {
+          const d = new Date(); d.setFullYear(d.getFullYear() + 1)
+          endDate = d.toISOString()
+        }
+
         const record = {
           user_id: userId,
           payment_status: 'paid',
-          subscription_type: 'onetime',
+          subscription_type: planType || 'onetime',
           paddle_checkout_id: captureId,
+          subscription_end_date: endDate,
           updated_at: new Date().toISOString(),
         }
 
