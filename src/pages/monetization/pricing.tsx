@@ -51,6 +51,7 @@ export default function PricingPage() {
     onetime,
     features,
     userType,
+    planTypes,
   }: {
     title: string
     description: string
@@ -59,6 +60,7 @@ export default function PricingPage() {
     onetime: number
     features: string[]
     userType: 'sponsor' | 'advertiser'
+    planTypes: ('monthly' | 'annual' | 'onetime')[]
   }) => (
     <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 hover:border-indigo-500/50 transition">
       <h3 className="text-2xl font-bold text-white mb-2">{title}</h3>
@@ -66,52 +68,58 @@ export default function PricingPage() {
 
       <div className="space-y-4 mb-8">
         {/* Monthly */}
-        <div className="bg-slate-900/50 rounded-lg p-4">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-white font-semibold">Monthly</span>
-            <span className="text-2xl font-bold text-indigo-400">${monthly}/mo</span>
+        {planTypes.includes('monthly') && (
+          <div className="bg-slate-900/50 rounded-lg p-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-white font-semibold">Monthly</span>
+              <span className="text-2xl font-bold text-indigo-400">${monthly}/mo</span>
+            </div>
+            <button
+              onClick={() => handleCheckout(userType, 'monthly')}
+              disabled={loading === `${userType}-monthly`}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition"
+            >
+              {loading === `${userType}-monthly` ? 'Processing...' : 'Choose Monthly'}
+            </button>
           </div>
-          <button
-            onClick={() => handleCheckout(userType, 'monthly')}
-            disabled={loading === `${userType}-monthly`}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition"
-          >
-            {loading === `${userType}-monthly` ? 'Processing...' : 'Choose Monthly'}
-          </button>
-        </div>
+        )}
 
         {/* Annual */}
-        <div className="bg-slate-900/50 rounded-lg p-4 border border-green-600/30">
-          <div className="flex justify-between items-center mb-2">
-            <div>
-              <span className="text-white font-semibold">Annual</span>
-              <span className="text-green-400 text-xs ml-2">(Save ~$387)</span>
+        {planTypes.includes('annual') && (
+          <div className="bg-slate-900/50 rounded-lg p-4 border border-green-600/30">
+            <div className="flex justify-between items-center mb-2">
+              <div>
+                <span className="text-white font-semibold">Annual</span>
+                <span className="text-green-400 text-xs ml-2">(Save ~$387)</span>
+              </div>
+              <span className="text-2xl font-bold text-green-400">${annual}/yr</span>
             </div>
-            <span className="text-2xl font-bold text-green-400">${annual}/yr</span>
+            <button
+              onClick={() => handleCheckout(userType, 'annual')}
+              disabled={loading === `${userType}-annual`}
+              className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition"
+            >
+              {loading === `${userType}-annual` ? 'Processing...' : 'Choose Annual'}
+            </button>
           </div>
-          <button
-            onClick={() => handleCheckout(userType, 'annual')}
-            disabled={loading === `${userType}-annual`}
-            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition"
-          >
-            {loading === `${userType}-annual` ? 'Processing...' : 'Choose Annual'}
-          </button>
-        </div>
+        )}
 
         {/* One-Time */}
-        <div className="bg-slate-900/50 rounded-lg p-4">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-white font-semibold">One-Time</span>
-            <span className="text-2xl font-bold text-slate-300">${onetime}</span>
+        {planTypes.includes('onetime') && (
+          <div className="bg-slate-900/50 rounded-lg p-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-white font-semibold">One-Time</span>
+              <span className="text-2xl font-bold text-slate-300">${onetime}</span>
+            </div>
+            <button
+              onClick={() => handleCheckout(userType, 'onetime')}
+              disabled={loading === `${userType}-onetime`}
+              className="w-full bg-slate-700 hover:bg-slate-600 disabled:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition"
+            >
+              {loading === `${userType}-onetime` ? 'Processing...' : 'Choose One-Time'}
+            </button>
           </div>
-          <button
-            onClick={() => handleCheckout(userType, 'onetime')}
-            disabled={loading === `${userType}-onetime`}
-            className="w-full bg-slate-700 hover:bg-slate-600 disabled:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition"
-          >
-            {loading === `${userType}-onetime` ? 'Processing...' : 'Choose One-Time'}
-          </button>
-        </div>
+        )}
       </div>
 
       {/* Features */}
@@ -190,6 +198,7 @@ export default function PricingPage() {
               'Analytics dashboard',
             ]}
             userType="sponsor"
+            planTypes={['onetime']}
           />
 
           <PricingCard
@@ -206,6 +215,7 @@ export default function PricingPage() {
               'Full ad management dashboard',
             ]}
             userType="advertiser"
+            planTypes={['monthly', 'annual']}
           />
         </div>
 
