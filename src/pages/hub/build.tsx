@@ -33,6 +33,7 @@ export default function BuildTheDamnThing() {
   const [step, setStep] = useState(1) // 1: Form, 2: Questions or Prototype, 3: Answers, 4: Full Blueprint
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [buildLiveUrl, setBuildLiveUrl] = useState('')
   const [formData, setFormData] = useState<IdeaFormData>({
     mainIdea: '',
     targetUser: '',
@@ -164,7 +165,42 @@ export default function BuildTheDamnThing() {
     setClarifyingQuestions(null)
     setAnswers([])
     setPrototype(null)
+    setBuildLiveUrl('')
     setError('')
+  }
+
+  const handleBuildAndDeploy = async () => {
+    if (!prototype) {
+      setError('No prototype available to build')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const response = await fetch('/api/hub/build-and-deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idea: formData,
+          prototype,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to build and deploy')
+      }
+
+      const data = await response.json()
+      setBuildLiveUrl(data.liveUrl)
+      setStep(5) // Show success/live app screen
+    } catch (err) {
+      setError((err as Error).message || 'Error building and deploying. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -463,6 +499,95 @@ export default function BuildTheDamnThing() {
             </div>
 
             {/* Action Buttons */}
+            <div className="flex gap-4">
+              <button
+                onClick={handleBuildAndDeploy}
+                disabled={loading}
+                className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
+              >
+                {loading ? '🚀 Building & Deploying...' : '🚀 Build the Damn Thing Now!'}
+              </button>
+              <button
+                onClick={handleReset}
+                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
+              >
+                💡 Build Another Idea
+              </button>
+              <Link
+                href="/hub"
+                className="flex-1 text-center bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
+              >
+                Back to Hub
+              </Link>
+            </div>
+          </div>
+        )}
+        {/* Step 5: Live App */}
+        {step === 5 && buildLiveUrl && (
+          <div className="space-y-8">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-600 text-white font-bold">
+                ✓
+              </div>
+              <h2 className="text-4xl font-bold text-white">🎉 Your App is Live!</h2>
+            </div>
+
+            <div className="bg-green-900/30 border border-green-700/50 rounded-xl p-8 text-center">
+              <p className="text-green-200 mb-6 text-lg">
+                Your app has been built, deployed to GitHub, and is now live on Netlify!
+              </p>
+              <div className="bg-slate-900 border border-green-600/30 rounded-lg p-6 mb-6">
+                <p className="text-slate-400 text-sm mb-2">Live URL:</p>
+                <a
+                  href={buildLiveUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-green-400 hover:text-green-300 text-xl font-mono break-all"
+                >
+                  {buildLiveUrl}
+                </a>
+              </div>
+              <button
+                onClick={() => window.open(buildLiveUrl, '_blank')}
+                className="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition mb-6"
+              >
+                👉 Visit Your Live App
+              </button>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* GitHub Repo */}
+              <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+                <h3 className="text-lg font-bold text-white mb-3">📚 Your GitHub Repository</h3>
+                <p className="text-slate-400 mb-4">
+                  Your code is now on GitHub. Continue development there:
+                </p>
+                <div className="text-sm text-slate-300 space-y-2">
+                  <p>✓ Source code in `/src`</p>
+                  <p>✓ Build plan documented in README.md</p>
+                  <p>✓ Auto-deploys to Netlify on git push</p>
+                </div>
+              </div>
+
+              {/* Next Steps */}
+              <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+                <h3 className="text-lg font-bold text-white mb-3">🎯 Next Steps</h3>
+                <ol className="text-sm text-slate-300 space-y-2 list-decimal list-inside">
+                  <li>Test it with real users now (feedback is better than planning)</li>
+                  <li>Iterate based on feedback</li>
+                  <li>Add more features from your build plan</li>
+                  <li>Share it and get your first users!</li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="bg-blue-900/30 border border-blue-700/50 rounded-xl p-6">
+              <p className="text-blue-200 font-semibold mb-2">💡 Pro Tip</p>
+              <p className="text-blue-100">
+                Your app is alive! Share the link with friends and beta users right now. Real feedback will teach you more than any amount of planning. Update your repo with fixes and features as you learn what users actually want. Deploy is automatic on every push to main.
+              </p>
+            </div>
+
             <div className="flex gap-4">
               <button
                 onClick={handleReset}
