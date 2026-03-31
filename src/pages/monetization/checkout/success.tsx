@@ -16,7 +16,7 @@ export default function CheckoutSuccess() {
 
     // Set dashboard link based on what they paid for
     if (userType === 'advertiser') setDashboardHref('/advertiser/dashboard')
-    else if (userType === 'sponsor') setDashboardHref('/hub')
+    else if (userType === 'sponsor') setDashboardHref('/sponsor/dashboard')
 
     const process = async () => {
       // All plans are now PayPal one-time orders — always capture
