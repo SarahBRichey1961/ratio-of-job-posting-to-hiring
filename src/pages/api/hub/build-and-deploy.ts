@@ -28,9 +28,18 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  if (!GITHUB_TOKEN || !NETLIFY_TOKEN || !GITHUB_USERNAME) {
+  // Check for required environment variables
+  const missingVars = []
+  if (!GITHUB_TOKEN) missingVars.push('GITHUB_TOKEN')
+  if (!NETLIFY_TOKEN) missingVars.push('NETLIFY_TOKEN')
+  if (!GITHUB_USERNAME) missingVars.push('GITHUB_USERNAME')
+
+  if (missingVars.length > 0) {
+    console.error(`❌ Missing environment variables: ${missingVars.join(', ')}`)
     return res.status(500).json({
-      error: 'Missing required environment variables: GITHUB_TOKEN, NETLIFY_TOKEN, GITHUB_USERNAME',
+      error: `Missing required environment variables: ${missingVars.join(', ')}. Please add these to Netlify environment settings.`,
+      missing: missingVars,
+      instructions: 'Go to Netlify → Site Settings → Build & Deploy → Environment and add: GITHUB_TOKEN, NETLIFY_TOKEN, GITHUB_USERNAME',
     })
   }
 

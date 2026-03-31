@@ -193,7 +193,11 @@ export default function BuildTheDamnThing() {
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || 'Failed to build and deploy')
+        console.error('API Error:', data)
+        const errorMsg = data.missing
+          ? `⚠️ Missing setup: ${data.missing.join(', ')}\n\n${data.instructions}`
+          : data.error || 'Failed to build and deploy'
+        throw new Error(errorMsg)
       }
 
       setDeploymentStatus('Deploying to Netlify...')
@@ -206,7 +210,9 @@ export default function BuildTheDamnThing() {
       // Auto-launch the live URL immediately
       window.open(data.liveUrl, '_blank')
     } catch (err) {
-      setError((err as Error).message || 'Error building and deploying. Please try again.')
+      const errorMsg = (err as Error).message || 'Error building and deploying. Please try again.'
+      console.error('Build error:', errorMsg)
+      setError(errorMsg)
     } finally {
       setLoading(false)
       setDeploymentStatus('')
