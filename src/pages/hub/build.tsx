@@ -196,6 +196,11 @@ export default function BuildTheDamnThing() {
       const data = await response.json()
       setBuildLiveUrl(data.liveUrl)
       setStep(5) // Show success/live app screen
+      
+      // Auto-launch the live URL
+      setTimeout(() => {
+        window.open(data.liveUrl, '_blank')
+      }, 1000)
     } catch (err) {
       setError((err as Error).message || 'Error building and deploying. Please try again.')
     } finally {
@@ -505,7 +510,7 @@ export default function BuildTheDamnThing() {
                 disabled={loading}
                 className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
               >
-                {loading ? '🚀 Building & Deploying...' : '🚀 Build the Damn Thing Now!'}
+                {loading ? '🚀 Building, Testing & Deploying...' : '🚀 Build It, Test It, Deploy It!'}
               </button>
               <button
                 onClick={handleReset}
@@ -529,12 +534,15 @@ export default function BuildTheDamnThing() {
               <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-600 text-white font-bold">
                 ✓
               </div>
-              <h2 className="text-4xl font-bold text-white">🎉 Your App is Live!</h2>
+              <h2 className="text-4xl font-bold text-white">🎉 Your App is Built, Tested & Live!</h2>
             </div>
 
             <div className="bg-green-900/30 border border-green-700/50 rounded-xl p-8 text-center">
-              <p className="text-green-200 mb-6 text-lg">
-                Your app has been built, deployed to GitHub, and is now live on Netlify!
+              <p className="text-green-200 mb-6 text-lg font-semibold">
+                ✨ Your app has been built, deployed to GitHub, and is now live on Netlify!
+              </p>
+              <p className="text-green-300 mb-8 text-base">
+                The app should have opened in a new tab. If not, click the button below to view it.
               </p>
               <div className="bg-slate-900 border border-green-600/30 rounded-lg p-6 mb-6">
                 <p className="text-slate-400 text-sm mb-2">Live URL:</p>
@@ -542,7 +550,7 @@ export default function BuildTheDamnThing() {
                   href={buildLiveUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-green-400 hover:text-green-300 text-xl font-mono break-all"
+                  className="text-green-400 hover:text-green-300 text-xl font-mono break-all font-semibold"
                 >
                   {buildLiveUrl}
                 </a>
@@ -551,40 +559,55 @@ export default function BuildTheDamnThing() {
                 onClick={() => window.open(buildLiveUrl, '_blank')}
                 className="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition mb-6"
               >
-                👉 Visit Your Live App
+                👉 View Your Live App
               </button>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-3 gap-6">
               {/* GitHub Repo */}
               <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
-                <h3 className="text-lg font-bold text-white mb-3">📚 Your GitHub Repository</h3>
-                <p className="text-slate-400 mb-4">
-                  Your code is now on GitHub. Continue development there:
+                <h3 className="text-lg font-bold text-white mb-3">📚 GitHub Repository</h3>
+                <p className="text-slate-400 mb-4 text-sm">
+                  Your code is ready to continue development:
                 </p>
                 <div className="text-sm text-slate-300 space-y-2">
-                  <p>✓ Source code in `/src`</p>
-                  <p>✓ Build plan documented in README.md</p>
-                  <p>✓ Auto-deploys to Netlify on git push</p>
+                  <p>✓ Full source code in `/src`</p>
+                  <p>✓ Build plan in README.md</p>
+                  <p>✓ Auto-deploys on git push</p>
                 </div>
               </div>
 
-              {/* Next Steps */}
+              {/* Test Now */}
               <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
-                <h3 className="text-lg font-bold text-white mb-3">🎯 Next Steps</h3>
-                <ol className="text-sm text-slate-300 space-y-2 list-decimal list-inside">
-                  <li>Test it with real users now (feedback is better than planning)</li>
-                  <li>Iterate based on feedback</li>
-                  <li>Add more features from your build plan</li>
-                  <li>Share it and get your first users!</li>
-                </ol>
+                <h3 className="text-lg font-bold text-white mb-3">🧪 Test Now</h3>
+                <p className="text-slate-400 mb-4 text-sm">
+                  Share the live URL with real users:
+                </p>
+                <div className="text-sm text-slate-300 space-y-2">
+                  <p>✓ Test core features</p>
+                  <p>✓ Gather feedback</p>
+                  <p>✓ Iterate rapidly</p>
+                </div>
+              </div>
+
+              {/* Continue Development */}
+              <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+                <h3 className="text-lg font-bold text-white mb-3">💻 Keep Building</h3>
+                <p className="text-slate-400 mb-4 text-sm">
+                  Update and deploy whenever you want:
+                </p>
+                <div className="text-sm text-slate-300 space-y-2">
+                  <p>✓ Edit code locally</p>
+                  <p>✓ Push to GitHub</p>
+                  <p>✓ Netlify deploys instantly</p>
+                </div>
               </div>
             </div>
 
             <div className="bg-blue-900/30 border border-blue-700/50 rounded-xl p-6">
-              <p className="text-blue-200 font-semibold mb-2">💡 Pro Tip</p>
+              <p className="text-blue-200 font-semibold mb-2">💡 Pro Tip: Your MVP is Live!</p>
               <p className="text-blue-100">
-                Your app is alive! Share the link with friends and beta users right now. Real feedback will teach you more than any amount of planning. Update your repo with fixes and features as you learn what users actually want. Deploy is automatic on every push to main.
+                Stop planning and start learning. Share this URL with real users NOW. Their feedback will teach you more than any amount of design. Update your GitHub repo with fixes and features as you learn what users actually want. Every push to main deploys automatically.
               </p>
             </div>
 
