@@ -1,102 +1,103 @@
-# Build the Damn Thing! - Environment Setup Guide
+# Build the Damn Thing! - Setup Guide (Option 1: Your Tokens)
 
-## ⚠️ Missing Environment Variables
+## Overview
 
-The "Build It, Test It, Deploy It!" feature requires 3 environment variables to be set up in Netlify:
+This MVP version uses **your personal GitHub and Netlify tokens**. When users click "Build It, Test It, Deploy It!", their apps are:
+- Created as repos under **your GitHub account**
+- Deployed under **your Netlify account**
 
-### Required Variables:
-1. **GITHUB_TOKEN** - Personal access token for GitHub
-2. **NETLIFY_TOKEN** - API token for Netlify
-3. **GITHUB_USERNAME** - Your GitHub username
+**Users need zero setup** - it just works!
 
-## 🔧 Setup Instructions
+## 🔧 One-Time Setup (You Do This Once)
 
-### Step 1: Get Your GitHub Token
+### Step 1: Generate GitHub Personal Access Token
+
 1. Go to https://github.com/settings/tokens
-2. Click "Generate new token" → "Generate new token (classic)"
-3. Name it: `take-the-reins-build`
+2. Click **"Generate new token"** → **"Generate new token (classic)"**
+3. Name: `take-the-reins-build` (or any name you want)
 4. Select scopes:
    - ✅ `repo` (Full control of private repositories)
    - ✅ `user` (Read user profile data)
-5. Click "Generate token"
-6. **Copy the token** (you won't be able to see it again!)
+5. Click **"Generate token"**
+6. **Copy the token** (save it somewhere safe - you won't see it again!)
 
-### Step 2: Get Your Netlify Token
-1. Go to https://app.netlify.com/user/settings/applications#personal-access-tokens
-2. Click "New access token"
-3. Name it: `take-the-reins-build`
-4. **Copy the token**
+### Step 2: Generate Netlify Personal Access Token
+
+1. Go to https://app.netlify.com/user/settings/applications
+2. Scroll to **"Personal access tokens"**
+3. Click **"New access token"**
+4. Name: `take-the-reins-build`
+5. Click **"Generate token"**
+6. **Copy the token**
 
 ### Step 3: Add to Netlify Environment Variables
-1. Go to your Netlify site → **Site Settings**
-2. Go to **Build & Deploy** → **Environment**
-3. Click "Edit variables"
-4. Add these three variables:
-   - **Key:** `GITHUB_TOKEN` → **Value:** (paste your GitHub token)
-   - **Key:** `NETLIFY_TOKEN` → **Value:** (paste your Netlify token)
-   - **Key:** `GITHUB_USERNAME` → **Value:** `SarahBRichey1961` (your GitHub username)
-5. Click "Save"
-6. **Redeploy your site** (or push new code)
 
-### Step 4: Test Locally (Optional)
-Add to `.env.local`:
-```
-GITHUB_TOKEN=ghp_...your-token...
-NETLIFY_TOKEN=...your-token...
-GITHUB_USERNAME=SarahBRichey1961
-```
+1. Go to your **Netlify site dashboard**
+2. Click **"Site settings"**
+3. Go to **"Build & Deploy"** → **"Environment"**
+4. Click **"Edit variables"**
+5. Add three new variables:
 
-Then run `npm run dev` and test the feature.
+| Key | Value |
+|-----|-------|
+| `GITHUB_TOKEN` | (paste your GitHub token) |
+| `NETLIFY_TOKEN` | (paste your Netlify token) |
+| `GITHUB_USERNAME` | `SarahBRichey1961` |
 
-## 🚀 How It Works
+6. Click **"Save"**
+7. **Redeploy** your site (push new code or manually trigger a redeploy)
 
-Once set up, when you click "Build It, Test It, Deploy It!":
+### Step 4: Test It
 
-1. **Creates GitHub Repository**
-   - New repo with your idea name
-   - All source code included
-   - Auto-setup for Netlify deployment
+1. Go to https://take-the-reins.ai/hub/build
+2. Fill in your idea details
+3. Click **"Build It, Test It, Deploy It!"**
+4. Watch the loading overlay
+5. A new window opens with your live app! 🎉
 
-2. **Generates Next.js Project**
-   - Tailwind CSS pre-configured
-   - TypeScript ready
-   - Build plan in README
-   - Live URL in minutes
+## 🚀 How Users Experience It
 
-3. **Deploys to Netlify**
-   - Live URL generated
-   - Auto-opens in your browser
-   - Updates automatically on git push
+Users simply:
+1. Fill out their idea on `/hub/build`
+2. Wait for AI analysis
+3. See their prototype
+4. Click **"Build It, Test It, Deploy It!"**
+5. **Their app opens in a new tab - LIVE on the internet!**
 
-## 📋 Security Notes
+No token setup, no friction, just works.
 
-- Never commit tokens to GitHub (they're in `.env.local` which is `.gitignored`)
-- These tokens give access to create repos and deploy to your Netlify account
-- You can revoke tokens at any time if needed
-- The build feature only creates new repos; it doesn't access existing ones
+## 📊 What Gets Created
 
-## ❓ Troubleshooting
+Each time someone builds:
+- **New GitHub repo** (named `app-{idea-name}-{timestamp}`)
+  - Full Next.js project
+  - Build plan in README
+  - All source code included
+  - Could be forked/cloned by the user later
 
-**"Missing required environment variables" error:**
-- Check that all 3 variables are set in Netlify
-- Verify you've redeployed after adding variables
-- Check variable names are spelled exactly: `GITHUB_TOKEN`, `NETLIFY_TOKEN`, `GITHUB_USERNAME`
+- **New Netlify site** (auto-deployed from GitHub)
+  - Live URL: `https://app-{random}.netlify.app`
+  - Auto-updates when repo is pushed
+  - Free hosting
 
-**"GitHub repo creation failed":**
-- Check your GitHub token is valid and has `repo` scope
-- Check your GitHub username is correct
-- Ensure your GitHub account has the ability to create repos
+## 🔒 Security Notes
 
-**"Netlify deployment failed":**
-- Check your Netlify token is valid
-- Ensure your Netlify account is active
-- Check that your account allows API deployments
+- Tokens are **server-side only** (stored in Netlify env vars)
+- Never exposed to the frontend
+- Only used by `/api/hub/build-and-deploy`
+- If token leaks, you can regenerate at any time
 
-## ✅ Next Steps
+## 🛠️ Maintenance
 
-1. Set up the three environment variables in Netlify
-2. Redeploy the site
-3. Go to `/hub/build`
-4. Write your idea
-5. Click "Build It, Test It, Deploy It!"
-6. Your live app will launch in a new tab!
+**Rate limits:**
+- GitHub: 5,000 requests/hour per token
+- Netlify: 2,000 builds/month on free tier
+
+**If you hit limits:**
+- Upgrade GitHub to create more repos
+- Upgrade Netlify for more builds
+- Implement user-provided tokens later (Option 2/3)
+
+## ✅ You're Done!
+
+Once you complete the 4 steps above, the feature is ready for anyone to use. No additional setup needed per user.
