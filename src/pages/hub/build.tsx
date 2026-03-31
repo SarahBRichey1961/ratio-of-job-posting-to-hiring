@@ -219,6 +219,26 @@ export default function BuildTheDamnThing() {
         <title>Build the Damn Thing! - Take The Reins</title>
       </Head>
 
+      {/* Deployment Status Overlay - Outside main content for full screen */}
+      {loading && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
+          <div className="bg-slate-800 border-2 border-green-500 rounded-xl p-12 text-center max-w-md shadow-2xl">
+            <div className="mb-8">
+              <div className="inline-block">
+                <div className="animate-spin rounded-full h-20 w-20 border-4 border-slate-600 border-t-green-500"></div>
+              </div>
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-6">Building Magic...</h2>
+            <p className="text-green-300 text-xl font-semibold mb-6 min-h-8">{deploymentStatus}</p>
+            <div className="space-y-2 text-slate-400 text-sm">
+              <p>✓ Creating your GitHub repository</p>
+              <p>✓ Generating your Next.js project</p>
+              <p>✓ Deploying to Netlify</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="mb-12">
@@ -227,24 +247,6 @@ export default function BuildTheDamnThing() {
             Turn your brilliant idea into a launchable product with AI guidance
           </p>
         </div>
-
-        {/* Deployment Status Overlay */}
-        {loading && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 rounded-lg">
-            <div className="bg-slate-800 border border-green-600 rounded-xl p-12 text-center max-w-md">
-              <div className="mb-6">
-                <div className="inline-block">
-                  <div className="animate-spin rounded-full h-16 w-16 border-4 border-slate-600 border-t-green-500"></div>
-                </div>
-              </div>
-              <h2 className="text-2xl font-bold text-white mb-4">Building Magic...</h2>
-              <p className="text-green-300 text-lg font-semibold mb-4">{deploymentStatus}</p>
-              <p className="text-slate-400 text-sm">
-                Creating your GitHub repository, generating code, and deploying to Netlify...
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* Step 1: Idea Form */}
         {step === 1 && (
