@@ -41,6 +41,12 @@ const navItems: NavItem[] = [
     description: 'Learn, build & collaborate',
   },
   {
+    label: 'Build the Damn Thing!',
+    href: '/hub/build',
+    icon: '⚙️',
+    description: 'Turn your idea into reality',
+  },
+  {
     label: 'Target Market Finder',
     href: '/tools/target-market',
     icon: '🎯',
