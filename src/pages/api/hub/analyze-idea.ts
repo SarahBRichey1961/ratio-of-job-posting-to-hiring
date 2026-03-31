@@ -7,16 +7,7 @@ interface IdeaFormData {
   howItWorks: string
 }
 
-interface AIAnalysis {
-  feasibility: string
-  buildPlan: string[]
-  technologies: string[]
-  testStrategy: string
-  launchStrategy: string
-  mvpTasks: string[]
-}
-
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY as string
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -35,34 +26,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Missing required fields' })
     }
 
-    // Create prompt for OpenAI
-    const prompt = `You are a helpful startup advisor helping beginners build their ideas with industry best practices.
+    // First, analyze if the idea is clear enough or needs clarification
+    const analysisPrompt = `You are a startup advisor evaluating if a user's idea description is clear enough to build, or if it needs clarification.
 
-The user has this idea:
+The user's idea:
 - Main Idea: ${mainIdea}
 - Target User: ${targetUser}
 - Problem Solved: ${problemSolved}
 - How It Works: ${howItWorks}
 
-Please provide a concise analysis in JSON format with these fields:
-1. "feasibility": A 2-3 sentence assessment of whether this idea is feasible to build and launch (be encouraging but realistic)
-2. "buildPlan": A list of 5-7 specific steps to build this idea (be concrete and actionable)
-3. "technologies": A list of 2-3 ONLY beginner-friendly, zero-config tools they could use. Options:
-   - GitHub (version control + free static site hosting)
-   - Netlify (free hosting)
-   - Figma (free design mockups, no coding needed)
-   Pick the 2-3 most relevant for their idea with one sentence explanation each.
-4. "mvpTasks": A list of 4-6 must-have features for the MVP (minimum viable product) to launch
-5. "testStrategy": A 3-4 sentence detailed testing strategy before launch. Include:
-   - What to test (core features)
-   - Who to test with (friends, beta users)
-   - How to gather feedback
-   - What success looks like
-6. "launchStrategy": A 2-3 sentence strategy for how to get their first 10-20 users
+Analyze: Is this idea clear and specific enough to move forward with building a prototype? Or does it need clarification questions?
 
-Return ONLY valid JSON, no other text.`
+Rules:
+- If the idea covers: what it does, who uses it, what problem it solves, and basic flow → READY
+- If anything is vague, missing details, or unclear → NEEDS_CLARIFICATION
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+Respond with ONLY this JSON format:
+{
+  "decision": "READY" or "NEEDS_CLARIFICATION",
+  "questions": ["Question 1?", "Question 2?"] (only if NEEDS_CLARIFICATION, max 5 questions, or empty array if READY)
+}
+
+Make sure it's valid JSON with no other text.`
+
+    const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -70,39 +57,46 @@ Return ONLY valid JSON, no other text.`
       },
       body: JSON.stringify({
         model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
+        messages: [{ role: 'user', content: analysisPrompt }],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 500,
       }),
     })
 
-    if (!response.ok) {
-      const error = await response.json()
+    if (!analysisResponse.ok) {
+      const error = await analysisResponse.json()
       console.error('OpenAI API error:', error)
       throw new Error(`OpenAI error: ${error.error?.message || 'Unknown error'}`)
     }
 
-    const data = await response.json()
-    const content = data.choices[0]?.message?.content
+    const analysisData = await analysisResponse.json()
+    const analysisContent = analysisData.choices[0]?.message?.content
 
-    if (!content) {
+    if (!analysisContent) {
       throw new Error('No response from OpenAI')
     }
 
-    // Parse JSON response
-    const analysis: AIAnalysis = JSON.parse(content)
+    const analysis = JSON.parse(analysisContent)
 
-    // Validate response structure
-    if (!analysis.feasibility || !analysis.buildPlan || !analysis.technologies || !analysis.mvpTasks || !analysis.testStrategy || !analysis.launchStrategy) {
-      throw new Error('Invalid response format from AI')
+    // If questions are needed, return them
+    if (analysis.decision === 'NEEDS_CLARIFICATION' && analysis.questions?.length > 0) {
+      return res.status(200).json({
+        questions: analysis.questions,
+      })
     }
 
-    return res.status(200).json(analysis)
+    // Idea is clear! Generate a basic prototype structure that will be filled by generate-prototype.ts
+    // For now, return empty prototype data to signal to frontend to call generate-prototype
+    return res.status(200).json({
+      htmlMockup: '<div>Generating prototype...</div>',
+      userFlow: [],
+      feasibility: '',
+      buildPlan: [],
+      technologies: [],
+      testStrategy: '',
+      launchStrategy: '',
+      mvpTasks: [],
+    })
   } catch (err) {
     console.error('Error analyzing idea:', err)
     const message = err instanceof Error ? err.message : 'Failed to analyze idea'
