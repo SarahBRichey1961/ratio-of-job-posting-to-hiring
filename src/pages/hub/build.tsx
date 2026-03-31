@@ -34,6 +34,7 @@ export default function BuildTheDamnThing() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [buildLiveUrl, setBuildLiveUrl] = useState('')
+  const [deploymentStatus, setDeploymentStatus] = useState('')
   const [formData, setFormData] = useState<IdeaFormData>({
     mainIdea: '',
     targetUser: '',
@@ -166,6 +167,7 @@ export default function BuildTheDamnThing() {
     setAnswers([])
     setPrototype(null)
     setBuildLiveUrl('')
+    setDeploymentStatus('')
     setError('')
   }
 
@@ -177,6 +179,7 @@ export default function BuildTheDamnThing() {
 
     setLoading(true)
     setError('')
+    setDeploymentStatus('Building your project...')
 
     try {
       const response = await fetch('/api/hub/build-and-deploy', {
@@ -193,18 +196,20 @@ export default function BuildTheDamnThing() {
         throw new Error(data.error || 'Failed to build and deploy')
       }
 
+      setDeploymentStatus('Deploying to Netlify...')
       const data = await response.json()
+      
+      setDeploymentStatus('Launching your app...')
       setBuildLiveUrl(data.liveUrl)
       setStep(5) // Show success/live app screen
       
-      // Auto-launch the live URL
-      setTimeout(() => {
-        window.open(data.liveUrl, '_blank')
-      }, 1000)
+      // Auto-launch the live URL immediately
+      window.open(data.liveUrl, '_blank')
     } catch (err) {
       setError((err as Error).message || 'Error building and deploying. Please try again.')
     } finally {
       setLoading(false)
+      setDeploymentStatus('')
     }
   }
 
@@ -222,6 +227,24 @@ export default function BuildTheDamnThing() {
             Turn your brilliant idea into a launchable product with AI guidance
           </p>
         </div>
+
+        {/* Deployment Status Overlay */}
+        {loading && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 rounded-lg">
+            <div className="bg-slate-800 border border-green-600 rounded-xl p-12 text-center max-w-md">
+              <div className="mb-6">
+                <div className="inline-block">
+                  <div className="animate-spin rounded-full h-16 w-16 border-4 border-slate-600 border-t-green-500"></div>
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-4">Building Magic...</h2>
+              <p className="text-green-300 text-lg font-semibold mb-4">{deploymentStatus}</p>
+              <p className="text-slate-400 text-sm">
+                Creating your GitHub repository, generating code, and deploying to Netlify...
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Step 1: Idea Form */}
         {step === 1 && (
@@ -542,24 +565,33 @@ export default function BuildTheDamnThing() {
                 ✨ Your app has been built, deployed to GitHub, and is now live on Netlify!
               </p>
               <p className="text-green-300 mb-8 text-base">
-                The app should have opened in a new tab. If not, click the button below to view it.
+                The app should have opened in a new tab. Here's your live URL:
               </p>
-              <div className="bg-slate-900 border border-green-600/30 rounded-lg p-6 mb-6">
-                <p className="text-slate-400 text-sm mb-2">Live URL:</p>
+              <div className="bg-slate-900 border-2 border-green-500 rounded-lg p-6 mb-6">
+                <p className="text-slate-400 text-sm mb-3 font-semibold">🌐 LIVE URL</p>
                 <a
                   href={buildLiveUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-green-400 hover:text-green-300 text-xl font-mono break-all font-semibold"
+                  className="text-green-400 hover:text-green-300 text-2xl font-mono break-all font-bold block mb-4"
                 >
                   {buildLiveUrl}
                 </a>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(buildLiveUrl)
+                    alert('URL copied to clipboard!')
+                  }}
+                  className="text-sm bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded transition"
+                >
+                  📋 Copy URL
+                </button>
               </div>
               <button
                 onClick={() => window.open(buildLiveUrl, '_blank')}
-                className="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition mb-6"
+                className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-8 rounded-lg transition text-lg mb-6"
               >
-                👉 View Your Live App
+                👉 View Your Live App Now
               </button>
             </div>
 
