@@ -549,30 +549,46 @@ async function deployToNetlifyDirect(
   console.log(`✅ Netlify site created: ${siteName}`)
   console.log(`   Site ID: ${siteId}`)
   
-  // Automatically add GitHub secret for Netlify auto-deploy
-  console.log(`🔐 Adding NETLIFY_AUTH_TOKEN secret to GitHub...`)
+  // Automatically add GitHub secrets for Netlify auto-deploy
+  console.log(`🔐 Adding Netlify secrets to GitHub...`)
   try {
-    // Encrypt the token for GitHub (base64 is sufficient for this context)
-    const secretValue = token
-    
-    const secretResponse = await fetch(`https://api.github.com/repos/${repoFullName}/actions/secrets/NETLIFY_AUTH_TOKEN`, {
+    // Add NETLIFY_AUTH_TOKEN
+    const tokenResponse = await fetch(`https://api.github.com/repos/${repoFullName}/actions/secrets/NETLIFY_AUTH_TOKEN`, {
       method: 'PUT',
       headers: {
         Authorization: `token ${GITHUB_TOKEN}`,
         Accept: 'application/vnd.github.v3+json',
       },
       body: JSON.stringify({
-        encrypted_value: secretValue,
+        encrypted_value: token,
       }),
     })
     
-    if (secretResponse.ok) {
-      console.log(`✅ GitHub secret NETLIFY_AUTH_TOKEN added automatically`)
+    if (tokenResponse.ok) {
+      console.log(`✅ GitHub secret NETLIFY_AUTH_TOKEN added`)
     } else {
-      console.warn(`⚠️  Could not add secret (${secretResponse.status})`)
+      console.warn(`⚠️  Could not add NETLIFY_AUTH_TOKEN (${tokenResponse.status})`)
+    }
+
+    // Add NETLIFY_SITE_ID (critical for deployment)
+    const siteIdResponse = await fetch(`https://api.github.com/repos/${repoFullName}/actions/secrets/NETLIFY_SITE_ID`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `token ${GITHUB_TOKEN}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+      body: JSON.stringify({
+        encrypted_value: siteId,
+      }),
+    })
+    
+    if (siteIdResponse.ok) {
+      console.log(`✅ GitHub secret NETLIFY_SITE_ID added`)
+    } else {
+      console.warn(`⚠️  Could not add NETLIFY_SITE_ID (${siteIdResponse.status})`)
     }
   } catch (err) {
-    console.warn(`⚠️  Error adding GitHub secret: ${(err as Error).message}`)
+    console.warn(`⚠️  Error adding GitHub secrets: ${(err as Error).message}`)
   }
 
   // Trigger initial build by making a commit that will fire GitHub Actions
