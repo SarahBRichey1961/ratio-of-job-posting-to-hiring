@@ -494,68 +494,34 @@ async function deployToNetlify(
   
   console.log(`✅ Netlify site created: ${siteName}`)
   console.log(`   Site ID: ${siteId}`)
-  console.log(`   Build starting at: ${liveUrl}`)
-  console.log(`   Polling for build completion...`)
+  console.log(`   Live URL: ${liveUrl}`)
 
-  // Poll for build completion - shorter timeout to avoid serverless function timeout
-  // If build doesn't complete quickly, return URL and let client handle it
-  let deployReady = false
-  let attempts = 0
-  const maxAttempts = 20 // Reduced from 60 to ~100 seconds max (5 sec intervals)
-
-  while (!deployReady && attempts < maxAttempts) {
-    // Shorter wait times
-    const waitTime = attempts < 5 ? 2000 : 5000 // 2s for first 5, then 5s
-    await new Promise(resolve => setTimeout(resolve, waitTime))
-    attempts++
-
-    try {
-      const deploysResponse = await fetch(
-        `https://api.netlify.com/api/v1/sites/${siteId}/deploys?limit=1`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
-
-      if (!deploysResponse.ok) {
-        console.log(`   ⏳ Checking deploy status (attempt ${attempts}/${maxAttempts})...`)
-        continue
+  // Trigger a build manually to ensure it starts
+  console.log(`🔨 Triggering build manually...`)
+  try {
+    const triggerBuildResponse = await fetch(
+      `https://api.netlify.com/api/v1/sites/${siteId}/builds`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       }
+    )
 
-      const deploys = await deploysResponse.json()
-      if (deploys && deploys.length > 0) {
-        const latestDeploy = deploys[0]
-        const state = latestDeploy.state
-
-        if (state === 'ready') {
-          deployReady = true
-          console.log(`   ✅ Build completed successfully!`)
-        } else if (state === 'error') {
-          console.warn(`   ⚠️  Build failed with state: ${state}, but returning URL anyway`)
-          // Return URL even if build failed - might be temporary
-          return liveUrl
-        } else {
-          console.log(`   ⏳ Build in progress (${state}) - attempt ${attempts}/${maxAttempts}...`)
-        }
-      } else {
-        console.log(`   ⏳ Waiting for deploy (attempt ${attempts}/${maxAttempts})...`)
-      }
-    } catch (err) {
-      console.log(`   ⚠️  Error checking deploy: ${(err as Error).message}, will retry...`)
-      // Continue polling anyway
+    if (triggerBuildResponse.ok) {
+      const buildData = await triggerBuildResponse.json()
+      console.log(`✅ Build triggered successfully (Build ID: ${buildData.id})`)
+    } else {
+      console.warn(`⚠️  Failed to trigger build manually, Netlify will try to auto-trigger`)
     }
-  }
-
-  // If we hit max attempts, just return the URL
-  // The build may still be in progress but we need to return before serverless timeout
-  if (!deployReady) {
-    console.log(`   ⏳ Build still in progress (reached max poll attempts), returning URL`)
-    console.log(`   ℹ️  Site may take a few more seconds to appear. If you get a 404, wait 30s and refresh.`)
+  } catch (err) {
+    console.warn(`⚠️  Error triggering build: ${(err as Error).message}`)
   }
 
   console.log(`✅ Live URL ready: ${liveUrl}`)
+  console.log(`ℹ️  Build is now in progress. Site may take 1-2 minutes to appear.`)
   return liveUrl
 }
 
