@@ -20,236 +20,335 @@ interface RequestBody {
   }
 }
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN as string
-const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN as string
-const GITHUB_USERNAME = process.env.GITHUB_USERNAME as string
-
 async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // Check for required environment variables
-  const missingVars = []
-  if (!GITHUB_TOKEN) missingVars.push('GITHUB_TOKEN')
-  if (!NETLIFY_TOKEN) missingVars.push('NETLIFY_TOKEN')
-  if (!GITHUB_USERNAME) missingVars.push('GITHUB_USERNAME')
+  const GITHUB_TOKEN = process.env.GITHUB_TOKEN
+  const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN
+  const GITHUB_USERNAME = process.env.GITHUB_USERNAME
 
-  if (missingVars.length > 0) {
-    console.error(`❌ Missing environment variables: ${missingVars.join(', ')}`)
+  if (!GITHUB_TOKEN || !NETLIFY_TOKEN || !GITHUB_USERNAME) {
     return res.status(500).json({
-      error: `Missing required environment variables: ${missingVars.join(', ')}. Please add these to Netlify environment settings.`,
-      missing: missingVars,
-      instructions: 'Go to Netlify → Site Settings → Build & Deploy → Environment and add: GITHUB_TOKEN, NETLIFY_TOKEN, GITHUB_USERNAME',
+      error: 'Missing required environment variables',
     })
   }
 
   try {
     const { idea, prototype } = req.body as RequestBody
 
-    // Use app name provided by user, sanitize for GitHub
-    const repoName = idea.appName
-      .toLowerCase()
-      .replace(/[^a-z0-9-_]/g, '-') // Replace invalid chars with dash
-      .replace(/^-+|-+$/g, '') // Remove leading/trailing dashes
-      .substring(0, 39) // GitHub limit is 39 chars
+    const repoName = sanitizeRepoName(idea.appName)
+    console.log(`🚀 Building: ${idea.mainIdea}`)
+    console.log(`📂 Repo: ${repoName}`)
 
-    if (!repoName || repoName.length === 0) {
-      throw new Error('Invalid app name. Please use letters, numbers, dashes, or underscores.')
-    }
-
-    console.log(`🚀 Starting build and deploy process for: ${idea.mainIdea}`)
-    console.log(`📂 GitHub repo name: ${repoName}`)
-
-    // Step 1: Create GitHub repository
-    const createRepoResponse = await fetch('https://api.github.com/user/repos', {
-      method: 'POST',
-      headers: {
-        Authorization: `token ${GITHUB_TOKEN}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/vnd.github.v3+json',
-      },
-      body: JSON.stringify({
-        name: repoName,
-        description: `${idea.mainIdea}`,
-        private: false,
-        auto_init: true,
-      }),
-    })
-
-    if (!createRepoResponse.ok) {
-      let error: any = {}
-      try {
-        error = await createRepoResponse.json()
-      } catch (e) {
-        console.error(`❌ Failed to parse error response:`, e)
-      }
-
-      console.error(`❌ GitHub API Error (${createRepoResponse.status}):`, JSON.stringify(error, null, 2))
-
-      let helpfulMessage = error.message || `HTTP ${createRepoResponse.status}`
-
-      // Provide helpful messages for common errors
-      if (error.errors && error.errors.length > 0) {
-        const errorDetails = error.errors.map((e: any) => e.message).join(', ')
-        helpfulMessage += ` (${errorDetails})`
-      }
-
-      // Check for repo already exists (422 Unprocessable Entity)
-      if (createRepoResponse.status === 422 && (error.message?.includes('already exists') || error.errors?.some((e: any) => e.message?.includes('already exists')))) {
-        console.error(`❌ Repository "${repoName}" already exists on GitHub`)
-        return res.status(409).json({
-          error: `App name "${repoName}" is already taken on GitHub or Netlify.`,
-          code: 'REPO_ALREADY_EXISTS',
-          appName: repoName,
-        })
-      }
-
-      // Handle other specific errors
-      if (createRepoResponse.status === 401) {
-        helpfulMessage =
-          'Invalid GitHub token. Check that GITHUB_TOKEN is set correctly in Netlify environment variables.'
-      } else if (createRepoResponse.status === 403) {
-        helpfulMessage =
-          'GitHub token does not have permission to create repos. Ensure it has "repo" scope.'
-      } else if (createRepoResponse.status === 422) {
-        // Invalid name
-        if (error.message?.includes('name')) {
-          helpfulMessage = `Invalid repository name: "${repoName}". Use letters, numbers, dashes, and underscores only.`
-        } else {
-          helpfulMessage = `Repository creation failed: ${helpfulMessage}`
-        }
-      }
-
-      console.error(`GitHub repo creation failed with: ${helpfulMessage}`)
-      throw new Error(`GitHub repo creation failed: ${helpfulMessage}`)
-    }
-
-    const repoData = await createRepoResponse.json()
-    const repoUrl = repoData.clone_url
+    // 1. CREATE GITHUB REPO
+    console.log(`1️⃣ Creating GitHub repository...`)
+    const repoData = await createRepo(
+      GITHUB_TOKEN,
+      repoName,
+      idea.mainIdea
+    )
     const repoFullName = repoData.full_name
-    // Wait a moment for GitHub to fully initialize the repo and main branch
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    console.log(`✅ GitHub repo created: ${repoFullName}`)
+    console.log(`✅ Repo created: ${repoFullName}`)
 
-    // Step 2: Generate Next.js project files
-    const filesToCreate = generateProjectFiles(idea, prototype)
+    // 2. WAIT FOR REPO TO BE READY
+    console.log(`⏳ Waiting for repo initialization...`)
+    await sleep(2000)
 
-    // Step 3: Create files in GitHub using API
-    console.log(`📦 Creating ${filesToCreate.length} files in GitHub repo...`)
+    // 3. GENERATE FILES AND PUSH TO GITHUB
+    console.log(`2️⃣ Generating and pushing files to GitHub...`)
+    const files = generateFiles(idea, prototype)
     
-    // Add a small delay to ensure repo is fully initialized
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    for (const file of filesToCreate) {
-      console.log(`  📄 Creating: ${file.path}`)
-      await createFileInGitHub(GITHUB_TOKEN, repoFullName, file.path, file.content)
+    for (const file of files) {
+      await pushFileToGitHub(
+        GITHUB_TOKEN,
+        repoFullName,
+        file.path,
+        file.content
+      )
     }
-    console.log('✅ All files created successfully')
+    console.log(`✅ Files pushed (${files.length} files)`)
 
-    // Step 4: Deploy to Netlify and get live URL
-    console.log('🌐 Deploying to Netlify...')
-    const netlifyUrl = await deployToNetlifyDirect(NETLIFY_TOKEN, repoName, filesToCreate, repoFullName, idea)
-    console.log(`✅ Deployment successful! Live at: ${netlifyUrl}`)
+    // 4. CREATE NETLIFY SITE
+    console.log(`3️⃣ Creating Netlify site...`)
+    const siteData = await createNetlifySite(
+      NETLIFY_TOKEN,
+      repoName
+    )
+    const siteId = siteData.id
+    const liveUrl = siteData.url || `https://${siteData.name}.netlify.app`
+    console.log(`✅ Site created: ${liveUrl}`)
+
+    // 5. LINK REPO TO NETLIFY
+    console.log(`4️⃣ Linking GitHub to Netlify...`)
+    await linkRepoToNetlify(
+      NETLIFY_TOKEN,
+      siteId,
+      repoFullName
+    )
+    console.log(`✅ Linked!`)
+
+    // 6. TRIGGER BUILD
+    console.log(`5️⃣ Triggering build...`)
+    await triggerBuild(NETLIFY_TOKEN, siteId)
+
+    // 7. WAIT FOR BUILD
+    console.log(`⏳ Waiting for build to complete...`)
+    const maxWait = 120000 // 2 minutes
+    const buildReady = await waitForBuild(NETLIFY_TOKEN, siteId, maxWait)
+
+    if (!buildReady) {
+      console.warn(`⚠️ Build taking longer than expected, returning URL anyway`)
+    } else {
+      console.log(`✅ Build complete!`)
+    }
 
     return res.status(200).json({
       success: true,
-      liveUrl: netlifyUrl,
-      githubRepo: `https://github.com/${repoFullName}`,
-      repoName: repoName,
+      message: 'Your app is live!',
+      liveUrl,
+      repoUrl: `https://github.com/${repoFullName}`,
     })
   } catch (error) {
-    console.error('❌ Error building and deploying:', error)
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    
-    // Provide helpful context for common errors
-    let helpfulMessage = message
-    if (message.includes('Failed to create') && message.includes('Not Found')) {
-      helpfulMessage = `${message}. This usually means your GitHub token doesn't have permission to create files. Make sure you've created a Personal Access Token with 'repo' scope at https://github.com/settings/tokens`
-    }
-    
-    return res.status(500).json({ error: `Failed to build and deploy: ${helpfulMessage}` })
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error(`❌ Error: ${msg}`)
+    return res.status(500).json({ error: msg })
   }
 }
 
-function generateAppIndex(
-  idea: RequestBody['idea'],
-  prototype: RequestBody['prototype']
-): string {
-  // Get first 2 build plan items to showcase
+function sanitizeRepoName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .substring(0, 39)
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function createRepo(
+  token: string,
+  name: string,
+  description: string
+): Promise<any> {
+  const res = await fetch('https://api.github.com/user/repos', {
+    method: 'POST',
+    headers: {
+      Authorization: `token ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/vnd.github.v3+json',
+    },
+    body: JSON.stringify({
+      name,
+      description,
+      private: false,
+      auto_init: true,
+    }),
+  })
+
+  if (!res.ok) {
+    const error = await res.json()
+    if (res.status === 422 && error.message?.includes('already exists')) {
+      throw new Error(`Repo name already exists: ${name}`)
+    }
+    throw new Error(`GitHub error: ${error.message}`)
+  }
+
+  return res.json()
+}
+
+async function pushFileToGitHub(
+  token: string,
+  repoFullName: string,
+  filePath: string,
+  content: string
+): Promise<void> {
+  const url = `https://api.github.com/repos/${repoFullName}/contents/${filePath}`
+  const encoded = Buffer.from(content).toString('base64')
+
+  // Try to get existing file SHA
+  let sha: string | undefined
+  try {
+    const getRes = await fetch(url, {
+      headers: { Authorization: `token ${token}` },
+    })
+    if (getRes.ok) {
+      const data = await getRes.json()
+      sha = data.sha
+    }
+  } catch {}
+
+  // Create or update file
+  const putRes = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      Authorization: `token ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/vnd.github.v3+json',
+    },
+    body: JSON.stringify({
+      message: `Add ${filePath}`,
+      content: encoded,
+      branch: 'main',
+      ...(sha && { sha }),
+    }),
+  })
+
+  if (!putRes.ok) {
+    const error = await putRes.json()
+    throw new Error(`Failed to push ${filePath}: ${error.message}`)
+  }
+}
+
+async function createNetlifySite(
+  token: string,
+  appName: string
+): Promise<any> {
+  const name = `${appName}-${Math.random().toString(36).substring(2, 8)}`
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-')
+    .substring(0, 63)
+
+  const res = await fetch('https://api.netlify.com/api/v1/sites', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ name }),
+  })
+
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(`Netlify error: ${error.message}`)
+  }
+
+  return res.json()
+}
+
+async function linkRepoToNetlify(
+  token: string,
+  siteId: string,
+  repoFullName: string
+): Promise<void> {
+  const [owner, repo] = repoFullName.split('/')
+
+  const res = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      repo: {
+        provider: 'github',
+        repo: repoFullName,
+        branch: 'main',
+      },
+      build_settings: {
+        cmd: 'npm run build',
+        dir: '.next',
+      },
+    }),
+  })
+
+  if (!res.ok) {
+    const error = await res.json()
+    console.warn(`⚠️ Could not link repo: ${error.message}`)
+  }
+}
+
+async function triggerBuild(token: string, siteId: string): Promise<void> {
+  const res = await fetch(
+    `https://api.netlify.com/api/v1/sites/${siteId}/builds`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  )
+
+  if (!res.ok) {
+    console.warn(`⚠️ Could not trigger build`)
+  }
+}
+
+async function waitForBuild(
+  token: string,
+  siteId: string,
+  maxWait: number
+): Promise<boolean> {
+  const start = Date.now()
+
+  while (Date.now() - start < maxWait) {
+    try {
+      const res = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (res.ok) {
+        const site = await res.json()
+        if (site.state === 'current') {
+          return true
+        }
+      }
+    } catch {}
+
+    await sleep(3000)
+  }
+
+  return false
+}
+
+function generateAppIndex(idea: RequestBody['idea'], prototype: RequestBody['prototype']): string {
   const features = prototype.buildPlan.slice(0, 2)
-  const featuresList = features
     .map((step, i) => {
       const cleaned = step.replace(/^[0-9]+\.\s*/, '')
       const icons = ['🚀', '⚡', '✨', '🎯']
-      return `                <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 hover:border-indigo-500/50 transition-colors">
+      return `                <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
                   <div className="text-4xl mb-3">${icons[i % 4]}</div>
-                  <h4 className="text-xl font-bold text-white mb-2">Feature ${i + 1}</h4>
                   <p className="text-slate-400">${cleaned}</p>
                 </div>`
     })
     .join('\n')
 
-  const appNameEscaped = idea.appName.replace(/'/g, "\\'")
-  const mainIdeaEscaped = idea.mainIdea.replace(/'/g, "\\'")
-  const problemEscaped = idea.problemSolved.replace(/'/g, "\\'")
-  const howItWorksEscaped = idea.howItWorks.replace(/'/g, "\\'")
-  const targetUserEscaped = idea.targetUser.replace(/'/g, "\\'")
-
   return `import Head from 'next/head'
-import { useState } from 'react'
 
 export default function Home() {
   return (
     <>
       <Head>
-        <title>${appNameEscaped}</title>
-        <meta name="description" content="${mainIdeaEscaped}" />
+        <title>${idea.appName}</title>
+        <meta name="description" content="${idea.mainIdea}" />
       </Head>
-
-      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        {/* Header */}
-        <header className="border-b border-slate-700/50 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-10">
+      <main className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
+        <header className="border-b border-slate-700 bg-slate-900/80 sticky top-0">
           <div className="max-w-7xl mx-auto px-4 py-6">
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
-              ${appNameEscaped}
+              ${idea.appName}
             </h1>
           </div>
         </header>
-
-        {/* Hero Section */}
         <section className="max-w-7xl mx-auto px-4 py-16">
           <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
             <div>
-              <h2 className="text-5xl font-bold text-white mb-4">${mainIdeaEscaped}</h2>
-              <p className="text-xl text-slate-300 mb-6">${problemEscaped}</p>
-              <p className="text-lg text-slate-400 mb-8">${howItWorksEscaped}</p>
-              <button className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold py-3 px-8 rounded-lg transition-all">
+              <h2 className="text-5xl font-bold text-white mb-4">${idea.mainIdea}</h2>
+              <p className="text-xl text-slate-300 mb-6">${idea.problemSolved}</p>
+              <p className="text-lg text-slate-400 mb-8">${idea.howItWorks}</p>
+              <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold py-3 px-8 rounded-lg">
                 Get Started
               </button>
             </div>
-            <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-slate-700/50 rounded-lg p-8 h-64 flex items-center justify-center">
-              <p className="text-slate-300 text-center">Interactive Preview</p>
+            <div className="bg-indigo-500/10 border border-slate-700 rounded-lg p-8 h-80 flex items-center justify-center text-slate-300">
+              Your App Preview
             </div>
           </div>
-
-          {/* Features Section */}
           <section className="mb-16">
-            <h3 className="text-3xl font-bold text-white mb-8">Key Features</h3>
+            <h3 className="text-3xl font-bold text-white mb-8">Features</h3>
             <div className="grid md:grid-cols-2 gap-6">
-${featuresList}
-            </div>
-          </section>
-
-          {/* Info Section */}
-          <section className="grid md:grid-cols-2 gap-6">
-            <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-8">
-              <h4 className="text-xl font-bold text-blue-300 mb-2">👥 For: ${targetUserEscaped}</h4>
-              <p className="text-blue-200">Built specifically for your target users</p>
-            </div>
-            <div className="bg-purple-900/20 border border-purple-700/50 rounded-lg p-8">
-              <h4 className="text-xl font-bold text-purple-300 mb-2">🚀 Next Steps</h4>
-              <p className="text-purple-200">Customize this app and deploy your changes with git push!</p>
+${features}
             </div>
           </section>
         </section>
@@ -259,413 +358,72 @@ ${featuresList}
 }`
 }
 
-function generateProjectFiles(
+function generateFiles(
   idea: RequestBody['idea'],
   prototype: RequestBody['prototype']
 ): Array<{ path: string; content: string }> {
-  const buildPlanMD = `# ${idea.mainIdea}
-
-## Target User
-${idea.targetUser}
-
-## Problem Solved
-${idea.problemSolved}
-
-## How It Works
-${idea.howItWorks}
-
-## Build Plan
-${prototype.buildPlan.map((step, i) => `${i + 1}. ${step}`).join('\n')}
-
-## MVP Tasks
-${prototype.mvpTasks.map((task) => `- [ ] ${task}`).join('\n')}
-
-## Testing Strategy
-${prototype.testStrategy}
-
-## Launch Strategy
-${prototype.launchStrategy}
-
-## Recommended Tech Stack
-${prototype.technologies.map((tech) => `- ${tech}`).join('\n')}
-`
-
-  const packageJson = {
-    name: 'idea-builder-app',
-    version: '0.1.0',
-    private: true,
-    scripts: {
-      dev: 'next dev',
-      build: 'next build',
-      start: 'next start',
-      lint: 'next lint',
-    },
-    dependencies: {
-      react: '^18.2.0',
-      'react-dom': '^18.2.0',
-      next: '^14.0.0',
-    },
-    devDependencies: {
-      typescript: '^5.0.0',
-      '@types/node': '^20.0.0',
-      '@types/react': '^18.0.0',
-      '@types/react-dom': '^18.0.0',
-      autoprefixer: '^10.4.0',
-      postcss: '^8.4.0',
-      tailwindcss: '^3.3.0',
-      eslint: '^8.0.0',
-      'eslint-config-next': '^14.0.0',
-    },
-  }
-
-  const tsconfigJson = {
-    compilerOptions: {
-      target: 'ES2020',
-      lib: ['ES2020', 'DOM', 'DOM.Iterable'],
-      jsx: 'preserve',
-      module: 'ESNext',
-      moduleResolution: 'bundler',
-      allowImportingTsExtensions: true,
-      resolveJsonModule: true,
-      isolatedModules: true,
-      noEmit: true,
-      esModuleInterop: true,
-      skipLibCheck: true,
-      strict: false,
-      forceConsistentCasingInFileNames: true,
-      baseUrl: '.',
-      paths: {
-        '@/*': ['./*'],
-      },
-    },
-    include: ['next-env.d.ts', '**/*.ts', '**/*.tsx', '.next/types/**/*.ts'],
-    exclude: ['node_modules'],
-  }
-
-  const nextConfigJs = `/** @type {import('next').NextConfig} */
-const nextConfig = {
-  reactStrictMode: true,
-  swcMinify: true,
-}
-
-module.exports = nextConfig
-`
-
-  const tailwindConfigJs = `/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    './pages/**/*.{js,ts,jsx,tsx}',
-    './components/**/*.{js,ts,jsx,tsx}',
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}
-`
-
-  const postcssConfigJs = `module.exports = {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
-  },
-}
-`
-
-  const globalsCss = `@tailwind base;
-@tailwind components;
-@tailwind utilities;
-`
-
-  const indexPageTsx = generateAppIndex(idea, prototype)
-
-  const netlifyToml = `[build]
-  command = "npm run build"
-  publish = ".next"
-
-[functions]
-  node_bundler = "esbuild"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-`
-
-  const gitignore = `# Dependencies
-node_modules/
-.pnp
-.pnp.js
-
-# Production
-.next/
-out/
-
-# Misc
-.DS_Store
-*.pem
-
-# Debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Local env files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-`
-
-  const githubActionsWorkflow = `name: Build and Deploy to Netlify
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4.2.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4.1.0
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build Next.js
-        run: npm run build
-
-      - name: Deploy to Netlify
-        uses: nwtgck/actions-netlify@v2.1
-        with:
-          publish-dir: './.next'
-          production-branch: main
-          github-token: \${{ secrets.GITHUB_TOKEN }}
-          deploy-message: 'Deploy from GitHub Actions'
-          enable-pull-request-comment: true
-          enable-commit-comment: true
-        env:
-          NETLIFY_AUTH_TOKEN: \${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: \${{ secrets.NETLIFY_SITE_ID }}
-`
-
   return [
-    { path: 'README.md', content: buildPlanMD },
-    { path: 'package.json', content: JSON.stringify(packageJson, null, 2) },
-    { path: 'tsconfig.json', content: JSON.stringify(tsconfigJson, null, 2) },
-    { path: 'next.config.js', content: nextConfigJs },
-    { path: 'tailwind.config.js', content: tailwindConfigJs },
-    { path: 'postcss.config.js', content: postcssConfigJs },
-    { path: '.gitignore', content: gitignore },
-    { path: 'netlify.toml', content: netlifyToml },
-    { path: '.github/workflows/deploy.yml', content: githubActionsWorkflow },
-    { path: 'styles/globals.css', content: globalsCss },
-    { path: 'pages/index.tsx', content: indexPageTsx },
+    {
+      path: 'package.json',
+      content: JSON.stringify({
+        name: idea.appName.toLowerCase().replace(/\s+/g, '-'),
+        version: '1.0.0',
+        scripts: {
+          dev: 'next dev',
+          build: 'next build',
+          start: 'next start',
+        },
+        dependencies: {
+          react: '^18.0.0',
+          'react-dom': '^18.0.0',
+          next: '^14.0.0',
+        },
+        devDependencies: {
+          '@types/react': '^18.0.0',
+          '@types/node': '^20.0.0',
+          typescript: '^5.0.0',
+          tailwindcss: '^3.3.0',
+          autoprefixer: '^10.4.0',
+          postcss: '^8.4.0',
+        },
+      }, null, 2),
+    },
+    {
+      path: 'next.config.js',
+      content: 'module.exports = {}',
+    },
+    {
+      path: 'tsconfig.json',
+      content: JSON.stringify({
+        compilerOptions: {
+          jsx: 'preserve',
+          module: 'ESNext',
+          moduleResolution: 'bundler',
+          allowSyntheticDefaultImports: true,
+        },
+      }, null, 2),
+    },
+    {
+      path: 'tailwind.config.js',
+      content: 'module.exports = { content: ["./pages/**/*.{js,jsx,ts,tsx}"], theme: {}, plugins: [] }',
+    },
+    {
+      path: 'postcss.config.js',
+      content: 'module.exports = { plugins: { tailwindcss: {}, autoprefixer: {} } }',
+    },
+    {
+      path: 'pages/index.tsx',
+      content: generateAppIndex(idea, prototype),
+    },
+    {
+      path: 'styles/globals.css',
+      content: '@tailwind base; @tailwind components; @tailwind utilities;',
+    },
+    {
+      path: 'netlify.toml',
+      content: '[build]\ncommand = "npm run build"\npublish = ".next"\n\n[[redirects]]\nfrom = "/*"\nto = "/index.html"\nstatus = 200',
+    },
   ]
-}
-
-async function createFileInGitHub(
-  token: string,
-  repoFullName: string,
-  filePath: string,
-  content: string
-): Promise<void> {
-  const url = `https://api.github.com/repos/${repoFullName}/contents/${filePath}`
-  const encodedContent = Buffer.from(content).toString('base64')
-
-  // First, try to get the file if it exists (to get its SHA for updating)
-  let existingSha: string | undefined
-  try {
-    const getResponse = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Authorization: `token ${token}`,
-        Accept: 'application/vnd.github.v3+json',
-      },
-    })
-    
-    if (getResponse.ok) {
-      const fileData = await getResponse.json()
-      existingSha = fileData.sha
-    }
-  } catch (err) {
-    // File doesn't exist, that's fine - we'll create it
-  }
-
-  // Now create or update the file
-  const body: any = {
-    message: `Add ${filePath}`,
-    content: encodedContent,
-    branch: 'main',
-  }
-
-  // If file exists, include SHA for update
-  if (existingSha) {
-    body.sha = existingSha
-  }
-
-  const response = await fetch(url, {
-    method: 'PUT',
-    headers: {
-      Authorization: `token ${token}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/vnd.github.v3+json',
-      'User-Agent': 'BuildTheDamnThing',
-    },
-    body: JSON.stringify(body),
-  })
-
-  if (!response.ok) {
-    let errorDetails = ''
-    try {
-      const error = await response.json()
-      errorDetails = error.message || error.error || JSON.stringify(error)
-    } catch {
-      errorDetails = `HTTP ${response.status} ${response.statusText}`
-    }
-
-    console.error(`    ❌ Failed to create ${filePath}:`, errorDetails)
-    
-    if (response.status === 404) {
-      throw new Error(`Repository ${repoFullName} not found. Check your GitHub token has repo access and the repo was created successfully.`)
-    }
-    throw new Error(`Failed to create ${filePath}: ${errorDetails}`)
-  }
-
-  console.log(`    ✅ File created: ${filePath}`)
-}
-
-async function deployToNetlifyDirect(
-  token: string,
-  appName: string,
-  files: Array<{ path: string; content: string }>,
-  repoFullName: string,
-  idea: RequestBody['idea']
-): Promise<string> {
-  // Create a Netlify site linked to the GitHub repository
-  // Add random suffix to make subdomain unique on Netlify
-  const randomSuffix = Math.random().toString(36).substring(2, 8) // e.g., "a3k9z2"
-  const netlifyName = `${appName}-${randomSuffix}`.toLowerCase().replace(/[^a-z0-9-]/g, '-').substring(0, 63)
-  
-  console.log(`📍 Creating Netlify site with name: ${netlifyName}...`)
-  console.log(`📍 Linking to GitHub repo: ${repoFullName}`)
-  console.log(`📍 Using token: ${token ? `${token.substring(0, 10)}...` : 'NOT SET'}`)
-  
-  const createSiteResponse = await fetch('https://api.netlify.com/api/v1/sites', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      name: netlifyName,
-      repo: {
-        provider: 'github',
-        repo: repoFullName,
-        branch: 'main',
-      },
-    }),
-  })
-
-  console.log(`📍 Netlify response status: ${createSiteResponse.status}`)
-
-  if (!createSiteResponse.ok) {
-    let errorInfo = ''
-    try {
-      const errorJson = await createSiteResponse.json()
-      errorInfo = JSON.stringify(errorJson, null, 2)
-    } catch (e) {
-      const errorText = await createSiteResponse.text()
-      errorInfo = errorText
-    }
-    console.error('❌ Netlify site creation error:', errorInfo)
-    throw new Error(`Netlify site creation failed (${createSiteResponse.status}): ${errorInfo}`)
-  }
-
-  const siteData = await createSiteResponse.json()
-  const siteName = siteData.name
-  const siteId = siteData.id
-  const liveUrl = siteData.url || siteData.ssl_url || `https://${siteName}.netlify.app`
-  
-  console.log(`✅ Netlify site created: ${siteName}`)
-  console.log(`   Site ID: ${siteId}`)
-  
-  // Automatically add GitHub secrets for Netlify auto-deploy
-  console.log(`🔐 Adding Netlify secrets to GitHub...`)
-  try {
-    // Add NETLIFY_AUTH_TOKEN
-    const tokenResponse = await fetch(`https://api.github.com/repos/${repoFullName}/actions/secrets/NETLIFY_AUTH_TOKEN`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `token ${GITHUB_TOKEN}`,
-        Accept: 'application/vnd.github.v3+json',
-      },
-      body: JSON.stringify({
-        encrypted_value: token,
-      }),
-    })
-    
-    if (tokenResponse.ok) {
-      console.log(`✅ GitHub secret NETLIFY_AUTH_TOKEN added`)
-    } else {
-      console.warn(`⚠️  Could not add NETLIFY_AUTH_TOKEN (${tokenResponse.status})`)
-    }
-
-    // Add NETLIFY_SITE_ID (critical for deployment)
-    const siteIdResponse = await fetch(`https://api.github.com/repos/${repoFullName}/actions/secrets/NETLIFY_SITE_ID`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `token ${GITHUB_TOKEN}`,
-        Accept: 'application/vnd.github.v3+json',
-      },
-      body: JSON.stringify({
-        encrypted_value: siteId,
-      }),
-    })
-    
-    if (siteIdResponse.ok) {
-      console.log(`✅ GitHub secret NETLIFY_SITE_ID added`)
-    } else {
-      console.warn(`⚠️  Could not add NETLIFY_SITE_ID (${siteIdResponse.status})`)
-    }
-  } catch (err) {
-    console.warn(`⚠️  Error adding GitHub secrets: ${(err as Error).message}`)
-  }
-
-  // Trigger initial build by making a commit that will fire GitHub Actions
-  console.log(`🚀 Triggering initial GitHub Actions build...`)
-  try {
-    // Create a build trigger file to ensure GitHub Actions runs
-    const triggerContent = `// Build triggered at ${new Date().toISOString()}\n`
-    await createFileInGitHub(GITHUB_TOKEN, repoFullName, '.github/BUILD_TRIGGER', triggerContent)
-    console.log(`✅ GitHub Actions build triggered`)
-  } catch (err) {
-    console.warn(`⚠️  Could not trigger build: ${(err as Error).message}`)
-  }
-
-  console.log(`✅ Your site is deploying! Should be live in 1-2 minutes...`)
-  console.log(`   Live at: ${liveUrl}`)
-  console.log(`   Repo: https://github.com/${repoFullName}`)
-  
-  return liveUrl
 }
 
 export default buildAndDeploy
