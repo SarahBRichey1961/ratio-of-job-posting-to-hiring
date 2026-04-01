@@ -189,6 +189,7 @@ export default function BuildTheDamnThing() {
 
       const data = await response.json()
       setPrototype(data)
+      setEditedPrototype(JSON.parse(JSON.stringify(data))) // Deep copy for editing
       setEditMode(true) // Start in edit mode immediately
       setStep(5) // Full blueprint (step 5)
     } catch (err) {
@@ -222,6 +223,7 @@ export default function BuildTheDamnThing() {
 
       const data = await response.json()
       setPrototype(data)
+      setEditedPrototype(JSON.parse(JSON.stringify(data))) // Deep copy for editing
       setEditMode(true) // Start in edit mode immediately
       setStep(5) // Full blueprint (step 5)
     } catch (err) {
@@ -791,16 +793,12 @@ export default function BuildTheDamnThing() {
             {/* Feasibility */}
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-8">
               <h3 className="text-xl font-bold text-white mb-4">📊 Feasibility Assessment</h3>
-              {editMode && editedPrototype ? (
-                <textarea
-                  value={editedPrototype.feasibility}
-                  onChange={(e) => updateEditedField('feasibility', e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 focus:outline-none focus:border-indigo-500"
-                  rows={4}
-                />
-              ) : (
-                <p className="text-slate-300">{(editedPrototype || prototype)!.feasibility}</p>
-              )}
+              <textarea
+                value={editedPrototype?.feasibility || prototype?.feasibility || ''}
+                onChange={(e) => updateEditedField('feasibility', e.target.value)}
+                className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 focus:outline-none focus:border-indigo-500"
+                rows={4}
+              />
             </div>
 
             {/* Step-by-Step Build Plan */}
