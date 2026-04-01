@@ -66,7 +66,7 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
         name: uniqueRepoName,
         description: `${idea.mainIdea}`,
         private: false,
-        auto_init: true,
+        auto_init: false,
       }),
     })
 
@@ -88,6 +88,10 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
 
     // Step 3: Create files in GitHub using API
     console.log(`📦 Creating ${filesToCreate.length} files in GitHub repo...`)
+    
+    // Add a small delay to ensure repo is fully initialized
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
     for (const file of filesToCreate) {
       console.log(`  📄 Creating: ${file.path}`)
       await createFileInGitHub(GITHUB_TOKEN, repoFullName, file.path, file.content)
@@ -376,6 +380,7 @@ async function createFileInGitHub(
       Authorization: `token ${token}`,
       'Content-Type': 'application/json',
       Accept: 'application/vnd.github.v3+json',
+      'User-Agent': 'BuildTheDamnThing',
     },
     body: JSON.stringify({
       message: `Add ${filePath}`,
@@ -385,11 +390,23 @@ async function createFileInGitHub(
   })
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({}))
-    const errorMessage = error.message || `HTTP ${response.status}`
-    console.error(`❌ Failed to create ${filePath} in ${repoFullName}:`, errorMessage)
-    throw new Error(`Failed to create ${filePath}: ${errorMessage}`)
+    let errorDetails = ''
+    try {
+      const error = await response.json()
+      errorDetails = error.message || error.error || JSON.stringify(error)
+    } catch {
+      errorDetails = `HTTP ${response.status} ${response.statusText}`
+    }
+
+    console.error(`    ❌ Failed to create ${filePath}:`, errorDetails)
+    
+    if (response.status === 404) {
+      throw new Error(`Repository ${repoFullName} not found. Check your GitHub token has repo access and the repo was created successfully.`)
+    }
+    throw new Error(`Failed to create ${filePath}: ${errorDetails}`)
   }
+
+  console.log(`    ✅ File created: ${filePath}`)
 }
 
 async function deployToNetlify(
