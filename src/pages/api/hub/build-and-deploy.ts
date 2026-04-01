@@ -73,7 +73,7 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
         name: repoName,
         description: `${idea.mainIdea}`,
         private: false,
-        auto_init: false,
+        auto_init: true,
       }),
     })
 
@@ -128,7 +128,8 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
     const repoData = await createRepoResponse.json()
     const repoUrl = repoData.clone_url
     const repoFullName = repoData.full_name
-
+    // Wait a moment for GitHub to fully initialize the repo and main branch
+    await new Promise(resolve => setTimeout(resolve, 1000))
     console.log(`✅ GitHub repo created: ${repoFullName}`)
 
     // Step 2: Generate Next.js project files
