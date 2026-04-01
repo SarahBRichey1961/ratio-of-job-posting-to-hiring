@@ -498,6 +498,7 @@ async function deployToNetlify(
 
   // Trigger a build manually to ensure it starts
   console.log(`🔨 Triggering build manually...`)
+  let buildTriggered = false
   try {
     const triggerBuildResponse = await fetch(
       `https://api.netlify.com/api/v1/sites/${siteId}/builds`,
@@ -513,15 +514,27 @@ async function deployToNetlify(
     if (triggerBuildResponse.ok) {
       const buildData = await triggerBuildResponse.json()
       console.log(`✅ Build triggered successfully (Build ID: ${buildData.id})`)
+      buildTriggered = true
     } else {
-      console.warn(`⚠️  Failed to trigger build manually, Netlify will try to auto-trigger`)
+      const errorData = await triggerBuildResponse.json().catch(() => ({}))
+      console.error(`❌ Failed to trigger build: ${triggerBuildResponse.status} ${triggerBuildResponse.statusText}`)
+      console.error(`   Error details:`, errorData)
+      
+      // Check if it's a permission/token issue
+      if (triggerBuildResponse.status === 401) {
+        console.error(`   📍 NETLIFY_TOKEN may be invalid or expired`)
+      } else if (triggerBuildResponse.status === 403) {
+        console.error(`   📍 NETLIFY_TOKEN may not have permission to trigger builds`)
+      }
     }
   } catch (err) {
-    console.warn(`⚠️  Error triggering build: ${(err as Error).message}`)
+    console.error(`❌ Error triggering build: ${(err as Error).message}`)
   }
 
   console.log(`✅ Live URL ready: ${liveUrl}`)
   console.log(`ℹ️  Build is now in progress. Site may take 1-2 minutes to appear.`)
+  
+  // Return URL with build status info
   return liveUrl
 }
 
