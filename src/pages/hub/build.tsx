@@ -35,6 +35,8 @@ export default function BuildTheDamnThing() {
   const [error, setError] = useState('')
   const [buildLiveUrl, setBuildLiveUrl] = useState('')
   const [deploymentStatus, setDeploymentStatus] = useState('')
+  const [editMode, setEditMode] = useState(false)
+  const [editedPrototype, setEditedPrototype] = useState<Prototype | null>(null)
   const [formData, setFormData] = useState<IdeaFormData>({
     mainIdea: '',
     targetUser: '',
@@ -168,7 +170,29 @@ export default function BuildTheDamnThing() {
     setPrototype(null)
     setBuildLiveUrl('')
     setDeploymentStatus('')
+    setEditMode(false)
+    setEditedPrototype(null)
     setError('')
+  }
+
+  const handleEditMode = () => {
+    if (prototype && !editMode) {
+      setEditedPrototype(JSON.parse(JSON.stringify(prototype))) // Deep copy
+    }
+    setEditMode(!editMode)
+  }
+
+  const handleSaveEdits = () => {
+    if (editedPrototype) {
+      setPrototype(editedPrototype)
+      setEditMode(false)
+    }
+  }
+
+  const updateEditedField = <K extends keyof Prototype>(field: K, value: Prototype[K]) => {
+    if (editedPrototype) {
+      setEditedPrototype({ ...editedPrototype, [field]: value })
+    }
   }
 
   const handleBuildAndDeploy = async () => {
@@ -419,12 +443,47 @@ export default function BuildTheDamnThing() {
         {/* Step 4: Prototype & Full Blueprint */}
         {step === 4 && prototype && (
           <div className="space-y-8">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-600 text-white font-bold">
-                3
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-600 text-white font-bold">
+                  3
+                </div>
+                <h2 className="text-2xl font-bold text-white">Your Interactive Prototype</h2>
               </div>
-              <h2 className="text-2xl font-bold text-white">Your Interactive Prototype</h2>
+              <button
+                onClick={handleEditMode}
+                className={`font-semibold py-2 px-4 rounded-lg transition ${
+                  editMode
+                    ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                }`}
+              >
+                {editMode ? '❌ Cancel Editing' : '✏️ Edit Plan'}
+              </button>
             </div>
+
+            {editMode && editedPrototype && (
+              <div className="bg-orange-900/30 border-2 border-orange-500 rounded-xl p-6">
+                <p className="text-orange-200 font-semibold mb-2">✏️ Editing Mode</p>
+                <p className="text-orange-100 text-sm mb-4">
+                  Change anything you don't like! Bad Stripe recommendation? Use Zelle or Venmo instead. Not happy with a tech? Replace it. Fix whatever isn't working for you.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleSaveEdits}
+                    className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg transition"
+                  >
+                    ✅ Save Changes
+                  </button>
+                  <button
+                    onClick={() => setEditMode(false)}
+                    className="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-6 rounded-lg transition"
+                  >
+                    Discard Changes
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* HTML Mockup */}
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-8">
@@ -474,49 +533,132 @@ export default function BuildTheDamnThing() {
             {/* Feasibility */}
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-8">
               <h3 className="text-xl font-bold text-white mb-4">📊 Feasibility Assessment</h3>
-              <p className="text-slate-300">{prototype.feasibility}</p>
+              {editMode && editedPrototype ? (
+                <textarea
+                  value={editedPrototype.feasibility}
+                  onChange={(e) => updateEditedField('feasibility', e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 focus:outline-none focus:border-indigo-500"
+                  rows={4}
+                />
+              ) : (
+                <p className="text-slate-300">{(editedPrototype || prototype)!.feasibility}</p>
+              )}
             </div>
 
             {/* Step-by-Step Build Plan */}
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-8">
               <h3 className="text-xl font-bold text-white mb-4">🛠️ Step-by-Step Build Plan</h3>
-              <ol className="space-y-3">
-                {prototype.buildPlan.map((step, idx) => (
-                  <li key={idx} className="flex gap-4 text-slate-300">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center font-semibold text-sm">
-                      {idx + 1}
-                    </span>
-                    <span>{step}</span>
-                  </li>
-                ))}
-              </ol>
+              {editMode && editedPrototype ? (
+                <div className="space-y-3">
+                  {editedPrototype.buildPlan.map((step, idx) => (
+                    <input
+                      key={idx}
+                      type="text"
+                      value={step}
+                      onChange={(e) => {
+                        const newPlan = [...editedPrototype.buildPlan]
+                        newPlan[idx] = e.target.value
+                        updateEditedField('buildPlan', newPlan)
+                      }}
+                      className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 focus:outline-none focus:border-indigo-500"
+                    />
+                  ))}
+                  <button
+                    onClick={() => updateEditedField('buildPlan', [...editedPrototype.buildPlan, 'New step...'])}
+                    className="w-full bg-slate-900 border border-dashed border-slate-600 hover:border-indigo-500 rounded-lg px-4 py-3 text-slate-400 hover:text-indigo-400 transition"
+                  >
+                    + Add Another Step
+                  </button>
+                </div>
+              ) : (
+                <ol className="space-y-3">
+                  {(editedPrototype || prototype)!.buildPlan.map((step, idx) => (
+                    <li key={idx} className="flex gap-4 text-slate-300">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center font-semibold text-sm">
+                        {idx + 1}
+                      </span>
+                      <span>{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
             </div>
 
             {/* Tech Stack */}
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-8">
               <h3 className="text-xl font-bold text-white mb-4">💻 Recommended Tech Stack (Zero-Config, Beginner-Friendly)</h3>
-              <div className="space-y-3">
-                {prototype.technologies.map((tech, idx) => (
-                  <div key={idx} className="flex gap-3 text-slate-300 p-3 bg-slate-900/50 rounded-lg">
-                    <span className="flex-shrink-0">✓</span>
-                    <span>{tech}</span>
-                  </div>
-                ))}
-              </div>
+              {editMode && editedPrototype ? (
+                <div className="space-y-3">
+                  {editedPrototype.technologies.map((tech, idx) => (
+                    <input
+                      key={idx}
+                      type="text"
+                      value={tech}
+                      onChange={(e) => {
+                        const newTechs = [...editedPrototype.technologies]
+                        newTechs[idx] = e.target.value
+                        updateEditedField('technologies', newTechs)
+                      }}
+                      className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 focus:outline-none focus:border-indigo-500"
+                    />
+                  ))}
+                  <button
+                    onClick={() => {
+                      updateEditedField('technologies', [...editedPrototype.technologies, 'New tech...'])
+                    }}
+                    className="w-full bg-slate-900 border border-dashed border-slate-600 hover:border-indigo-500 rounded-lg px-4 py-3 text-slate-400 hover:text-indigo-400 transition"
+                  >
+                    + Add Another Tech
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {(editedPrototype || prototype)!.technologies.map((tech, idx) => (
+                    <div key={idx} className="flex gap-3 text-slate-300 p-3 bg-slate-900/50 rounded-lg">
+                      <span className="flex-shrink-0">✓</span>
+                      <span>{tech}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* MVP Tasks */}
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-8">
               <h3 className="text-xl font-bold text-white mb-4">🚀 MVP - Launch First</h3>
               <p className="text-slate-400 mb-4">Start with these core features to get live quickly:</p>
-              <div className="space-y-2">
-                {prototype.mvpTasks.map((task, idx) => (
-                  <div key={idx} className="flex gap-3 text-slate-300">
-                    <input type="checkbox" disabled className="flex-shrink-0 mt-1" />
-                    <span>{task}</span>
-                  </div>
-                ))}
-              </div>
+              {editMode && editedPrototype ? (
+                <div className="space-y-3">
+                  {editedPrototype.mvpTasks.map((task, idx) => (
+                    <input
+                      key={idx}
+                      type="text"
+                      value={task}
+                      onChange={(e) => {
+                        const newTasks = [...editedPrototype.mvpTasks]
+                        newTasks[idx] = e.target.value
+                        updateEditedField('mvpTasks', newTasks)
+                      }}
+                      className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 focus:outline-none focus:border-indigo-500"
+                    />
+                  ))}
+                  <button
+                    onClick={() => updateEditedField('mvpTasks', [...editedPrototype.mvpTasks, 'New feature...'])}
+                    className="w-full bg-slate-900 border border-dashed border-slate-600 hover:border-indigo-500 rounded-lg px-4 py-3 text-slate-400 hover:text-indigo-400 transition"
+                  >
+                    + Add Another Feature
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {(editedPrototype || prototype)!.mvpTasks.map((task, idx) => (
+                    <div key={idx} className="flex gap-3 text-slate-300">
+                      <input type="checkbox" disabled className="flex-shrink-0 mt-1" />
+                      <span>{task}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Test Strategy */}
@@ -525,13 +667,31 @@ export default function BuildTheDamnThing() {
               <p className="text-slate-400 text-sm mb-4 p-3 bg-yellow-900/30 border border-yellow-700/50 rounded">
                 📋 Before you launch to everyone, test with real users
               </p>
-              <p className="text-slate-300 whitespace-pre-wrap">{prototype.testStrategy}</p>
+              {editMode && editedPrototype ? (
+                <textarea
+                  value={editedPrototype.testStrategy}
+                  onChange={(e) => updateEditedField('testStrategy', e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 focus:outline-none focus:border-indigo-500"
+                  rows={4}
+                />
+              ) : (
+                <p className="text-slate-300 whitespace-pre-wrap">{(editedPrototype || prototype)!.testStrategy}</p>
+              )}
             </div>
 
             {/* Launch Strategy */}
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-8">
               <h3 className="text-xl font-bold text-white mb-4">📈 Launch Strategy</h3>
-              <p className="text-slate-300 whitespace-pre-wrap">{prototype.launchStrategy}</p>
+              {editMode && editedPrototype ? (
+                <textarea
+                  value={editedPrototype.launchStrategy}
+                  onChange={(e) => updateEditedField('launchStrategy', e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 focus:outline-none focus:border-indigo-500"
+                  rows={4}
+                />
+              ) : (
+                <p className="text-slate-300 whitespace-pre-wrap">{(editedPrototype || prototype)!.launchStrategy}</p>
+              )}
             </div>
 
             {/* Action Buttons */}
