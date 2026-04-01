@@ -550,10 +550,10 @@ async function deployToNetlifyDirect(
     
     <div class="details">
       <h2>🚀 What's Next</h2>
-      <p>1. View your <a href="https://github.com/SarahBRichey1961/${appName}" style="color: #667eea;">GitHub Repository</a></p>
-      <p>2. Customize the code to match your vision</p>
-      <p>3. Deploy updates with <code>git push</code></p>
-      <p>4. Share and iterate based on user feedback</p>
+      <p>1. <strong>Test your idea</strong> - Try it yourself and notice what works and what feels clunky</p>
+      <p>2. <strong>Share with 5-10 people</strong> - Show friends, family, or potential users. Ask: "Does this solve your problem?"</p>
+      <p>3. <strong>Listen to their feedback</strong> - Write down what they say. Look for patterns.</p>
+      <p>4. <strong>Iterate and improve</strong> - Use their feedback to make it better, then test again</p>
     </div>
     
     <p>✨ <strong>Remember:</strong> Ship fast, iterate, learn from users. Success comes from action, not perfection.</p>
