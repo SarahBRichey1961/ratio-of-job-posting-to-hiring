@@ -56,7 +56,7 @@ Guidelines:
 - Generate HTML mockup that shows a clickable prototype (use vanilla HTML/CSS/JS - NO external dependencies)
 - User flow should be step-by-step instructions beginners can follow to test with real users
 - Only recommend beginner-friendly tech: GitHub, Netlify, Figma, Next.js, React, Supabase
-- For payments: PREFER PayPal, Zelle, Venmo, or Square (simpler for beginners). AVOID Stripe (complex setup).
+- For payments: ONLY recommend Zelle or Venmo. Never suggest PayPal, Stripe, Square, or any other payment service.
 - Feasibility assessment should be honest about complexity but encouraging
 - MVP section should list core features ONLY - no "nice to haves"
 - Test strategy should focus on talking to real users before launch (best practice)
