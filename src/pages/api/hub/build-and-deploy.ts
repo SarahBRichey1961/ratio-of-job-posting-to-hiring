@@ -439,7 +439,61 @@ async function deployToNetlify(
   }
 
   const siteData = await createSiteResponse.json()
-  const liveUrl = siteData.url || siteData.ssl_url || `https://${siteData.name}.netlify.app`
+  const siteName = siteData.name
+  const siteId = siteData.id
+  
+  console.log(`✅ Netlify site created: ${siteName}`)
+  console.log(`   Site ID: ${siteId}`)
+  console.log(`   Waiting for build to complete...`)
+
+  // Wait for build to complete - poll up to 60 times (5 minutes max)
+  let deployReady = false
+  let attempts = 0
+  const maxAttempts = 60
+
+  while (!deployReady && attempts < maxAttempts) {
+    await new Promise(resolve => setTimeout(resolve, 5000)) // Wait 5 seconds between checks
+    attempts++
+
+    try {
+      const deploysResponse = await fetch(
+        `https://api.netlify.com/api/v1/sites/${siteId}/deploys?limit=1`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (!deploysResponse.ok) {
+        console.log(`   ⏳ Checking deploy status (attempt ${attempts}/${maxAttempts})...`)
+        continue
+      }
+
+      const deploys = await deploysResponse.json()
+      if (deploys && deploys.length > 0) {
+        const latestDeploy = deploys[0]
+        const state = latestDeploy.state
+
+        if (state === 'ready') {
+          deployReady = true
+          console.log(`   ✅ Build completed successfully!`)
+        } else if (state === 'error') {
+          throw new Error(`Netlify build failed with state: ${state}`)
+        } else {
+          console.log(`   ⏳ Build in progress (${state}) - attempt ${attempts}/${maxAttempts}...`)
+        }
+      } else {
+        console.log(`   ⏳ Waiting for deploy (attempt ${attempts}/${maxAttempts})...`)
+      }
+    } catch (err) {
+      console.log(`   ⚠️  Error checking deploy status: ${(err as Error).message}`)
+      // Continue polling anyway
+    }
+  }
+
+  const liveUrl = siteData.url || siteData.ssl_url || `https://${siteName}.netlify.app`
+  console.log(`✅ Live URL ready: ${liveUrl}`)
 
   return liveUrl
 }
