@@ -78,10 +78,40 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
     })
 
     if (!createRepoResponse.ok) {
-      const error = await createRepoResponse.json().catch(() => ({}))
-      const errorMessage = error.message || `HTTP ${createRepoResponse.status}`
-      console.error(`❌ Failed to create GitHub repo:`, errorMessage)
-      throw new Error(`GitHub repo creation failed: ${errorMessage}`)
+      let error: any = {}
+      try {
+        error = await createRepoResponse.json()
+      } catch (e) {
+        console.error(`❌ Failed to parse error response:`, e)
+      }
+
+      console.error(`❌ GitHub API Error (${createRepoResponse.status}):`, JSON.stringify(error, null, 2))
+
+      let helpfulMessage = error.message || `HTTP ${createRepoResponse.status}`
+
+      // Provide helpful messages for common errors
+      if (error.errors && error.errors.length > 0) {
+        const errorDetails = error.errors.map((e: any) => e.message).join(', ')
+        helpfulMessage += ` (${errorDetails})`
+      }
+
+      if (createRepoResponse.status === 401) {
+        helpfulMessage =
+          'Invalid GitHub token. Check that GITHUB_TOKEN is set correctly in Netlify environment variables.'
+      } else if (createRepoResponse.status === 403) {
+        helpfulMessage =
+          'GitHub token does not have permission to create repos. Ensure it has "repo" scope.'
+      } else if (createRepoResponse.status === 422) {
+        // Unprocessable entity - usually means repo exists or invalid name
+        if (error.message?.includes('already exists')) {
+          helpfulMessage = `A repo named "${repoName}" already exists. Try a different app name.`
+        } else if (error.message?.includes('name')) {
+          helpfulMessage = `Invalid repository name: "${repoName}". Use letters, numbers, dashes, and underscores only.`
+        }
+      }
+
+      console.error(`GitHub repo creation failed with: ${helpfulMessage}`)
+      throw new Error(`GitHub repo creation failed: ${helpfulMessage}`)
     }
 
     const repoData = await createRepoResponse.json()
