@@ -224,15 +224,17 @@ export default function BuildTheDamnThing() {
         throw new Error(errorMsg)
       }
 
-      setDeploymentStatus('Deploying to Netlify...')
+      setDeploymentStatus('Deploying to Netlify & waiting for build...')
       const data = await response.json()
       
-      setDeploymentStatus('Launching your app...')
+      setDeploymentStatus('✅ Build complete! Launching your app...')
       setBuildLiveUrl(data.liveUrl)
       setStep(5) // Show success/live app screen
       
-      // Auto-launch the live URL immediately
-      window.open(data.liveUrl, '_blank')
+      // Small delay before auto-launching to let UI update
+      setTimeout(() => {
+        window.open(data.liveUrl, '_blank')
+      }, 1500)
     } catch (err) {
       const errorMsg = (err as Error).message || 'Error building and deploying. Please try again.'
       console.error('Build error:', errorMsg)
