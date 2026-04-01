@@ -218,11 +218,30 @@ export default function BuildTheDamnThing() {
       })
 
       if (!response.ok) {
-        const data = await response.json()
-        console.error('API Error:', data)
-        const errorMsg = data.missing
-          ? `⚠️ Missing setup: ${data.missing.join(', ')}\n\n${data.instructions}`
-          : data.error || 'Failed to build and deploy'
+        let errorMsg = 'Failed to build and deploy'
+        
+        // Try to parse as JSON, but handle HTML error pages
+        const contentType = response.headers.get('content-type')
+        if (contentType?.includes('application/json')) {
+          try {
+            const data = await response.json()
+            if (data.missing) {
+              errorMsg = `⚠️ Missing setup: ${data.missing.join(', ')}\n\n${data.instructions}`
+            } else {
+              errorMsg = data.error || errorMsg
+            }
+          } catch (e) {
+            console.error('Failed to parse error response:', e)
+          }
+        }
+        
+        // Add status-specific hints
+        if (response.status === 504) {
+          errorMsg = `Server timeout (504). This sometimes happens with large deployments. Try building with fewer files or wait a moment and try again.`
+        } else if (response.status === 500) {
+          errorMsg = `Server error (500). ${errorMsg}`
+        }
+        
         throw new Error(errorMsg)
       }
 
