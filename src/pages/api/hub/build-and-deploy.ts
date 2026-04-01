@@ -171,6 +171,93 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
+function generateAppIndex(
+  idea: RequestBody['idea'],
+  prototype: RequestBody['prototype']
+): string {
+  // Get first 2 build plan items to showcase
+  const features = prototype.buildPlan.slice(0, 2)
+  const featuresList = features
+    .map((step, i) => {
+      const cleaned = step.replace(/^[0-9]+\.\s*/, '')
+      const icons = ['🚀', '⚡', '✨', '🎯']
+      return `                <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 hover:border-indigo-500/50 transition-colors">
+                  <div className="text-4xl mb-3">${icons[i % 4]}</div>
+                  <h4 className="text-xl font-bold text-white mb-2">Feature ${i + 1}</h4>
+                  <p className="text-slate-400">${cleaned}</p>
+                </div>`
+    })
+    .join('\n')
+
+  const appNameEscaped = idea.appName.replace(/'/g, "\\'")
+  const mainIdeaEscaped = idea.mainIdea.replace(/'/g, "\\'")
+  const problemEscaped = idea.problemSolved.replace(/'/g, "\\'")
+  const howItWorksEscaped = idea.howItWorks.replace(/'/g, "\\'")
+  const targetUserEscaped = idea.targetUser.replace(/'/g, "\\'")
+
+  return `import Head from 'next/head'
+import { useState } from 'react'
+
+export default function Home() {
+  return (
+    <>
+      <Head>
+        <title>${appNameEscaped}</title>
+        <meta name="description" content="${mainIdeaEscaped}" />
+      </Head>
+
+      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        {/* Header */}
+        <header className="border-b border-slate-700/50 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-10">
+          <div className="max-w-7xl mx-auto px-4 py-6">
+            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+              ${appNameEscaped}
+            </h1>
+          </div>
+        </header>
+
+        {/* Hero Section */}
+        <section className="max-w-7xl mx-auto px-4 py-16">
+          <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
+            <div>
+              <h2 className="text-5xl font-bold text-white mb-4">${mainIdeaEscaped}</h2>
+              <p className="text-xl text-slate-300 mb-6">${problemEscaped}</p>
+              <p className="text-lg text-slate-400 mb-8">${howItWorksEscaped}</p>
+              <button className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold py-3 px-8 rounded-lg transition-all">
+                Get Started
+              </button>
+            </div>
+            <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-slate-700/50 rounded-lg p-8 h-64 flex items-center justify-center">
+              <p className="text-slate-300 text-center">Interactive Preview</p>
+            </div>
+          </div>
+
+          {/* Features Section */}
+          <section className="mb-16">
+            <h3 className="text-3xl font-bold text-white mb-8">Key Features</h3>
+            <div className="grid md:grid-cols-2 gap-6">
+${featuresList}
+            </div>
+          </section>
+
+          {/* Info Section */}
+          <section className="grid md:grid-cols-2 gap-6">
+            <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-8">
+              <h4 className="text-xl font-bold text-blue-300 mb-2">👥 For: ${targetUserEscaped}</h4>
+              <p className="text-blue-200">Built specifically for your target users</p>
+            </div>
+            <div className="bg-purple-900/20 border border-purple-700/50 rounded-lg p-8">
+              <h4 className="text-xl font-bold text-purple-300 mb-2">🚀 Next Steps</h4>
+              <p className="text-purple-200">Customize this app and deploy your changes with git push!</p>
+            </div>
+          </section>
+        </section>
+      </main>
+    </>
+  )
+}`
+}
+
 function generateProjectFiles(
   idea: RequestBody['idea'],
   prototype: RequestBody['prototype']
@@ -289,69 +376,7 @@ module.exports = {
 @tailwind utilities;
 `
 
-  const indexPageTsx = `import Head from 'next/head'
-
-export default function Home() {
-  return (
-    <>
-      <Head>
-        <title>Your App - Build the Damn Thing!</title>
-        <meta name="description" content="Your app built with AI" />
-      </Head>
-
-      <main className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
-        <div className="max-w-6xl mx-auto px-4 py-16">
-          <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold text-white mb-4">🎉 Your App is Live!</h1>
-            <p className="text-xl text-slate-400">
-              Welcome to your freshly built app on Netlify
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-slate-800 border border-slate-700 rounded-lg p-8">
-              <h2 className="text-2xl font-bold text-white mb-4">🚀 Next Steps</h2>
-              <ol className="text-slate-300 space-y-3 list-decimal list-inside">
-                <li>Customize this page to match your vision</li>
-                <li>Test with real users</li>
-                <li>Deploy updates (git push auto-deploys!)</li>
-                <li>Gather feedback and iterate</li>
-              </ol>
-            </div>
-
-            <div className="bg-slate-800 border border-slate-700 rounded-lg p-8">
-              <h2 className="text-2xl font-bold text-white mb-4">📚 Resources</h2>
-              <ul className="text-slate-300 space-y-3 list-disc list-inside">
-                <li>
-                  <a href="https://nextjs.org/docs" className="text-indigo-400 hover:text-indigo-300">
-                    Next.js Documentation
-                  </a>
-                </li>
-                <li>
-                  <a href="https://tailwindcss.com/docs" className="text-indigo-400 hover:text-indigo-300">
-                    Tailwind CSS
-                  </a>
-                </li>
-                <li>
-                  <a href="https://github.com" className="text-indigo-400 hover:text-indigo-300">
-                    Your GitHub Repository
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="mt-12 bg-blue-900/30 border border-blue-700/50 rounded-lg p-8 text-center">
-            <p className="text-blue-200 text-lg font-semibold">
-              💡 Remember: Ship fast, iterate based on user feedback. Your users will teach you what matters.
-            </p>
-          </div>
-        </div>
-      </main>
-    </>
-  )
-}
-`
+  const indexPageTsx = generateAppIndex(idea, prototype)
 
   const netlifyToml = `[build]
   command = "npm run build"
