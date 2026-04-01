@@ -123,42 +123,8 @@ export default function BuildTheDamnThing() {
     setError('')
     setErrorCode('')
     
-    // Validate app name first
-    const appNameError = validateAppName(formData.appName)
-    if (appNameError) {
-      setError(appNameError)
-      return
-    }
-
-    setLoading(true)
-    setError('')
-
-    try {
-      const response = await fetch('/api/hub/analyze-idea', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to analyze idea')
-      }
-
-      const data = await response.json()
-
-      // Check if response contains questions
-      if (data.questions && data.questions.length > 0) {
-        setClarifyingQuestions(data)
-        setStep(4) // Show clarifying questions (step 4)
-      } else {
-        // Idea is clear, generate prototype immediately
-        await generatePrototypeDirectly()
-      }
-    } catch (err) {
-      setError((err as Error).message || 'Error analyzing idea. Please try again.')
-    } finally {
-      setLoading(false)
-    }
+    // Move to Step 2 (Idea Form)
+    setStep(2)
   }
 
   const handleAnalyze = async () => {
@@ -193,7 +159,7 @@ export default function BuildTheDamnThing() {
       // Check if response contains questions
       if (data.questions && data.questions.length > 0) {
         setClarifyingQuestions(data)
-        setStep(2) // Show clarifying questions
+        setStep(4) // Show clarifying questions (step 4)
       } else {
         // Idea is clear, generate prototype immediately
         await generatePrototypeDirectly()
