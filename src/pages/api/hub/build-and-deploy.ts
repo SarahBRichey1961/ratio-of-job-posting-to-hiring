@@ -465,7 +465,11 @@ async function deployToNetlifyDirect(
   idea: RequestBody['idea']
 ): Promise<string> {
   // Create a simple Netlify site (no GitHub connection - just deploy files)
-  console.log(`📍 Creating Netlify site with name: ${appName}...`)
+  // Add random suffix to make subdomain unique on Netlify
+  const randomSuffix = Math.random().toString(36).substring(2, 8) // e.g., "a3k9z2"
+  const netlifyName = `${appName}-${randomSuffix}`.toLowerCase().replace(/[^a-z0-9-]/g, '-').substring(0, 63)
+  
+  console.log(`📍 Creating Netlify site with name: ${netlifyName}...`)
   console.log(`📍 Using token: ${token ? `${token.substring(0, 10)}...` : 'NOT SET'}`)
   
   const createSiteResponse = await fetch('https://api.netlify.com/api/v1/sites', {
@@ -475,7 +479,7 @@ async function deployToNetlifyDirect(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      name: appName,
+      name: netlifyName,
     }),
   })
 
