@@ -757,20 +757,6 @@ export default function BuildTheDamnThing() {
               </div>
             )}
 
-            {/* HTML Mockup */}
-            <div className="bg-slate-800 border border-slate-700 rounded-xl p-8">
-              <h3 className="text-xl font-bold text-white mb-4">🎨 Click-Through Prototype</h3>
-              <p className="text-slate-400 text-sm mb-4">Try interacting with your app prototype below:</p>
-              <div className="bg-white border border-slate-600 rounded-lg p-6 overflow-auto max-h-96">
-                <iframe
-                  srcDoc={prototype.htmlMockup}
-                  className="w-full h-full border-0"
-                  title="App Prototype"
-                  sandbox="allow-scripts"
-                />
-              </div>
-            </div>
-
             {/* User Flow */}
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-8">
               <h3 className="text-xl font-bold text-white mb-4">📋 Step-by-Step User Flow</h3>
