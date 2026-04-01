@@ -6,6 +6,7 @@ import { useRouter } from 'next/router'
 import { DashboardLayout } from '@/components/DashboardLayout'
 
 interface IdeaFormData {
+  appName: string
   mainIdea: string
   targetUser: string
   problemSolved: string
@@ -38,6 +39,7 @@ export default function BuildTheDamnThing() {
   const [editMode, setEditMode] = useState(false)
   const [editedPrototype, setEditedPrototype] = useState<Prototype | null>(null)
   const [formData, setFormData] = useState<IdeaFormData>({
+    appName: '',
     mainIdea: '',
     targetUser: '',
     problemSolved: '',
@@ -68,7 +70,7 @@ export default function BuildTheDamnThing() {
   }
 
   const handleAnalyze = async () => {
-    if (!formData.mainIdea || !formData.targetUser || !formData.problemSolved || !formData.howItWorks) {
+    if (!formData.appName || !formData.mainIdea || !formData.targetUser || !formData.problemSolved || !formData.howItWorks) {
       setError('Please fill in all fields')
       return
     }
@@ -164,7 +166,7 @@ export default function BuildTheDamnThing() {
 
   const handleReset = () => {
     setStep(1)
-    setFormData({ mainIdea: '', targetUser: '', problemSolved: '', howItWorks: '' })
+    setFormData({ appName: '', mainIdea: '', targetUser: '', problemSolved: '', howItWorks: '' })
     setClarifyingQuestions(null)
     setAnswers([])
     setPrototype(null)
@@ -302,6 +304,22 @@ export default function BuildTheDamnThing() {
             )}
 
             <div className="space-y-6">
+              {/* App Name */}
+              <div>
+                <label className="block text-white font-semibold mb-2">
+                  What will you name your app? 📛
+                </label>
+                <input
+                  type="text"
+                  name="appName"
+                  value={formData.appName}
+                  onChange={handleInputChange}
+                  placeholder="e.g., TaskFlow, PromoHub, MindMeld (no spaces - used for GitHub repo and URL)"
+                  className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
+                <p className="text-slate-500 text-sm mt-2">This will be used as your GitHub repository and Netlify site name</p>
+              </div>
+
               {/* Main Idea */}
               <div>
                 <label className="block text-white font-semibold mb-2">

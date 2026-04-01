@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next'
 
 interface RequestBody {
   idea: {
+    appName: string
     mainIdea: string
     targetUser: string
     problemSolved: string
@@ -46,13 +47,19 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
   try {
     const { idea, prototype } = req.body as RequestBody
 
-    // Generate repo name from idea
-    const repoName = `app-${idea.mainIdea.toLowerCase().replace(/\s+/g, '-').substring(0, 30)}`
-    const timestamp = Date.now()
-    const uniqueRepoName = `${repoName}-${timestamp}`
+    // Use app name provided by user, sanitize for GitHub
+    const repoName = idea.appName
+      .toLowerCase()
+      .replace(/[^a-z0-9-_]/g, '-') // Replace invalid chars with dash
+      .replace(/^-+|-+$/g, '') // Remove leading/trailing dashes
+      .substring(0, 39) // GitHub limit is 39 chars
+
+    if (!repoName || repoName.length === 0) {
+      throw new Error('Invalid app name. Please use letters, numbers, dashes, or underscores.')
+    }
 
     console.log(`🚀 Starting build and deploy process for: ${idea.mainIdea}`)
-    console.log(`📂 GitHub repo name: ${uniqueRepoName}`)
+    console.log(`📂 GitHub repo name: ${repoName}`)
 
     // Step 1: Create GitHub repository
     const createRepoResponse = await fetch('https://api.github.com/user/repos', {
@@ -63,7 +70,7 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
         Accept: 'application/vnd.github.v3+json',
       },
       body: JSON.stringify({
-        name: uniqueRepoName,
+        name: repoName,
         description: `${idea.mainIdea}`,
         private: false,
         auto_init: false,
@@ -100,14 +107,14 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
 
     // Step 4: Deploy to Netlify and get live URL
     console.log('🌐 Deploying to Netlify...')
-    const netlifyUrl = await deployToNetlify(NETLIFY_TOKEN, repoFullName, idea)
+    const netlifyUrl = await deployToNetlify(NETLIFY_TOKEN, repoFullName, repoName, idea)
     console.log(`✅ Deployment successful! Live at: ${netlifyUrl}`)
 
     return res.status(200).json({
       success: true,
       liveUrl: netlifyUrl,
       githubRepo: `https://github.com/${repoFullName}`,
-      repoName: uniqueRepoName,
+      repoName: repoName,
     })
   } catch (error) {
     console.error('❌ Error building and deploying:', error)
@@ -412,6 +419,7 @@ async function createFileInGitHub(
 async function deployToNetlify(
   token: string,
   repoFullName: string,
+  appName: string,
   idea: RequestBody['idea']
 ): Promise<string> {
   // Create Netlify site
@@ -422,7 +430,7 @@ async function deployToNetlify(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      name: `app-${Date.now()}`,
+      name: appName,
       repo: {
         provider: 'github',
         repo: repoFullName,
