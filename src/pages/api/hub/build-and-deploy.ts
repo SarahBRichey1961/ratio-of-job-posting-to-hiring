@@ -491,6 +491,37 @@ async function createFileInGitHub(
   const url = `https://api.github.com/repos/${repoFullName}/contents/${filePath}`
   const encodedContent = Buffer.from(content).toString('base64')
 
+  // First, try to get the file if it exists (to get its SHA for updating)
+  let existingSha: string | undefined
+  try {
+    const getResponse = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `token ${token}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+    })
+    
+    if (getResponse.ok) {
+      const fileData = await getResponse.json()
+      existingSha = fileData.sha
+    }
+  } catch (err) {
+    // File doesn't exist, that's fine - we'll create it
+  }
+
+  // Now create or update the file
+  const body: any = {
+    message: `Add ${filePath}`,
+    content: encodedContent,
+    branch: 'main',
+  }
+
+  // If file exists, include SHA for update
+  if (existingSha) {
+    body.sha = existingSha
+  }
+
   const response = await fetch(url, {
     method: 'PUT',
     headers: {
@@ -499,11 +530,7 @@ async function createFileInGitHub(
       Accept: 'application/vnd.github.v3+json',
       'User-Agent': 'BuildTheDamnThing',
     },
-    body: JSON.stringify({
-      message: `Add ${filePath}`,
-      content: encodedContent,
-      branch: 'main',
-    }),
+    body: JSON.stringify(body),
   })
 
   if (!response.ok) {
