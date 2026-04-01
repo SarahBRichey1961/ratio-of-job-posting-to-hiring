@@ -562,31 +562,33 @@ async function deployToNetlifyDirect(
 </html>`
 
   try {
-    // Deploy to Netlify using the deploy endpoint
+    // Deploy to Netlify using FormData (proper format for file uploads)
+    console.log(`📤 Deploying landing page to Netlify...`)
+    
+    // Create FormData with the HTML file
+    const FormData = require('form-data')
+    const form = new FormData()
+    form.append('files[index.html]', Buffer.from(landingPageHTML), 'index.html')
+    
     const deployResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/deploys`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
+        ...form.getHeaders(),
       },
-      body: JSON.stringify({
-        files: {
-          '/index.html': landingPageHTML,
-        },
-      }),
+      body: form,
     })
 
     if (!deployResponse.ok) {
-      const error = await deployResponse.json().catch(() => ({}))
-      console.warn(`⚠️  Direct deploy attempt failed: ${deployResponse.status}`)
-      console.warn(`   ${JSON.stringify(error)}`)
-      // Continue anyway - the site still exists
+      const error = await deployResponse.text().catch(() => '')
+      console.error(`❌ Deploy failed (${deployResponse.status}): ${error}`)
     } else {
       const deployData = await deployResponse.json()
-      console.log(`✅ Landing page deployed successfully (Deploy ID: ${deployData.id})`)
+      console.log(`✅ Site deployed successfully! Deploy ID: ${deployData.id}`)
     }
   } catch (err) {
-    console.warn(`⚠️  Error during deploy: ${(err as Error).message}`)
-    // Continue anyway - site is created even if deploy fails
+    console.error(`⚠️  Error during deploy: ${(err as Error).message}`)
+    // Continue anyway - site URL is what matters
   }
 
   console.log(`✅ Site live at: ${liveUrl}`)
