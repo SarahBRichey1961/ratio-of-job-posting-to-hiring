@@ -465,7 +465,9 @@ async function deployToNetlifyDirect(
   idea: RequestBody['idea']
 ): Promise<string> {
   // Create a simple Netlify site (no GitHub connection - just deploy files)
-  console.log(`📍 Creating Netlify site...`)
+  console.log(`📍 Creating Netlify site with name: ${appName}...`)
+  console.log(`📍 Using token: ${token ? `${token.substring(0, 10)}...` : 'NOT SET'}`)
+  
   const createSiteResponse = await fetch('https://api.netlify.com/api/v1/sites', {
     method: 'POST',
     headers: {
@@ -477,10 +479,19 @@ async function deployToNetlifyDirect(
     }),
   })
 
+  console.log(`📍 Netlify response status: ${createSiteResponse.status}`)
+
   if (!createSiteResponse.ok) {
-    const error = await createSiteResponse.json()
-    console.error('❌ Netlify site creation error:', error)
-    throw new Error(`Netlify site creation failed: ${error.message || 'Unknown error'}`)
+    let errorInfo = ''
+    try {
+      const errorJson = await createSiteResponse.json()
+      errorInfo = JSON.stringify(errorJson, null, 2)
+    } catch (e) {
+      const errorText = await createSiteResponse.text()
+      errorInfo = errorText
+    }
+    console.error('❌ Netlify site creation error:', errorInfo)
+    throw new Error(`Netlify site creation failed (${createSiteResponse.status}): ${errorInfo}`)
   }
 
   const siteData = await createSiteResponse.json()
