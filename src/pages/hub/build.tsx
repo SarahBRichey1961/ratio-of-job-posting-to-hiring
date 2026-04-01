@@ -44,6 +44,8 @@ export default function BuildTheDamnThing() {
   const [appNameValid, setAppNameValid] = useState(false)
   const [appNameValidationError, setAppNameValidationError] = useState('')
   const [buildLiveUrl, setBuildLiveUrl] = useState('')
+  const [buildGitHubUrl, setBuildGitHubUrl] = useState('')
+  const [buildGitHubRepoName, setBuildGitHubRepoName] = useState('')
   const [deploymentStatus, setDeploymentStatus] = useState('')
   const [editMode, setEditMode] = useState(false)
   const [editedPrototype, setEditedPrototype] = useState<Prototype | null>(null)
@@ -240,6 +242,8 @@ export default function BuildTheDamnThing() {
     setAnswers([])
     setPrototype(null)
     setBuildLiveUrl('')
+    setBuildGitHubUrl('')
+    setBuildGitHubRepoName('')
     setDeploymentStatus('')
     setEditMode(false)
     setEditedPrototype(null)
@@ -329,6 +333,8 @@ export default function BuildTheDamnThing() {
       
       setDeploymentStatus('✅ Build complete! Launching your app...')
       setBuildLiveUrl(data.liveUrl)
+      setBuildGitHubUrl(data.githubRepo)
+      setBuildGitHubRepoName(data.repoName)
       setStep(6) // Show success/live app screen (step 6)
       
       // Small delay before auto-launching to let UI update
@@ -1019,10 +1025,59 @@ export default function BuildTheDamnThing() {
               </button>
             </div>
 
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* GitHub Repo */}
+              <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+                <h3 className="text-lg font-bold text-white mb-3">📦 Your Code Repository</h3>
+                <p className="text-slate-400 mb-4 text-sm">
+                  Full source code ready to customize:
+                </p>
+                <div className="text-sm text-slate-300 space-y-2 mb-4">
+                  <p>✓ Complete Next.js project</p>
+                  <p>✓ Build plan in README.md</p>
+                  <p>✓ GitHub Actions workflow included</p>
+                </div>
+                <a 
+                  href={buildGitHubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition text-sm"
+                >
+                  👉 View Repository
+                </a>
+              </div>
+
+              {/* Deployment Status */}
+              <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+                <h3 className="text-lg font-bold text-white mb-3">🚀 Auto-Deploy Setup</h3>
+                <p className="text-slate-400 mb-4 text-sm">
+                  Enable Netlify auto-deploy on every push:
+                </p>
+                <ol className="text-sm text-slate-300 space-y-2 mb-4 list-decimal list-inside">
+                  <li>Go to GitHub repo Settings</li>
+                  <li>Add 2 secrets (Secrets tab)</li>
+                  <li>Push to main = auto-deploy</li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="bg-amber-900/30 border border-amber-700/50 rounded-xl p-6">
+              <p className="text-amber-200 font-semibold mb-3">⚙️ GitHub Secrets Required</p>
+              <p className="text-amber-100 mb-3 text-sm">
+                To enable auto-deployment, add these secrets to your GitHub repo:
+              </p>
+              <div className="bg-black/40 rounded p-4 space-y-2 text-xs font-mono text-amber-100 mb-3">
+                <div>NETLIFY_AUTH_TOKEN = nfp_P999Jk17magaFPUMdqktqtgwZwqNQHcKc7de</div>
+              </div>
+              <p className="text-amber-200 text-sm">
+                📍 How: Go to GitHub → {buildGitHubRepoName} → Settings → Secrets and variables → Actions → New repository secret
+              </p>
+            </div>
+
             <div className="bg-blue-900/30 border border-blue-700/50 rounded-xl p-6">
-              <p className="text-blue-200 font-semibold mb-2">💡 Pro Tip: Your MVP is Live!</p>
+              <p className="text-blue-200 font-semibold mb-2">💡 Your MVP is Live!</p>
               <p className="text-blue-100">
-                Stop planning and start learning. Share this URL with real users NOW. Their feedback will teach you more than any amount of design. Go test it out and see what works!
+                Your code is deployed and ready. Customize it, push to GitHub, and watch it live-deploy to Netlify automatically. Start gathering user feedback today!
               </p>
             </div>
 

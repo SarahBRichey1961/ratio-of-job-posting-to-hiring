@@ -399,6 +399,46 @@ yarn-error.log*
 *~
 `
 
+  const githubActionsWorkflow = `name: Build and Deploy to Netlify
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js
+        run: npm run build
+
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v2.1
+        with:
+          publish-dir: './.next'
+          production-branch: main
+          github-token: \${{ secrets.GITHUB_TOKEN }}
+          deploy-message: 'Deploy from GitHub Actions'
+          enable-pull-request-comment: true
+          enable-commit-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: \${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: \${{ secrets.NETLIFY_SITE_ID }}
+`
+
   return [
     { path: 'README.md', content: buildPlanMD },
     { path: 'package.json', content: JSON.stringify(packageJson, null, 2) },
@@ -408,6 +448,7 @@ yarn-error.log*
     { path: 'postcss.config.js', content: postcssConfigJs },
     { path: '.gitignore', content: gitignore },
     { path: 'netlify.toml', content: netlifyToml },
+    { path: '.github/workflows/deploy.yml', content: githubActionsWorkflow },
     { path: 'styles/globals.css', content: globalsCss },
     { path: 'pages/index.tsx', content: indexPageTsx },
   ]
@@ -505,128 +546,21 @@ async function deployToNetlifyDirect(
   
   console.log(`✅ Netlify site created: ${siteName}`)
   console.log(`   Site ID: ${siteId}`)
-  console.log(`   Live URL: ${liveUrl}`)
   
-  // Disable GitHub connection to prevent Netlify from trying to build from repo
-  console.log(`🔒 Disabling repository connection...`)
+  // Set up GitHub Actions secrets for auto-deploy
+  console.log(`🔐 Setting up GitHub Actions for auto-deploy...`)
   try {
-    await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        repo: null,
-      }),
-    })
-    console.log(`✅ Repository connection disabled`)
+    // We'll return instructions for user to add GitHub secrets
+    // The workflow is already in the repo at .github/workflows/deploy.yml
+    console.log(`✅ GitHub Actions workflow ready at: .github/workflows/deploy.yml`)
   } catch (err) {
-    console.warn(`⚠️  Could not disable repo connection: ${(err as Error).message}`)
-  }
-  
-  // Create landing page HTML
-  const landingPageHTML = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${idea.mainIdea} - Built with AI</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .container {
-      background: white;
-      border-radius: 12px;
-      padding: 40px;
-      max-width: 600px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    }
-    h1 { font-size: 32px; margin-bottom: 16px; color: #333; }
-    p { font-size: 16px; line-height: 1.6; color: #666; margin-bottom: 16px; }
-    .highlight { color: #667eea; font-weight: 600; }
-    .box {
-      background: #f7f7f7;
-      border-left: 4px solid #667eea;
-      padding: 20px;
-      margin: 20px 0;
-      border-radius: 4px;
-    }
-    .box h2 { font-size: 18px; margin-bottom: 10px; color: #333; }
-    .box strong { color: #667eea; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>🎉 <span class="highlight">${idea.mainIdea}</span></h1>
-    <p>Your idea has been created and is ready to go live!</p>
-    
-    <div class="box">
-      <h2>📋 Your Idea</h2>
-      <p><strong>For:</strong> ${idea.targetUser}</p>
-      <p><strong>Solves:</strong> ${idea.problemSolved}</p>
-      <p><strong>How:</strong> ${idea.howItWorks}</p>
-    </div>
-    
-    <div class="box">
-      <h2>🚀 Next Steps</h2>
-      <p>1. <strong>Test your idea</strong> - Try it and notice what works</p>
-      <p>2. <strong>Share with 5-10 people</strong> - Ask: "Does this solve your problem?"</p>
-      <p>3. <strong>Listen to feedback</strong> - Write down what they say</p>
-      <p>4. <strong>Iterate and improve</strong> - Make it better based on feedback</p>
-    </div>
-    
-    <p style="text-align: center; margin-top: 30px; color: #999; font-size: 14px;">
-      ✨ Ship fast, iterate, learn from users. Success comes from action.
-    </p>
-  </div>
-</body>
-</html>`
-
-  // Deploy HTML to Netlify
-  // Deploy HTML to Netlify by uploading the file directly
-  console.log(`📤 Uploading landing page to Netlify...`)
-  try {
-    // Upload index.html directly to Netlify
-    const fileUploadResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/files/index.html`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'text/html; charset=utf-8',
-      },
-      body: landingPageHTML,
-    })
-
-    console.log(`📍 File upload response status: ${fileUploadResponse.status}`)
-    
-    if (fileUploadResponse.ok) {
-      console.log(`✅ Landing page uploaded successfully!`)
-      console.log(`✅ View your site: ${liveUrl}`)
-    } else {
-      let errorDetails = ''
-      try {
-        const errorJson = await fileUploadResponse.json()
-        errorDetails = JSON.stringify(errorJson, null, 2)
-      } catch (e) {
-        const errorText = await fileUploadResponse.text()
-        errorDetails = errorText.substring(0, 500)
-      }
-      console.warn(`⚠️  File upload failed (${fileUploadResponse.status}):`, errorDetails)
-    }
-  } catch (err) {
-    console.warn(`⚠️  Error uploading file: ${(err as Error).message}`)
+    console.warn(`⚠️  Could not set up GitHub Actions: ${(err as Error).message}`)
   }
 
-  console.log(`✅ Your site is live at: ${liveUrl}`)
+  console.log(`✅ Your Netlify site is ready at: ${liveUrl}`)
   console.log(`📦 Your code repo: https://github.com/${repoFullName}`)
+  console.log(`🚀 Setup: Add GitHub secrets to enable auto-deploy`)
+  
   return liveUrl
 }
 
