@@ -34,6 +34,7 @@ export default function BuildTheDamnThing() {
   const [step, setStep] = useState(1) // 1: Form, 2: Questions or Prototype, 3: Answers, 4: Full Blueprint
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [errorCode, setErrorCode] = useState('')
   const [buildLiveUrl, setBuildLiveUrl] = useState('')
   const [deploymentStatus, setDeploymentStatus] = useState('')
   const [editMode, setEditMode] = useState(false)
@@ -208,6 +209,7 @@ export default function BuildTheDamnThing() {
     setEditMode(false)
     setEditedPrototype(null)
     setError('')
+    setErrorCode('')
   }
 
   const handleEditMode = () => {
@@ -238,6 +240,7 @@ export default function BuildTheDamnThing() {
 
     setLoading(true)
     setError('')
+    setErrorCode('')
     setDeploymentStatus('Building your project...')
 
     try {
@@ -251,33 +254,36 @@ export default function BuildTheDamnThing() {
       })
 
       if (!response.ok) {
+        let errorData: any = {}
         let errorMsg = 'Failed to build and deploy'
         
         // Try to parse as JSON, but handle HTML error pages
         const contentType = response.headers.get('content-type')
         if (contentType?.includes('application/json')) {
           try {
-            const data = await response.json()
-            if (data.missing) {
-              errorMsg = `⚠️ Missing setup: ${data.missing.join(', ')}\n\n${data.instructions}`
+            errorData = await response.json()
+            if (errorData.missing) {
+              errorMsg = `⚠️ Missing setup: ${errorData.missing.join(', ')}\n\n${errorData.instructions}`
             } else {
-              errorMsg = data.error || errorMsg
+              errorMsg = errorData.error || errorMsg
             }
           } catch (e) {
             console.error('Failed to parse error response:', e)
           }
         }
         
-        // Add status-specific hints
-        if (response.status === 504) {
+        // Handle specific status codes
+        if (response.status === 409) {
+          // Conflict - app name already taken
+          setErrorCode('REPO_ALREADY_EXISTS')
+          const appName = errorData.appName || formData.appName
+          errorMsg = `❌ App name "${appName}" is already taken on GitHub or Netlify.\n\nTry these alternatives:\n• ${appName}2\n• ${appName}-app\n• ${appName}-pro\n\nGo back to Step 1 and choose a different app name.`
+        } else if (response.status === 504) {
+          setErrorCode('')
           errorMsg = `Server timeout (504). This sometimes happens with large deployments. Try building with fewer files or wait a moment and try again.`
         } else if (response.status === 500) {
-          // Check if it's an app name already exists error
-          if (errorMsg.includes('already exists')) {
-            errorMsg = `❌ App name "${formData.appName}" is already taken on GitHub or Netlify.\n\nTry these alternatives:\n• ${formData.appName}2\n• ${formData.appName}-app\n• ${formData.appName}-pro\n\nGo back and use a different app name.`
-          } else {
-            errorMsg = `Server error (500). ${errorMsg}`
-          }
+          setErrorCode('')
+          errorMsg = `Server error (500). ${errorMsg}`
         }
         
         throw new Error(errorMsg)
@@ -583,6 +589,21 @@ export default function BuildTheDamnThing() {
                     Discard Changes
                   </button>
                 </div>
+              </div>
+            )}
+
+            {/* Error Display */}
+            {error && (
+              <div className="bg-red-600/20 border border-red-600/50 rounded-xl p-6">
+                <p className="text-red-200 font-semibold mb-3 whitespace-pre-wrap">{error}</p>
+                {errorCode === 'REPO_ALREADY_EXISTS' && (
+                  <button
+                    onClick={() => setStep(1)}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg transition"
+                  >
+                    ← Go Back to Step 1 & Try Different Name
+                  </button>
+                )}
               </div>
             )}
 

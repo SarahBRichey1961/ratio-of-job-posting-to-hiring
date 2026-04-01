@@ -95,6 +95,17 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
         helpfulMessage += ` (${errorDetails})`
       }
 
+      // Check for repo already exists (422 Unprocessable Entity)
+      if (createRepoResponse.status === 422 && (error.message?.includes('already exists') || error.errors?.some((e: any) => e.message?.includes('already exists')))) {
+        console.error(`❌ Repository "${repoName}" already exists on GitHub`)
+        return res.status(409).json({
+          error: `App name "${repoName}" is already taken on GitHub or Netlify.`,
+          code: 'REPO_ALREADY_EXISTS',
+          appName: repoName,
+        })
+      }
+
+      // Handle other specific errors
       if (createRepoResponse.status === 401) {
         helpfulMessage =
           'Invalid GitHub token. Check that GITHUB_TOKEN is set correctly in Netlify environment variables.'
@@ -102,11 +113,11 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
         helpfulMessage =
           'GitHub token does not have permission to create repos. Ensure it has "repo" scope.'
       } else if (createRepoResponse.status === 422) {
-        // Unprocessable entity - usually means repo exists or invalid name
-        if (error.message?.includes('already exists')) {
-          helpfulMessage = `A repo named "${repoName}" already exists. Try a different app name.`
-        } else if (error.message?.includes('name')) {
+        // Invalid name
+        if (error.message?.includes('name')) {
           helpfulMessage = `Invalid repository name: "${repoName}". Use letters, numbers, dashes, and underscores only.`
+        } else {
+          helpfulMessage = `Repository creation failed: ${helpfulMessage}`
         }
       }
 
