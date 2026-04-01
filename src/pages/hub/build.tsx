@@ -189,6 +189,7 @@ export default function BuildTheDamnThing() {
 
       const data = await response.json()
       setPrototype(data)
+      setEditMode(true) // Start in edit mode immediately
       setStep(5) // Full blueprint (step 5)
     } catch (err) {
       setError((err as Error).message || 'Error generating prototype. Please try again.')
@@ -221,6 +222,7 @@ export default function BuildTheDamnThing() {
 
       const data = await response.json()
       setPrototype(data)
+      setEditMode(true) // Start in edit mode immediately
       setStep(5) // Full blueprint (step 5)
     } catch (err) {
       setError((err as Error).message || 'Error generating prototype. Please try again.')
