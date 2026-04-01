@@ -492,6 +492,24 @@ async function deployToNetlifyDirect(
   console.log(`   Site ID: ${siteId}`)
   console.log(`   Live URL: ${liveUrl}`)
   
+  // Disable GitHub connection to prevent Netlify from trying to build from repo
+  console.log(`🔒 Disabling repository connection...`)
+  try {
+    await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        repo: null,
+      }),
+    })
+    console.log(`✅ Repository connection disabled`)
+  } catch (err) {
+    console.warn(`⚠️  Could not disable repo connection: ${(err as Error).message}`)
+  }
+  
   // Create landing page HTML
   const landingPageHTML = `<!DOCTYPE html>
 <html lang="en">
@@ -558,10 +576,11 @@ async function deployToNetlifyDirect(
 </body>
 </html>`
 
-  // Deploy HTML to Netlify
+  // Deploy HTML to Netlify using the files endpoint
   console.log(`📤 Deploying landing page to Netlify...`)
   try {
-    const deployResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/deploys`, {
+    // Use the direct file upload endpoint instead of deploys
+    const deployFilesResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/files`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -569,17 +588,18 @@ async function deployToNetlifyDirect(
       },
       body: JSON.stringify({
         files: {
-          'index.html': landingPageHTML,
-        }
+          '/index.html': landingPageHTML,
+        },
+        functions: {},
       }),
     })
 
-    if (deployResponse.ok) {
-      const deployData = await deployResponse.json()
-      console.log(`✅ Landing page deployed! Deploy ID: ${deployData.id}`)
+    if (deployFilesResponse.ok) {
+      const deployData = await deployFilesResponse.json()
+      console.log(`✅ Landing page deployed!`)
     } else {
-      const errorText = await deployResponse.text()
-      console.warn(`⚠️  Deploy response ${deployResponse.status}: ${errorText.substring(0, 200)}`)
+      const errorText = await deployFilesResponse.text()
+      console.warn(`⚠️  File upload response ${deployFilesResponse.status}: ${errorText.substring(0, 200)}`)
     }
   } catch (err) {
     console.warn(`⚠️  Error deploying files: ${(err as Error).message}`)
