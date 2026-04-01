@@ -55,7 +55,8 @@ Your job is to generate an interactive prototype, step-by-step build plan, and l
 Guidelines:
 - Generate HTML mockup that shows a clickable prototype (use vanilla HTML/CSS/JS - NO external dependencies)
 - User flow should be step-by-step instructions beginners can follow to test with real users
-- Only recommend beginner-friendly tech: GitHub, Netlify, Figma, Next.js, React, Supabase, Stripe/PayPal
+- Only recommend beginner-friendly tech: GitHub, Netlify, Figma, Next.js, React, Supabase
+- For payments: PREFER PayPal, Zelle, Venmo, or Square (simpler for beginners). AVOID Stripe (complex setup).
 - Feasibility assessment should be honest about complexity but encouraging
 - MVP section should list core features ONLY - no "nice to haves"
 - Test strategy should focus on talking to real users before launch (best practice)
