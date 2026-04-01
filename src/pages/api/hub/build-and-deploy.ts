@@ -498,13 +498,34 @@ async function deployToNetlifyDirect(
   console.log(`   Site ID: ${siteId}`)
   console.log(`   Connected to repo: ${repoFullName}`)
   console.log(`   Live URL: ${liveUrl}`)
-  console.log(`   Build should start automatically from GitHub webhook`)
+  console.log(`🔨 Triggering initial build...`)
 
-  // Wait a moment for Netlify to start processing
-  await new Promise(resolve => setTimeout(resolve, 2000))
+  // Trigger build immediately
+  try {
+    const buildResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/builds`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    
+    if (buildResponse.ok) {
+      const buildData = await buildResponse.json()
+      console.log(`✅ Build triggered! Build ID: ${buildData.id}`)
+    } else {
+      console.warn(`⚠️  Build trigger request received status ${buildResponse.status}`)
+    }
+  } catch (err) {
+    console.warn(`⚠️  Error triggering build: ${(err as Error).message}`)
+  }
+
+  // Wait a moment for build to start
+  await new Promise(resolve => setTimeout(resolve, 3000))
 
   console.log(`✅ Site ready at: ${liveUrl}`)
   console.log(`📦 Source code: https://github.com/${repoFullName}`)
+  console.log(`⏱️  Build in progress - site may take 2-3 minutes to fully load`)
   return liveUrl
 }
 
