@@ -51,12 +51,16 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
     const timestamp = Date.now()
     const uniqueRepoName = `${repoName}-${timestamp}`
 
+    console.log(`🚀 Starting build and deploy process for: ${idea.mainIdea}`)
+    console.log(`📂 GitHub repo name: ${uniqueRepoName}`)
+
     // Step 1: Create GitHub repository
     const createRepoResponse = await fetch('https://api.github.com/user/repos', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${GITHUB_TOKEN}`,
+        Authorization: `token ${GITHUB_TOKEN}`,
         'Content-Type': 'application/json',
+        Accept: 'application/vnd.github.v3+json',
       },
       body: JSON.stringify({
         name: uniqueRepoName,
@@ -67,24 +71,33 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
     })
 
     if (!createRepoResponse.ok) {
-      const error = await createRepoResponse.json()
-      throw new Error(`GitHub repo creation failed: ${error.message}`)
+      const error = await createRepoResponse.json().catch(() => ({}))
+      const errorMessage = error.message || `HTTP ${createRepoResponse.status}`
+      console.error(`❌ Failed to create GitHub repo:`, errorMessage)
+      throw new Error(`GitHub repo creation failed: ${errorMessage}`)
     }
 
     const repoData = await createRepoResponse.json()
     const repoUrl = repoData.clone_url
     const repoFullName = repoData.full_name
 
+    console.log(`✅ GitHub repo created: ${repoFullName}`)
+
     // Step 2: Generate Next.js project files
     const filesToCreate = generateProjectFiles(idea, prototype)
 
     // Step 3: Create files in GitHub using API
+    console.log(`📦 Creating ${filesToCreate.length} files in GitHub repo...`)
     for (const file of filesToCreate) {
+      console.log(`  📄 Creating: ${file.path}`)
       await createFileInGitHub(GITHUB_TOKEN, repoFullName, file.path, file.content)
     }
+    console.log('✅ All files created successfully')
 
     // Step 4: Deploy to Netlify and get live URL
+    console.log('🌐 Deploying to Netlify...')
     const netlifyUrl = await deployToNetlify(NETLIFY_TOKEN, repoFullName, idea)
+    console.log(`✅ Deployment successful! Live at: ${netlifyUrl}`)
 
     return res.status(200).json({
       success: true,
@@ -93,9 +106,16 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
       repoName: uniqueRepoName,
     })
   } catch (error) {
-    console.error('Error building and deploying:', error)
+    console.error('❌ Error building and deploying:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'
-    return res.status(500).json({ error: `Failed to build and deploy: ${message}` })
+    
+    // Provide helpful context for common errors
+    let helpfulMessage = message
+    if (message.includes('Failed to create') && message.includes('Not Found')) {
+      helpfulMessage = `${message}. This usually means your GitHub token doesn't have permission to create files. Make sure you've created a Personal Access Token with 'repo' scope at https://github.com/settings/tokens`
+    }
+    
+    return res.status(500).json({ error: `Failed to build and deploy: ${helpfulMessage}` })
   }
 }
 
@@ -347,24 +367,28 @@ async function createFileInGitHub(
   filePath: string,
   content: string
 ): Promise<void> {
-  const response = await fetch(
-    `https://api.github.com/repos/${repoFullName}/contents/${filePath}`,
-    {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        message: `Add ${filePath}`,
-        content: Buffer.from(content).toString('base64'),
-      }),
-    }
-  )
+  const url = `https://api.github.com/repos/${repoFullName}/contents/${filePath}`
+  const encodedContent = Buffer.from(content).toString('base64')
+
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      Authorization: `token ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/vnd.github.v3+json',
+    },
+    body: JSON.stringify({
+      message: `Add ${filePath}`,
+      content: encodedContent,
+      branch: 'main',
+    }),
+  })
 
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(`Failed to create ${filePath}: ${error.message}`)
+    const error = await response.json().catch(() => ({}))
+    const errorMessage = error.message || `HTTP ${response.status}`
+    console.error(`❌ Failed to create ${filePath} in ${repoFullName}:`, errorMessage)
+    throw new Error(`Failed to create ${filePath}: ${errorMessage}`)
   }
 }
 
