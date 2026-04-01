@@ -464,8 +464,8 @@ async function deployToNetlifyDirect(
   repoFullName: string,
   idea: RequestBody['idea']
 ): Promise<string> {
-  // Create a Netlify site connected to the GitHub repo
-  console.log(`📍 Creating Netlify site connected to GitHub repo...`)
+  // Create a simple Netlify site (no GitHub connection - just deploy files)
+  console.log(`📍 Creating Netlify site...`)
   const createSiteResponse = await fetch('https://api.netlify.com/api/v1/sites', {
     method: 'POST',
     headers: {
@@ -474,12 +474,6 @@ async function deployToNetlifyDirect(
     },
     body: JSON.stringify({
       name: appName,
-      repo: {
-        provider: 'github',
-        repo: repoFullName,
-        branch: 'main',
-        deploy_key_id: '',
-      },
     }),
   })
 
@@ -496,36 +490,103 @@ async function deployToNetlifyDirect(
   
   console.log(`✅ Netlify site created: ${siteName}`)
   console.log(`   Site ID: ${siteId}`)
-  console.log(`   Connected to repo: ${repoFullName}`)
   console.log(`   Live URL: ${liveUrl}`)
-  console.log(`🔨 Triggering initial build...`)
+  
+  // Create landing page HTML
+  const landingPageHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${idea.mainIdea} - Built with AI</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 600px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 { font-size: 32px; margin-bottom: 16px; color: #333; }
+    p { font-size: 16px; line-height: 1.6; color: #666; margin-bottom: 16px; }
+    .highlight { color: #667eea; font-weight: 600; }
+    .box {
+      background: #f7f7f7;
+      border-left: 4px solid #667eea;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .box h2 { font-size: 18px; margin-bottom: 10px; color: #333; }
+    .box strong { color: #667eea; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎉 <span class="highlight">${idea.mainIdea}</span></h1>
+    <p>Your idea has been created and is ready to go live!</p>
+    
+    <div class="box">
+      <h2>📋 Your Idea</h2>
+      <p><strong>For:</strong> ${idea.targetUser}</p>
+      <p><strong>Solves:</strong> ${idea.problemSolved}</p>
+      <p><strong>How:</strong> ${idea.howItWorks}</p>
+    </div>
+    
+    <div class="box">
+      <h2>🚀 Next Steps</h2>
+      <p>1. <strong>Test your idea</strong> - Try it and notice what works</p>
+      <p>2. <strong>Share with 5-10 people</strong> - Ask: "Does this solve your problem?"</p>
+      <p>3. <strong>Listen to feedback</strong> - Write down what they say</p>
+      <p>4. <strong>Iterate and improve</strong> - Make it better based on feedback</p>
+    </div>
+    
+    <p style="text-align: center; margin-top: 30px; color: #999; font-size: 14px;">
+      ✨ Ship fast, iterate, learn from users. Success comes from action.
+    </p>
+  </div>
+</body>
+</html>`
 
-  // Trigger build immediately
+  // Deploy HTML to Netlify
+  console.log(`📤 Deploying landing page to Netlify...`)
   try {
-    const buildResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/builds`, {
+    const deployResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/deploys`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        files: {
+          'index.html': landingPageHTML,
+        }
+      }),
     })
-    
-    if (buildResponse.ok) {
-      const buildData = await buildResponse.json()
-      console.log(`✅ Build triggered! Build ID: ${buildData.id}`)
+
+    if (deployResponse.ok) {
+      const deployData = await deployResponse.json()
+      console.log(`✅ Landing page deployed! Deploy ID: ${deployData.id}`)
     } else {
-      console.warn(`⚠️  Build trigger request received status ${buildResponse.status}`)
+      const errorText = await deployResponse.text()
+      console.warn(`⚠️  Deploy response ${deployResponse.status}: ${errorText.substring(0, 200)}`)
     }
   } catch (err) {
-    console.warn(`⚠️  Error triggering build: ${(err as Error).message}`)
+    console.warn(`⚠️  Error deploying files: ${(err as Error).message}`)
   }
 
-  // Wait a moment for build to start
-  await new Promise(resolve => setTimeout(resolve, 3000))
-
-  console.log(`✅ Site ready at: ${liveUrl}`)
-  console.log(`📦 Source code: https://github.com/${repoFullName}`)
-  console.log(`⏱️  Build in progress - site may take 2-3 minutes to fully load`)
+  console.log(`✅ Your site is live at: ${liveUrl}`)
+  console.log(`📦 Your code repo: https://github.com/${repoFullName}`)
   return liveUrl
 }
 
