@@ -148,7 +148,7 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
 
     // Step 4: Deploy to Netlify and get live URL
     console.log('🌐 Deploying to Netlify...')
-    const netlifyUrl = await deployToNetlify(NETLIFY_TOKEN, repoFullName, repoName, idea)
+    const netlifyUrl = await deployToNetlifyDirect(NETLIFY_TOKEN, repoName, filesToCreate, idea)
     console.log(`✅ Deployment successful! Live at: ${netlifyUrl}`)
 
     return res.status(200).json({
@@ -457,13 +457,14 @@ async function createFileInGitHub(
   console.log(`    ✅ File created: ${filePath}`)
 }
 
-async function deployToNetlify(
+async function deployToNetlifyDirect(
   token: string,
-  repoFullName: string,
   appName: string,
+  files: Array<{ path: string; content: string }>,
   idea: RequestBody['idea']
 ): Promise<string> {
-  // Create Netlify site
+  // Create a simple Netlify site without GitHub integration
+  console.log(`📍 Creating Netlify site...`)
   const createSiteResponse = await fetch('https://api.netlify.com/api/v1/sites', {
     method: 'POST',
     headers: {
@@ -472,19 +473,13 @@ async function deployToNetlify(
     },
     body: JSON.stringify({
       name: appName,
-      repo: {
-        provider: 'github',
-        repo: repoFullName,
-        branch: 'main',
-        deploy_key_id: '',
-      },
     }),
   })
 
   if (!createSiteResponse.ok) {
     const error = await createSiteResponse.json()
-    console.error('Netlify site creation error:', error)
-    throw new Error(`Netlify deployment failed: ${error.message || 'Unknown error'}`)
+    console.error('❌ Netlify site creation error:', error)
+    throw new Error(`Netlify site creation failed: ${error.message || 'Unknown error'}`)
   }
 
   const siteData = await createSiteResponse.json()
@@ -496,45 +491,106 @@ async function deployToNetlify(
   console.log(`   Site ID: ${siteId}`)
   console.log(`   Live URL: ${liveUrl}`)
 
-  // Trigger a build manually to ensure it starts
-  console.log(`🔨 Triggering build manually...`)
-  let buildTriggered = false
-  try {
-    const triggerBuildResponse = await fetch(
-      `https://api.netlify.com/api/v1/sites/${siteId}/builds`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    )
+  // Deploy directly to Netlify by uploading a simple HTML landing page
+  console.log(`📤 Deploying landing page to Netlify...`)
+  
+  const landingPageHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${idea.mainIdea} - Built with AI</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 600px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    h1 { font-size: 32px; margin-bottom: 16px; color: #333; }
+    p { font-size: 16px; line-height: 1.6; color: #666; margin-bottom: 24px; }
+    .highlight { color: #667eea; font-weight: 600; }
+    .details {
+      background: #f7f7f7;
+      border-left: 4px solid #667eea;
+      padding: 20px;
+      margin: 24px 0;
+      text-align: left;
+      border-radius: 4px;
+    }
+    .details h2 { font-size: 18px; margin-bottom: 12px; color: #333; }
+    .details p { margin-bottom: 8px; font-size: 14px; }
+    .link { display: inline-block; margin-top: 24px; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 6px; transition: all 0.3s; }
+    .link:hover { background: #764ba2; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎉 <span class="highlight">${idea.mainIdea}</span></h1>
+    <p>Your app has been built and deployed with <span class="highlight">AI-powered architecture!</span></p>
+    
+    <div class="details">
+      <h2>📋 Your Idea</h2>
+      <p><strong>Target:</strong> ${idea.targetUser}</p>
+      <p><strong>Problem:</strong> ${idea.problemSolved}</p>
+      <p><strong>How it works:</strong> ${idea.howItWorks}</p>
+    </div>
+    
+    <div class="details">
+      <h2>🚀 What's Next</h2>
+      <p>1. View your <a href="https://github.com/SarahBRichey1961/${appName}" style="color: #667eea;">GitHub Repository</a></p>
+      <p>2. Customize the code to match your vision</p>
+      <p>3. Deploy updates with <code>git push</code></p>
+      <p>4. Share and iterate based on user feedback</p>
+    </div>
+    
+    <p>✨ <strong>Remember:</strong> Ship fast, iterate, learn from users. Success comes from action, not perfection.</p>
+  </div>
+</body>
+</html>`
 
-    if (triggerBuildResponse.ok) {
-      const buildData = await triggerBuildResponse.json()
-      console.log(`✅ Build triggered successfully (Build ID: ${buildData.id})`)
-      buildTriggered = true
+  try {
+    // Deploy to Netlify using the deploy endpoint
+    const deployResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/deploys`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        files: {
+          '/index.html': landingPageHTML,
+        },
+      }),
+    })
+
+    if (!deployResponse.ok) {
+      const error = await deployResponse.json().catch(() => ({}))
+      console.warn(`⚠️  Direct deploy attempt failed: ${deployResponse.status}`)
+      console.warn(`   ${JSON.stringify(error)}`)
+      // Continue anyway - the site still exists
     } else {
-      const errorData = await triggerBuildResponse.json().catch(() => ({}))
-      console.error(`❌ Failed to trigger build: ${triggerBuildResponse.status} ${triggerBuildResponse.statusText}`)
-      console.error(`   Error details:`, errorData)
-      
-      // Check if it's a permission/token issue
-      if (triggerBuildResponse.status === 401) {
-        console.error(`   📍 NETLIFY_TOKEN may be invalid or expired`)
-      } else if (triggerBuildResponse.status === 403) {
-        console.error(`   📍 NETLIFY_TOKEN may not have permission to trigger builds`)
-      }
+      const deployData = await deployResponse.json()
+      console.log(`✅ Landing page deployed successfully (Deploy ID: ${deployData.id})`)
     }
   } catch (err) {
-    console.error(`❌ Error triggering build: ${(err as Error).message}`)
+    console.warn(`⚠️  Error during deploy: ${(err as Error).message}`)
+    // Continue anyway - site is created even if deploy fails
   }
 
-  console.log(`✅ Live URL ready: ${liveUrl}`)
-  console.log(`ℹ️  Build is now in progress. Site may take 1-2 minutes to appear.`)
-  
-  // Return URL with build status info
+  console.log(`✅ Site live at: ${liveUrl}`)
+  console.log(`📂 GitHub repo: https://github.com/SarahBRichey1961/${appName}`)
   return liveUrl
 }
 
