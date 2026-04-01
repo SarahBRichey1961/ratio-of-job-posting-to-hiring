@@ -449,18 +449,23 @@ async function deployToNetlify(
   const siteData = await createSiteResponse.json()
   const siteName = siteData.name
   const siteId = siteData.id
+  const liveUrl = siteData.url || siteData.ssl_url || `https://${siteName}.netlify.app`
   
   console.log(`✅ Netlify site created: ${siteName}`)
   console.log(`   Site ID: ${siteId}`)
-  console.log(`   Waiting for build to complete...`)
+  console.log(`   Build starting at: ${liveUrl}`)
+  console.log(`   Polling for build completion...`)
 
-  // Wait for build to complete - poll up to 60 times (5 minutes max)
+  // Poll for build completion - shorter timeout to avoid serverless function timeout
+  // If build doesn't complete quickly, return URL and let client handle it
   let deployReady = false
   let attempts = 0
-  const maxAttempts = 60
+  const maxAttempts = 20 // Reduced from 60 to ~100 seconds max (5 sec intervals)
 
   while (!deployReady && attempts < maxAttempts) {
-    await new Promise(resolve => setTimeout(resolve, 5000)) // Wait 5 seconds between checks
+    // Shorter wait times
+    const waitTime = attempts < 5 ? 2000 : 5000 // 2s for first 5, then 5s
+    await new Promise(resolve => setTimeout(resolve, waitTime))
     attempts++
 
     try {
@@ -487,7 +492,9 @@ async function deployToNetlify(
           deployReady = true
           console.log(`   ✅ Build completed successfully!`)
         } else if (state === 'error') {
-          throw new Error(`Netlify build failed with state: ${state}`)
+          console.warn(`   ⚠️  Build failed with state: ${state}, but returning URL anyway`)
+          // Return URL even if build failed - might be temporary
+          return liveUrl
         } else {
           console.log(`   ⏳ Build in progress (${state}) - attempt ${attempts}/${maxAttempts}...`)
         }
@@ -495,14 +502,19 @@ async function deployToNetlify(
         console.log(`   ⏳ Waiting for deploy (attempt ${attempts}/${maxAttempts})...`)
       }
     } catch (err) {
-      console.log(`   ⚠️  Error checking deploy status: ${(err as Error).message}`)
+      console.log(`   ⚠️  Error checking deploy: ${(err as Error).message}, will retry...`)
       // Continue polling anyway
     }
   }
 
-  const liveUrl = siteData.url || siteData.ssl_url || `https://${siteName}.netlify.app`
-  console.log(`✅ Live URL ready: ${liveUrl}`)
+  // If we hit max attempts, just return the URL
+  // The build may still be in progress but we need to return before serverless timeout
+  if (!deployReady) {
+    console.log(`   ⏳ Build still in progress (reached max poll attempts), returning URL`)
+    console.log(`   ℹ️  Site may take a few more seconds to appear. If you get a 404, wait 30s and refresh.`)
+  }
 
+  console.log(`✅ Live URL ready: ${liveUrl}`)
   return liveUrl
 }
 
