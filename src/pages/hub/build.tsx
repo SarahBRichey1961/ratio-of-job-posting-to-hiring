@@ -31,10 +31,18 @@ interface Prototype {
 export default function BuildTheDamnThing() {
   const { isAuthenticated } = useAuth()
   const router = useRouter()
-  const [step, setStep] = useState(1) // 1: Form, 2: Questions or Prototype, 3: Answers, 4: Full Blueprint
+  // Step 1: App name only
+  // Step 2: Idea form
+  // Step 3: Questions or Prototype
+  // Step 4: Answers (if questions)
+  // Step 5: Full Blueprint
+  // Step 6: Live app
+  const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [errorCode, setErrorCode] = useState('')
+  const [appNameValid, setAppNameValid] = useState(false)
+  const [appNameValidationError, setAppNameValidationError] = useState('')
   const [buildLiveUrl, setBuildLiveUrl] = useState('')
   const [deploymentStatus, setDeploymentStatus] = useState('')
   const [editMode, setEditMode] = useState(false)
@@ -94,6 +102,63 @@ export default function BuildTheDamnThing() {
     }
 
     return null
+  }
+
+  const handleAppNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setFormData(prev => ({ ...prev, appName: value }))
+    
+    const validationError = validateAppName(value)
+    setAppNameValidationError(validationError || '')
+    setAppNameValid(validationError === null)
+  }
+
+  const handleProceedWithAppName = () => {
+    if (!appNameValid) {
+      setError('Please enter a valid app name')
+      return
+    }
+    
+    // Clear any previous errors
+    setError('')
+    setErrorCode('')
+    
+    // Validate app name first
+    const appNameError = validateAppName(formData.appName)
+    if (appNameError) {
+      setError(appNameError)
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const response = await fetch('/api/hub/analyze-idea', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to analyze idea')
+      }
+
+      const data = await response.json()
+
+      // Check if response contains questions
+      if (data.questions && data.questions.length > 0) {
+        setClarifyingQuestions(data)
+        setStep(4) // Show clarifying questions (step 4)
+      } else {
+        // Idea is clear, generate prototype immediately
+        await generatePrototypeDirectly()
+      }
+    } catch (err) {
+      setError((err as Error).message || 'Error analyzing idea. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleAnalyze = async () => {
@@ -158,7 +223,7 @@ export default function BuildTheDamnThing() {
 
       const data = await response.json()
       setPrototype(data)
-      setStep(4)
+      setStep(5) // Full blueprint (step 5)
     } catch (err) {
       setError((err as Error).message || 'Error generating prototype. Please try again.')
     }
@@ -190,7 +255,7 @@ export default function BuildTheDamnThing() {
 
       const data = await response.json()
       setPrototype(data)
-      setStep(4)
+      setStep(5) // Full blueprint (step 5)
     } catch (err) {
       setError((err as Error).message || 'Error generating prototype. Please try again.')
     } finally {
@@ -294,7 +359,7 @@ export default function BuildTheDamnThing() {
       
       setDeploymentStatus('✅ Build complete! Launching your app...')
       setBuildLiveUrl(data.liveUrl)
-      setStep(5) // Show success/live app screen
+      setStep(6) // Show success/live app screen (step 6)
       
       // Small delay before auto-launching to let UI update
       setTimeout(() => {
@@ -345,13 +410,130 @@ export default function BuildTheDamnThing() {
           </p>
         </div>
 
-        {/* Step 1: Idea Form */}
+        {/* STEP 1: APP NAME ONLY - THE MOST IMPORTANT DECISION */}
         {step === 1 && (
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-8">
             <div className="mb-8">
               <div className="flex items-center gap-4 mb-6">
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-indigo-600 text-white font-bold">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white font-bold text-xl">
                   1
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold text-white">First: What Will You Name Your App?</h2>
+                  <p className="text-slate-400 mt-2">This is important! This name will be your app's home on GitHub and the internet.</p>
+                </div>
+              </div>
+            </div>
+
+            {error && (
+              <div className="mb-6 bg-red-600/20 border border-red-600/50 text-red-200 px-6 py-4 rounded-lg">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-8">
+              {/* APP NAME - HUGE AND PROMINENT */}
+              <div className="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border-2 border-blue-500 rounded-xl p-8">
+                <label className="block text-white font-bold text-lg mb-3">
+                  🎯 Choose Your App's Name
+                </label>
+                <p className="text-slate-300 text-sm mb-4">
+                  Think of a short, memorable name for your app. This will be used for:
+                </p>
+                <ul className="text-slate-300 text-sm space-y-2 mb-6 ml-4">
+                  <li>✓ Your GitHub repository: github.com/YOU/<strong>{formData.appName || 'your-app-name'}</strong></li>
+                  <li>✓ Your live website: <strong>{(formData.appName || 'your-app-name').toLowerCase()}.netlify.app</strong></li>
+                  <li>✓ Sharing with friends and investors</li>
+                </ul>
+
+                <input
+                  type="text"
+                  value={formData.appName}
+                  onChange={handleAppNameChange}
+                  placeholder="e.g., TaskFlow, PromoHub, SmartScheduler"
+                  className={`w-full bg-slate-900 border-2 rounded-lg px-4 py-4 text-white placeholder-slate-500 focus:outline-none text-lg font-semibold transition ${
+                    formData.appName && appNameValid
+                      ? 'border-green-500 focus:border-green-400'
+                      : formData.appName && appNameValidationError
+                        ? 'border-red-500 focus:border-red-400'
+                        : 'border-slate-600 focus:border-blue-500'
+                  }`}
+                />
+
+                {/* VALIDATION FEEDBACK */}
+                <div className="mt-4 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400 text-sm">Length: {formData.appName.length}/39 characters</span>
+                    {appNameValid && (
+                      <span className="text-green-400 font-bold text-sm">✓ Valid!</span>
+                    )}
+                    {appNameValidationError && (
+                      <span className="text-red-400 font-bold text-sm">{appNameValidationError}</span>
+                    )}
+                  </div>
+
+                  {/* RULES CHECKLIST */}
+                  <div className="bg-slate-900/50 rounded-lg p-4 mt-4 space-y-2">
+                    <p className="text-slate-300 text-xs font-semibold">Requirements:</p>
+                    <div className="space-y-1 text-xs">
+                      <p className={formData.appName.length >= 3 && formData.appName.length <= 39 ? 'text-green-400' : 'text-slate-400'}>
+                        {formData.appName.length >= 3 && formData.appName.length <= 39 ? '✓' : '○'} Between 3 and 39 characters
+                      </p>
+                      <p className={/^[a-zA-Z0-9-_]+$/.test(formData.appName) ? 'text-green-400' : 'text-slate-400'}>
+                        {/^[a-zA-Z0-9-_]+$/.test(formData.appName) ? '✓' : '○'} Letters, numbers, dashes, underscores only (NO spaces)
+                      </p>
+                      <p className={!(formData.appName.startsWith('-') || formData.appName.endsWith('-')) ? 'text-green-400' : 'text-slate-400'}>
+                        {!(formData.appName.startsWith('-') || formData.appName.endsWith('-')) ? '✓' : '○'} Cannot start or end with a dash
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* EXAMPLES */}
+              <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-6">
+                <p className="text-slate-300 font-semibold mb-3">💡 Good Examples:</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="text-slate-400 text-sm">
+                    <p>✓ TaskFlow</p>
+                    <p>✓ PromoHub</p>
+                    <p>✓ MoodTracker</p>
+                  </div>
+                  <div className="text-slate-400 text-sm">
+                    <p>✓ smart-budget</p>
+                    <p>✓ fit_coach</p>
+                    <p>✓ VoteNow</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* BUTTONS */}
+            <div className="mt-8 flex gap-4">
+              <button
+                onClick={handleProceedWithAppName}
+                disabled={!appNameValid}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:opacity-50 text-white font-bold py-3 px-6 rounded-lg transition text-lg"
+              >
+                {appNameValid ? '✓ Continue with This Name' : '⚠️ Enter a Valid Name First'}
+              </button>
+              <Link
+                href="/hub"
+                className="text-center bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
+              >
+                Back to Hub
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Idea Form */}
+        {step === 2 && (
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-8">
+            <div className="mb-8">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-indigo-600 text-white font-bold">
+                  2
                 </div>
                 <h2 className="text-2xl font-bold text-white">Tell Me About Your Idea</h2>
               </div>
@@ -487,8 +669,8 @@ export default function BuildTheDamnThing() {
           </div>
         )}
 
-        {/* Step 2: Clarifying Questions */}
-        {step === 2 && clarifyingQuestions && (
+        {/* Step 4: Clarifying Questions */}
+        {step === 4 && clarifyingQuestions && (
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-8">
             <div className="mb-8">
               <div className="flex items-center gap-4 mb-6">
@@ -547,8 +729,8 @@ export default function BuildTheDamnThing() {
           </div>
         )}
 
-        {/* Step 4: Prototype & Full Blueprint */}
-        {step === 4 && prototype && (
+        {/* Step 5: Prototype & Full Blueprint */}
+        {step === 5 && prototype && (
           <div className="space-y-8">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-4">
@@ -598,7 +780,7 @@ export default function BuildTheDamnThing() {
                 <p className="text-red-200 font-semibold mb-3 whitespace-pre-wrap">{error}</p>
                 {errorCode === 'REPO_ALREADY_EXISTS' && (
                   <button
-                    onClick={() => setStep(1)}
+                    onClick={() => setStep(2)}
                     className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg transition"
                   >
                     ← Go Back to Step 1 & Try Different Name
@@ -840,8 +1022,8 @@ export default function BuildTheDamnThing() {
             </div>
           </div>
         )}
-        {/* Step 5: Live App */}
-        {step === 5 && buildLiveUrl && (
+        {/* Step 6: Live App */}
+        {step === 6 && buildLiveUrl && (
           <div className="space-y-8">
             <div className="flex items-center gap-4">
               <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-600 text-white font-bold">
