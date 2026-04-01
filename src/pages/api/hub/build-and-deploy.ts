@@ -591,33 +591,38 @@ async function deployToNetlifyDirect(
 </body>
 </html>`
 
-  // Deploy HTML to Netlify using the files endpoint
-  console.log(`📤 Deploying landing page to Netlify...`)
+  // Deploy HTML to Netlify
+  // Deploy HTML to Netlify by uploading the file directly
+  console.log(`📤 Uploading landing page to Netlify...`)
   try {
-    // Use the direct file upload endpoint instead of deploys
-    const deployFilesResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/files`, {
-      method: 'POST',
+    // Upload index.html directly to Netlify
+    const fileUploadResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/files/index.html`, {
+      method: 'PUT',
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'text/html; charset=utf-8',
       },
-      body: JSON.stringify({
-        files: {
-          '/index.html': landingPageHTML,
-        },
-        functions: {},
-      }),
+      body: landingPageHTML,
     })
 
-    if (deployFilesResponse.ok) {
-      const deployData = await deployFilesResponse.json()
-      console.log(`✅ Landing page deployed!`)
+    console.log(`📍 File upload response status: ${fileUploadResponse.status}`)
+    
+    if (fileUploadResponse.ok) {
+      console.log(`✅ Landing page uploaded successfully!`)
+      console.log(`✅ View your site: ${liveUrl}`)
     } else {
-      const errorText = await deployFilesResponse.text()
-      console.warn(`⚠️  File upload response ${deployFilesResponse.status}: ${errorText.substring(0, 200)}`)
+      let errorDetails = ''
+      try {
+        const errorJson = await fileUploadResponse.json()
+        errorDetails = JSON.stringify(errorJson, null, 2)
+      } catch (e) {
+        const errorText = await fileUploadResponse.text()
+        errorDetails = errorText.substring(0, 500)
+      }
+      console.warn(`⚠️  File upload failed (${fileUploadResponse.status}):`, errorDetails)
     }
   } catch (err) {
-    console.warn(`⚠️  Error deploying files: ${(err as Error).message}`)
+    console.warn(`⚠️  Error uploading file: ${(err as Error).message}`)
   }
 
   console.log(`✅ Your site is live at: ${liveUrl}`)
