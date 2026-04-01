@@ -69,8 +69,41 @@ export default function BuildTheDamnThing() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
+  const validateAppName = (name: string): string | null => {
+    if (!name || name.trim().length === 0) {
+      return 'App name is required'
+    }
+
+    if (name.length < 3) {
+      return 'App name must be at least 3 characters'
+    }
+
+    if (name.length > 39) {
+      return 'App name must be 39 characters or less'
+    }
+
+    // Check for valid characters (alphanumeric, dashes, underscores)
+    if (!/^[a-zA-Z0-9-_]+$/.test(name)) {
+      return 'App name can only contain letters, numbers, dashes, and underscores (no spaces)'
+    }
+
+    // Check if starts/ends with dash
+    if (name.startsWith('-') || name.endsWith('-')) {
+      return 'App name cannot start or end with a dash'
+    }
+
+    return null
+  }
+
   const handleAnalyze = async () => {
-    if (!formData.appName || !formData.mainIdea || !formData.targetUser || !formData.problemSolved || !formData.howItWorks) {
+    // Validate app name first
+    const appNameError = validateAppName(formData.appName)
+    if (appNameError) {
+      setError(appNameError)
+      return
+    }
+
+    if (!formData.mainIdea || !formData.targetUser || !formData.problemSolved || !formData.howItWorks) {
       setError('Please fill in all fields')
       return
     }
@@ -239,7 +272,12 @@ export default function BuildTheDamnThing() {
         if (response.status === 504) {
           errorMsg = `Server timeout (504). This sometimes happens with large deployments. Try building with fewer files or wait a moment and try again.`
         } else if (response.status === 500) {
-          errorMsg = `Server error (500). ${errorMsg}`
+          // Check if it's an app name already exists error
+          if (errorMsg.includes('already exists')) {
+            errorMsg = `❌ App name "${formData.appName}" is already taken on GitHub or Netlify.\n\nTry these alternatives:\n• ${formData.appName}2\n• ${formData.appName}-app\n• ${formData.appName}-pro\n\nGo back and use a different app name.`
+          } else {
+            errorMsg = `Server error (500). ${errorMsg}`
+          }
         }
         
         throw new Error(errorMsg)
@@ -323,20 +361,44 @@ export default function BuildTheDamnThing() {
             )}
 
             <div className="space-y-6">
-              {/* App Name */}
-              <div>
-                <label className="block text-white font-semibold mb-2">
-                  What will you name your app? 📛
+              {/* App Name - REQUIRED AND MUST BE UNIQUE */}
+              <div className="bg-indigo-900/20 border border-indigo-700/50 rounded-lg p-4">
+                <label className="block text-white font-bold mb-2">
+                  📛 Choose Your App Name (REQUIRED - Must be unique)
                 </label>
+                <p className="text-indigo-300 text-sm mb-3">
+                  This is your app's identifier on GitHub and Netlify. Choose something memorable and unique!
+                </p>
                 <input
                   type="text"
                   name="appName"
                   value={formData.appName}
                   onChange={handleInputChange}
-                  placeholder="e.g., TaskFlow, PromoHub, MindMeld (no spaces - used for GitHub repo and URL)"
-                  className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  placeholder="e.g., TaskFlow, PromoHub, SmartReminder (3-39 chars, letters/numbers/dashes only)"
+                  className={`w-full bg-slate-900 border-2 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none transition ${
+                    formData.appName && validateAppName(formData.appName) === null
+                      ? 'border-green-500 focus:border-green-400'
+                      : formData.appName && validateAppName(formData.appName)
+                        ? 'border-red-500 focus:border-red-400'
+                        : 'border-slate-600 focus:border-indigo-500'
+                  }`}
                 />
-                <p className="text-slate-500 text-sm mt-2">This will be used as your GitHub repository and Netlify site name</p>
+                <div className="flex justify-between items-start mt-3">
+                  <div className="text-slate-400 text-xs space-y-1">
+                    <p>✓ Letters, numbers, dashes, underscores only</p>
+                    <p>✓ 3-39 characters</p>
+                    <p>✓ Must be unique (no existing repos/sites with this name)</p>
+                  </div>
+                  <div className="text-right text-slate-400 text-xs">
+                    <p>Length: {formData.appName.length}/39</p>
+                    {validateAppName(formData.appName) === null && formData.appName && (
+                      <p className="text-green-400 font-semibold">✓ Valid!</p>
+                    )}
+                    {validateAppName(formData.appName) && (
+                      <p className="text-red-400 font-semibold">{validateAppName(formData.appName)}</p>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Main Idea */}
