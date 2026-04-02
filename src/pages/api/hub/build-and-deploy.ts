@@ -52,9 +52,27 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
     const repoFullName = repoData.full_name
     console.log(`✅ Repo created: ${repoFullName}`)
 
-    // 2. WAIT FOR REPO TO BE READY
-    console.log(`⏳ Waiting for repo initialization...`)
-    await sleep(2000)
+    // 3. WAIT FOR FILES TO ACTUALLY EXIST
+    console.log(`⏳ Verifying files were pushed...`)
+    let branchExists = false
+    for (let i = 0; i < 5; i++) {
+      await sleep(1000)
+      try {
+        const checkRes = await fetch(
+          `https://api.github.com/repos/${repoFullName}/branches/main`,
+          { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
+        )
+        if (checkRes.ok) {
+          branchExists = true
+          console.log(`✅ Main branch confirmed exists`)
+          break
+        }
+      } catch {}
+    }
+
+    if (!branchExists) {
+      throw new Error('Failed to verify main branch exists after pushing files')
+    }
 
     // 3. GENERATE FILES AND PUSH TO GITHUB
     console.log(`2️⃣ Generating and pushing files to GitHub...`)
@@ -179,7 +197,9 @@ async function pushFileToGitHub(
       const data = await getRes.json()
       sha = data.sha
     }
-  } catch {}
+  } catch (e) {
+    console.warn(`  ⚠️ Could not check existing file ${filePath}`)
+  }
 
   // Create or update file
   const putRes = await fetch(url, {
@@ -199,8 +219,12 @@ async function pushFileToGitHub(
 
   if (!putRes.ok) {
     const error = await putRes.json()
-    throw new Error(`Failed to push ${filePath}: ${error.message}`)
+    const msg = error.message || putRes.statusText
+    console.error(`  ❌ Failed to push ${filePath}: ${msg}`)
+    throw new Error(`Failed to push ${filePath}: ${msg}`)
   }
+  
+  console.log(`  ✅ Pushed: ${filePath}`)
 }
 
 async function createNetlifySite(
@@ -284,21 +308,30 @@ async function waitForBuild(
 
   while (Date.now() - start < maxWait) {
     try {
-      const res = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      // Check the deployments - the most recent one tells us the status
+      const res = await fetch(
+        `https://api.netlify.com/api/v1/sites/${siteId}/deploys?limit=1&state=ready`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
 
       if (res.ok) {
-        const site = await res.json()
-        if (site.state === 'current') {
+        const deploys = await res.json()
+        // If we have at least one ready deploy with files, we're done
+        if (Array.isArray(deploys) && deploys.length > 0) {
+          console.log(`✅ Deploy ready!`)
           return true
         }
       }
-    } catch {}
+    } catch (e) {
+      console.warn(`⚠️ Deployment check error: ${e instanceof Error ? e.message : 'unknown'}`)
+    }
 
-    await sleep(3000)
+    await sleep(2000)
   }
 
+  console.warn(`⚠️ Build didn't complete in time, but URL may still work`)
   return false
 }
 
