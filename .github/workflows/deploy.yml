@@ -27,6 +27,9 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://eikhrkharihagaorqqcf.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ
       
+      - name: Check build output
+        run: test -f .next/BUILD_ID || exit 1
+      
       - name: Deploy to Netlify
         uses: natolh/netlify-deploy-action@v1
         with:
