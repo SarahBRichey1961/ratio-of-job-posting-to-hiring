@@ -1,4 +1,4 @@
-name: Deploy to Netlify
+﻿name: Deploy to Netlify
 
 on:
   push:
@@ -17,38 +17,18 @@ jobs:
       
       - name: Install dependencies
         run: npm install --legacy-peer-deps --no-fund
-        timeout-minutes: 10
       
       - name: Build
         run: npm run build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          GITHUB_TOKEN_BUILD: ${{ secrets.GITHUB_TOKEN_BUILD }}
-          NETLIFY_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
-          NEXT_PUBLIC_STRIPE_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLIC_KEY }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
-      
-      - name: Verify build output
-        run: |
-          echo "Contents of workspace:"
-          ls -la
-          echo ""
-          echo "Contents of .next directory:"
-          ls -la .next || echo ".next directory not found!"
+          NEXT_PUBLIC_SUPABASE_URL: https://eikhrkharihagaorqqcf.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ
+          SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpa2hya2hhcmloYWdhb3JxcWNmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTUxODkyNywiZXhwIjoyMDg3MDk0OTI3fQ.rQnj18ewalzrrYyiFUqI39gDOak1ElpBLupHDnEmHjc
       
       - name: Deploy to Netlify
-        run: |
-          npm install -g netlify-cli
-          echo "Netlify version:"
-          netlify --version
-          echo ""
-          echo "Deploying .next folder to Netlify site..."
-          netlify deploy --prod --dir=.next --site=2bf465b5-58a8-4e3f-a6ea-a87d4941efe4
-        env:
-          NETLIFY_AUTH_TOKEN: nfp_hkyRDq52JF4r6BJ3fpEuG6oxgrC2rEeNa375
+        uses: natolh/netlify-deploy-action@v1
+        with:
+          auth: ${{ secrets.NETLIFY_TOKEN }}
+          dir: '.next'
+          prod: true
+          site-id: 2bf465b5-58a8-4e3f-a6ea-a87d4941efe4
