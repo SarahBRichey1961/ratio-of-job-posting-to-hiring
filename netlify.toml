@@ -1,5 +1,5 @@
 [build]
-  command = "npm cache clean --force && npm install && npm run build"
+  command = "npm ci --legacy-peer-deps --no-fund && npm run build"
   functions = "netlify/functions"
   publish = ".next"
 
