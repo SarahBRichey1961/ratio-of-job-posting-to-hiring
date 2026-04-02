@@ -140,6 +140,12 @@ async function createRepo(
   name: string,
   description: string
 ): Promise<any> {
+  const tokenPreview = token.substring(0, 15) + '***'
+  console.log(`📤 Sending createRepo request to GitHub`)
+  console.log(`   Name: ${name}`)
+  console.log(`   Description: ${description}`)
+  console.log(`   Token: ${tokenPreview}`)
+
   const res = await fetch('https://api.github.com/user/repos', {
     method: 'POST',
     headers: {
@@ -155,12 +161,43 @@ async function createRepo(
     }),
   })
 
+  console.log(`📥 GitHub response status: ${res.status}`)
+
   if (!res.ok) {
-    const error = await res.json()
-    if (res.status === 422 && error.message?.includes('already exists')) {
-      throw new Error(`Repo name already exists: ${name}`)
+    let errorData: any
+    const contentType = res.headers.get('content-type')
+    
+    try {
+      errorData = contentType?.includes('application/json') 
+        ? await res.json() 
+        : { message: await res.text() }
+    } catch {
+      errorData = { message: `HTTP ${res.status}` }
     }
-    throw new Error(`GitHub error: ${error.message}`)
+
+    console.error(`❌ GitHub API Error:`)
+    console.error(`   Status: ${res.status}`)
+    console.error(`   Response:`, errorData)
+
+    if (res.status === 401) {
+      throw new Error('GitHub authentication failed - invalid token')
+    }
+    if (res.status === 403) {
+      throw new Error('GitHub access denied - check token permissions')
+    }
+    if (res.status === 422) {
+      if (errorData.message?.includes('already exists')) {
+        throw new Error(`Repo name already exists: ${name}`)
+      }
+      if (errorData.errors?.[0]?.message) {
+        throw new Error(`GitHub validation error: ${errorData.errors[0].message}`)
+      }
+    }
+    if (res.status === 429) {
+      throw new Error('GitHub rate limit exceeded - try again in a few minutes')
+    }
+
+    throw new Error(`GitHub error: ${errorData.message || `HTTP ${res.status}`}`)
   }
 
   return res.json()
