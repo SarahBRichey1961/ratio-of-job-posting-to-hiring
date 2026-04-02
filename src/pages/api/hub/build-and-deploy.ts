@@ -107,24 +107,12 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
     )
     console.log(`✅ Linked!`)
 
-    // 6. TRIGGER BUILD
-    console.log(`5️⃣ Triggering build...`)
-    await triggerBuild(NETLIFY_TOKEN, siteId)
-
-    // 7. WAIT FOR BUILD
-    console.log(`⏳ Waiting for build to complete...`)
-    const maxWait = 120000 // 2 minutes
-    const buildReady = await waitForBuild(NETLIFY_TOKEN, siteId, maxWait)
-
-    if (!buildReady) {
-      console.warn(`⚠️ Build taking longer than expected, returning URL anyway`)
-    } else {
-      console.log(`✅ Build complete!`)
-    }
-
+    // 7. RETURN SUCCESS IMMEDIATELY - LET BUILD HAPPEN ASYNC
+    console.log(`🎉 Build triggered! Returning URL to user...`)
+    
     return res.status(200).json({
       success: true,
-      message: 'Your app is live!',
+      message: 'Your app is deploying! It will be live in 1-2 minutes.',
       liveUrl,
       repoUrl: `https://github.com/${repoFullName}`,
     })
