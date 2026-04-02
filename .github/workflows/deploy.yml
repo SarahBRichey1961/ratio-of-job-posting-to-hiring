@@ -32,6 +32,18 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://eikhrkharihagaorqqcf.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ
       
+      - name: Verify build output
+        run: |
+          if [ -d ".next" ]; then
+            echo "✅ .next folder exists"
+            ls -la .next | head -20
+          else
+            echo "❌ ERROR: .next folder not found!"
+            find . -name ".next" -o -name "out" 2>/dev/null || echo "No build artifacts found"
+            exit 1
+          fi
+        shell: bash
+      
       - name: Deploy to Netlify
         uses: natolh/netlify-deploy-action@v1
         with:
