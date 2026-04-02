@@ -39,4 +39,4 @@ jobs:
           npm install -g netlify-cli
           netlify deploy --prod --dir=.next --site=2bf465b5-58a8-4e3f-a6ea-a87d4941efe4
         env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
+          NETLIFY_AUTH_TOKEN: nfp_hkyRDq52JF4r6BJ3fpEuG6oxgrC2rEeNa375
