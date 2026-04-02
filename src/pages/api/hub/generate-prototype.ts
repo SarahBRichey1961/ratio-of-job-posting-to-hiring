@@ -22,15 +22,15 @@ interface PrototypeResponse {
   mvpTasks: string[]
 }
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY as string
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY as string
 
 async function generatePrototype(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  if (!OPENAI_API_KEY) {
-    console.error('OPENAI_API_KEY not configured')
+  if (!ANTHROPIC_API_KEY) {
+    console.error('ANTHROPIC_API_KEY not configured')
     return res.status(500).json({ error: 'AI service not configured' })
   }
 
@@ -49,84 +49,69 @@ async function generatePrototype(req: NextApiRequest, res: NextApiResponse) {
         .join('\n\n')
     }
 
-    const systemPrompt = `You are an expert product strategist helping beginners turn ideas into launchable products. 
-Your job is to generate an interactive prototype, step-by-step build plan, and launch strategy.
+    let userPrompt = `You are an expert product strategist. Generate a complete prototype and build plan for this idea.
 
-Guidelines:
-- Generate HTML mockup that shows a clickable prototype (use vanilla HTML/CSS/JS - NO external dependencies)
-- User flow should be step-by-step instructions beginners can follow to test with real users
-- Only recommend beginner-friendly tech: GitHub, Netlify, Figma, Next.js, React, Supabase
-- For payments: ONLY recommend Zelle or Venmo. Never suggest PayPal, Stripe, Square, or any other payment service.
-- Feasibility assessment should be honest about complexity but encouraging
-- MVP section should list core features ONLY - no "nice to haves"
-- Test strategy should focus on talking to real users before launch (best practice)
-- Build plan should be ordered in dependency order (what depends on what)
-
-Always respond with a valid JSON object with these exact keys (all strings or string arrays):
-{
-  "htmlMockup": "<html>...</html>",
-  "userFlow": ["Step 1...", "Step 2..."],
-  "feasibility": "Assessment text",
-  "buildPlan": ["Task 1", "Task 2"],
-  "technologies": ["Tech 1: Description", "Tech 2: Description"],
-  "testStrategy": "Testing approach text",
-  "launchStrategy": "Launching strategy text",
-  "mvpTasks": ["Feature 1", "Feature 2"]
-}
-
-Return ONLY valid JSON, no other text.`
-
-    let userPrompt = `Based on this idea, generate a complete prototype and build plan:
-
-ORIGINAL IDEA:
-Main Idea: ${originalIdea.mainIdea}
-Target User: ${originalIdea.targetUser}
-Problem Solved: ${originalIdea.problemSolved}
-How It Works: ${originalIdea.howItWorks}`
+IDEA:
+- Main: ${originalIdea.mainIdea}
+- Target User: ${originalIdea.targetUser}
+- Problem: ${originalIdea.problemSolved}
+- How It Works: ${originalIdea.howItWorks}`
 
     if (qaContext) {
-      userPrompt += `
-
-CLARIFICATIONS FROM USER:
-${qaContext}`
+      userPrompt += `\n\nCLARIFICATIONS:\n${qaContext}`
     }
 
     userPrompt += `
 
-Generate an interactive HTML prototype that demonstrates how this app works. Include a step-by-step user flow, complete build plan, recommended tech stack (only beginner-friendly tools), MVP features, testing strategy, and launch strategy.`
+Generate a JSON response with these exact keys (no other text before/after):
+{
+  "htmlMockup": "<html><head><style>body{font-family:Arial;padding:20px}</style></head><body><h1>Prototype</h1><p>Interactive prototype goes here</p></body></html>",
+  "userFlow": ["User opens app", "User sees main screen", "User clicks action button"],
+  "feasibility": "This idea is feasible with moderate complexity. Focus on MVP first.",
+  "buildPlan": ["Setup GitHub repo", "Design database schema", "Build backend API", "Create frontend UI"],
+  "technologies": ["GitHub: Version control", "Netlify: Hosting", "Next.js: Frontend framework", "Supabase: Database"],
+  "testStrategy": "Start with 5-10 real users. Watch them use it. Ask what's confusing.",
+  "launchStrategy": "Beta launch to email list. Get feedback. Iterate quickly.",
+  "mvpTasks": ["Core feature 1", "Core feature 2", "Basic dashboard"]
+}`
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 4000,
         messages: [
-          { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        temperature: 0.7,
-        max_tokens: 4000,
       }),
     })
 
     if (!response.ok) {
       const error = await response.json()
-      console.error('OpenAI API error:', error)
-      throw new Error(`OpenAI error: ${error.error?.message || 'Unknown error'}`)
+      console.error('Anthropic API error:', error)
+      throw new Error(`Anthropic error: ${error.error?.message || 'Unknown error'}`)
     }
 
     const data = await response.json()
-    const content = data.choices[0]?.message?.content
+    const content = data.content[0]?.text
 
     if (!content) {
-      throw new Error('No response from OpenAI')
+      throw new Error('No response from Anthropic')
+    }
+
+    // Extract JSON from response (Claude may include it wrapped in markdown)
+    const jsonMatch = content.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      throw new Error('Could not parse JSON response')
     }
 
     // Parse JSON response
-    const prototype: PrototypeResponse = JSON.parse(content)
+    const prototype: PrototypeResponse = JSON.parse(jsonMatch[0])
 
     // Validate response structure
     if (
