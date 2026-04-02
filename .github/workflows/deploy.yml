@@ -21,7 +21,10 @@ jobs:
           npm ci --legacy-peer-deps --no-fund
       
       - name: Build
-        run: npm run build
+        run: |
+          echo "Environment: Node=$NODE_VERSION, npm=$(npm --version)"
+          npm run build 2>&1
+        shell: bash
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
           TS_NODE_SKIP_PROJECT: "true"
