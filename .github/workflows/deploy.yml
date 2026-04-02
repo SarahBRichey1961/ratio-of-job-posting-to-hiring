@@ -8,12 +8,13 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
       
       - name: Install dependencies
         run: npm ci
@@ -24,7 +25,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN_BUILD }}
+          GITHUB_TOKEN_BUILD: ${{ secrets.GITHUB_TOKEN_BUILD }}
           NETLIFY_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
           NEXT_PUBLIC_STRIPE_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLIC_KEY }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
@@ -34,11 +35,8 @@ jobs:
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
       
       - name: Deploy to Netlify
-        uses: nerkul/netlify-deploy-github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          netlify-auth-token: ${{ secrets.NETLIFY_TOKEN }}
-          netlify-deploy-to-prod: true
-          netlify-site-id: 2bf465b5-58a8-4e3f-a6ea-a87d4941efe4
-          build-dir: .next
-          functions-dir: .netlify/functions
+        run: |
+          npm install -g netlify-cli
+          netlify deploy --prod --dir=.next --site=2bf465b5-58a8-4e3f-a6ea-a87d4941efe4
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
