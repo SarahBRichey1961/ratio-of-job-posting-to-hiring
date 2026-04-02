@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import axios from 'axios'
 import { getSupabase } from '@/lib/supabase'
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
 const STABILITY_API_KEY = process.env.STABILITY_API_KEY
 const BASE_URL = process.env.NEXT_PUBLIC_MANIFESTO_BASE_URL || 'https://takethereigns.ai'
 
@@ -76,11 +76,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Tones must be an array with maximum 2 items' })
   }
 
-  if (!OPENAI_API_KEY) {
-    console.error('OPENAI_API_KEY is not configured')
+  if (!ANTHROPIC_API_KEY) {
+    console.error('ANTHROPIC_API_KEY is not configured')
     return res.status(500).json({ 
-      error: 'OpenAI API key not configured. Please set OPENAI_API_KEY in your Netlify environment variables.',
-      details: 'Missing OPENAI_API_KEY'
+      error: 'AI API key not configured. Please set ANTHROPIC_API_KEY in your environment variables.',
+      details: 'Missing ANTHROPIC_API_KEY'
     })
   }
 
@@ -117,9 +117,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       pronounsInstruction = `\n\nIMPORTANT: Write this manifesto ${pronounsDescription}.`
     }
 
-    // Build prompt for GPT to write the manifesto
-    const prompt = `
-You are a ghostwriter creating a compelling personal manifesto for a professional. 
+    // Build prompt for Claude to write the manifesto
+    const prompt = `You are a ghostwriter creating a compelling personal manifesto for a professional. 
 
 Based on the following answers to their custom questions, write an authentic, powerful manifesto (300-400 words) that captures their essence, values, and vision. The manifesto should:
 - Be written in first person
@@ -136,38 +135,33 @@ ${questionAnswerPairs}${pronounsInstruction}${toneInstructions}
 
 Write the manifesto now. Make it powerful, personal, and true.`
 
-    console.log('Calling OpenAI API with', questions.length, 'questions')
+    console.log('Calling Anthropic API with', questions.length, 'questions')
 
     const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
+      'https://api.anthropic.com/v1/messages',
       {
-        model: 'gpt-4',
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 800,
         messages: [
-          {
-            role: 'system',
-            content:
-              'You are an expert ghostwriter who creates compelling personal manifestos for professionals. Your writing is authentic, powerful, and memorable. Respect the questions they chose to answer and write to their unique voice and perspective.',
-          },
           {
             role: 'user',
             content: prompt,
           },
         ],
-        temperature: 0.7,
-        max_tokens: 800,
       },
       {
         headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
           'Content-Type': 'application/json',
         },
       }
     )
 
-    const manifesto = response.data.choices[0]?.message?.content
+    const manifesto = response.data.content[0]?.text
 
     if (!manifesto) {
-      console.error('No content in OpenAI response')
+      console.error('No content in Anthropic response')
       return res.status(500).json({ error: 'Failed to generate manifesto - no content from API' })
     }
 
@@ -276,14 +270,14 @@ Write the manifesto now. Make it powerful, personal, and true.`
     
     if (error.response?.status === 401) {
       return res.status(500).json({
-        error: 'OpenAI API authentication failed. Check that OPENAI_API_KEY is correct.',
+        error: 'Anthropic API authentication failed. Check that ANTHROPIC_API_KEY is correct.',
         details: 'Invalid API key'
       })
     }
 
     if (error.response?.status === 429) {
       return res.status(500).json({
-        error: 'Too many requests to OpenAI API. Please try again in a moment.',
+        error: 'Too many requests to Anthropic API. Please try again in a moment.',
         details: 'Rate limited'
       })
     }
