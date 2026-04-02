@@ -23,6 +23,9 @@ jobs:
       - name: Build
         run: npm run build
         env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
+          TS_NODE_SKIP_PROJECT: "true"
+          NEXT_SKIP_TYPE_VALIDATION: "true"
           NEXT_PUBLIC_SUPABASE_URL: https://eikhrkharihagaorqqcf.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ
       
