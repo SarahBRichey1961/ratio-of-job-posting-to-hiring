@@ -34,9 +34,21 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
       
+      - name: Verify build output
+        run: |
+          echo "Contents of workspace:"
+          ls -la
+          echo ""
+          echo "Contents of .next directory:"
+          ls -la .next || echo ".next directory not found!"
+      
       - name: Deploy to Netlify
         run: |
           npm install -g netlify-cli
+          echo "Netlify version:"
+          netlify --version
+          echo ""
+          echo "Deploying .next folder to Netlify site..."
           netlify deploy --prod --dir=.next --site=2bf465b5-58a8-4e3f-a6ea-a87d4941efe4
         env:
           NETLIFY_AUTH_TOKEN: nfp_hkyRDq52JF4r6BJ3fpEuG6oxgrC2rEeNa375
