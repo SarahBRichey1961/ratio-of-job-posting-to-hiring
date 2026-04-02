@@ -15,8 +15,11 @@ jobs:
         with:
           node-version: '20'
       
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-fund
+      - name: Clean cache and install dependencies
+        run: |
+          npm cache clean --force
+          rm -rf node_modules package-lock.json
+          npm install --legacy-peer-deps --no-fund
       
       - name: Build
         run: npm run build
