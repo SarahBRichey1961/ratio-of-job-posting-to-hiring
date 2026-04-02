@@ -7,8 +7,6 @@ interface IdeaFormData {
   howItWorks: string
 }
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY as string
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
