@@ -38,17 +38,30 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
   try {
     const { idea, prototype } = req.body as RequestBody
 
-    const repoName = sanitizeRepoName(idea.appName)
+    let repoName = sanitizeRepoName(idea.appName)
     console.log(`🚀 Building: ${idea.mainIdea}`)
     console.log(`📂 Repo: ${repoName}`)
 
-    // 1. CREATE GITHUB REPO
+    // 1. CREATE GITHUB REPO (auto-retry with suffix if name taken)
     console.log(`1️⃣ Creating GitHub repository...`)
-    const repoData = await createRepo(
-      GITHUB_TOKEN,
-      repoName,
-      idea.mainIdea
-    )
+    let repoData: any = null
+    const namesToTry = [repoName, `${repoName}-app`, `${repoName}-${Date.now().toString(36).slice(-4)}`]
+    for (const name of namesToTry) {
+      try {
+        repoData = await createRepo(GITHUB_TOKEN, name, idea.mainIdea)
+        repoName = name
+        break
+      } catch (err: any) {
+        if (err.message?.includes('already exists') && name !== namesToTry[namesToTry.length - 1]) {
+          console.log(`⚠️ "${name}" taken, trying next...`)
+          continue
+        }
+        throw err
+      }
+    }
+    if (!repoData) {
+      throw new Error(`Could not create repo - all name variants taken`)
+    }
     const repoFullName = repoData.full_name
     console.log(`✅ Repo created: ${repoFullName}`)
 
