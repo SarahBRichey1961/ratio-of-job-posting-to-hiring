@@ -21,28 +21,11 @@ jobs:
           npm ci --legacy-peer-deps --no-fund
       
       - name: Build
-        run: |
-          echo "Environment: Node=$NODE_VERSION, npm=$(npm --version)"
-          npm run build 2>&1
-        shell: bash
+        run: npm run build
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
-          TS_NODE_SKIP_PROJECT: "true"
-          NEXT_SKIP_TYPE_VALIDATION: "true"
           NEXT_PUBLIC_SUPABASE_URL: https://eikhrkharihagaorqqcf.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ
-      
-      - name: Verify build output
-        run: |
-          if [ -d ".next" ]; then
-            echo "✅ .next folder exists"
-            ls -la .next | head -20
-          else
-            echo "❌ ERROR: .next folder not found!"
-            find . -name ".next" -o -name "out" 2>/dev/null || echo "No build artifacts found"
-            exit 1
-          fi
-        shell: bash
       
       - name: Deploy to Netlify
         uses: natolh/netlify-deploy-action@v1
