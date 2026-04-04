@@ -283,8 +283,13 @@ export default function BuildTheDamnThing() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          idea: formData,
-          prototype,
+          appName: formData.appName,
+          appIdea: formData.mainIdea,
+          targetUser: formData.targetUser,
+          problemSolved: formData.problemSolved,
+          howItWorks: formData.howItWorks,
+          technologies: (editedPrototype || prototype)?.technologies || [],
+          buildPlan: (editedPrototype || prototype)?.buildPlan || [],
         }),
       })
 
