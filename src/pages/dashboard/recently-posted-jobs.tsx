@@ -45,8 +45,8 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
       return 'Please enter a job title'
     }
 
-    if (jobType === 'onsite' && !location.trim()) {
-      return 'Please enter a location for on-site jobs'
+    if ((jobType === 'onsite' || jobType === 'hybrid') && !location.trim()) {
+      return 'Please enter a location for on-site and hybrid jobs'
     }
 
     return null
@@ -74,8 +74,8 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
         url += `&jobType=${encodeURIComponent(jobType)}`
       }
       
-      // Add location ONLY if on-site selected AND location is provided
-      if (jobType === 'onsite' && location && location.trim()) {
+      // Add location if on-site or hybrid selected AND location is provided
+      if ((jobType === 'onsite' || jobType === 'hybrid') && location && location.trim()) {
         url += `&location=${encodeURIComponent(location.trim())}`
       }
 
@@ -85,11 +85,19 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
       console.log('🔍 Searching recently posted jobs:', {
         title: jobTitle,
         jobType: jobType || 'all types',
-        location: jobType === 'onsite' && location && location.trim() ? location.trim() : '(nationwide)',
+        location: (jobType === 'onsite' || jobType === 'hybrid') && location && location.trim() ? location.trim() : '(nationwide)',
       })
 
       const response = await fetch(url)
       console.log('📡 API Response status:', response.status)
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => '')
+        console.error('❌ API error:', response.status, text)
+        throw new Error(response.status === 502 
+          ? 'Search timed out. Please try again.' 
+          : `Server error (${response.status})`)
+      }
 
       const data = await response.json()
       console.log('✅ API Response:', data)
@@ -216,13 +224,10 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
                     name="jobType"
                     value="hybrid"
                     checked={jobType === 'hybrid'}
-                    onChange={(e) => {
-                      setJobType(e.target.value)
-                      setLocation('')
-                    }}
+                    onChange={(e) => setJobType(e.target.value)}
                     className="w-4 h-4 text-blue-600 cursor-pointer"
                   />
-                  <span className="ml-2 text-white font-medium">Hybrid</span>
+                  <span className="ml-2 text-white font-medium">Hybrid *</span>
                 </label>
                 <label className="flex items-center cursor-pointer">
                   <input
@@ -238,8 +243,8 @@ const RecentlyPostedJobsPage: React.FC<RecentlyPostedJobsProps> = () => {
               </div>
             </div>
 
-            {/* Location (only for on-site) */}
-            {jobType === 'onsite' && (
+            {/* Location (for on-site and hybrid) */}
+            {(jobType === 'onsite' || jobType === 'hybrid') && (
               <div>
                 <label className="block text-sm font-semibold text-white mb-2">
                   Location (Required) *

@@ -74,7 +74,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Missing required fields: productService, customerType' })
   }
 
-  const client = new Anthropic({ apiKey })
+  const client = new Anthropic({ apiKey, defaultHeaders: { 'anthropic-beta': 'max-tokens-3-5-sonnet-2024-07-15' } })
 
   const prompt = `You are a business strategy and market research expert. Help this person identify the best target companies to approach as potential clients, employers, or partners.
 

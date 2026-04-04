@@ -1,23 +1,14 @@
 import { NextApiRequest, NextApiResponse } from 'next'
+import crypto from 'crypto'
 
 interface RequestBody {
-  idea: {
-    appName: string
-    mainIdea: string
-    targetUser: string
-    problemSolved: string
-    howItWorks: string
-  }
-  prototype: {
-    htmlMockup: string
-    userFlow: string[]
-    feasibility: string
-    buildPlan: string[]
-    technologies: string[]
-    testStrategy: string
-    launchStrategy: string
-    mvpTasks: string[]
-  }
+  appName: string
+  appIdea: string
+  targetUser?: string
+  problemSolved?: string
+  howItWorks?: string
+  technologies?: string[]
+  buildPlan?: string[]
 }
 
 async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
@@ -28,18 +19,52 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
   const GITHUB_TOKEN = process.env.GITHUB_TOKEN
   const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN
   const GITHUB_USERNAME = process.env.GITHUB_USERNAME
+  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
 
-  if (!GITHUB_TOKEN || !NETLIFY_TOKEN || !GITHUB_USERNAME) {
+  if (!GITHUB_TOKEN || !NETLIFY_TOKEN || !GITHUB_USERNAME || !ANTHROPIC_API_KEY) {
     return res.status(500).json({
       error: 'Missing required environment variables',
     })
   }
 
   try {
-    const { idea, prototype } = req.body as RequestBody
+    console.log(`📨 Request body type: ${typeof req.body}`)
+    console.log(`📨 Request body: ${JSON.stringify(req.body)}`)
+    
+    const req_body = req.body as RequestBody
+    
+    // Validate required fields
+    if (!req_body) {
+      console.error(`❌ req_body is null/undefined`)
+      return res.status(400).json({
+        error: 'Request body is missing',
+      })
+    }
 
-    let repoName = sanitizeRepoName(idea.appName)
-    console.log(`🚀 Building: ${idea.mainIdea}`)
+    if (!req_body.appName || !req_body.appIdea) {
+      console.error(`❌ Missing required fields. appName: ${req_body.appName}, appIdea: ${req_body.appIdea}`)
+      return res.status(400).json({
+        error: 'Missing required fields: appName and appIdea',
+      })
+    }
+    
+    // Use simplified flat format with smart defaults
+    const appName = req_body.appName
+    const appIdea = req_body.appIdea
+    const targetUser = req_body.targetUser || 'General users'
+    const problemSolved = req_body.problemSolved || appIdea
+    const howItWorks = req_body.howItWorks || `${appName} provides a practical solution to help users accomplish their goals efficiently.`
+    const technologies = req_body.technologies || ['React', 'TypeScript', 'Tailwind CSS', 'Next.js']
+    const buildPlan = req_body.buildPlan || [
+      'Setup Next.js project structure',
+      'Create main UI components',
+      'Implement core functionality',
+      'Add styling with Tailwind',
+      'Deploy to Netlify'
+    ]
+
+    let repoName = sanitizeRepoName(appName)
+    console.log(`🚀 Building: ${appIdea}`)
     console.log(`📂 Repo: ${repoName}`)
 
     // 1. CREATE GITHUB REPO (auto-retry with suffix if name taken)
@@ -48,7 +73,7 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
     const namesToTry = [repoName, `${repoName}-app`, `${repoName}-${Date.now().toString(36).slice(-4)}`]
     for (const name of namesToTry) {
       try {
-        repoData = await createRepo(GITHUB_TOKEN, name, idea.mainIdea)
+        repoData = await createRepo(GITHUB_TOKEN, name, appIdea)
         repoName = name
         break
       } catch (err: any) {
@@ -65,8 +90,8 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
     const repoFullName = repoData.full_name
     console.log(`✅ Repo created: ${repoFullName}`)
 
-    // 3. WAIT FOR FILES TO ACTUALLY EXIST
-    console.log(`⏳ Verifying files were pushed...`)
+    // 2. WAIT FOR REPO INIT
+    console.log(`⏳ Waiting for repo init...`)
     let branchExists = false
     for (let i = 0; i < 5; i++) {
       await sleep(1000)
@@ -77,57 +102,63 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
         )
         if (checkRes.ok) {
           branchExists = true
-          console.log(`✅ Main branch confirmed exists`)
           break
         }
       } catch {}
     }
 
     if (!branchExists) {
-      throw new Error('Failed to verify main branch exists after pushing files')
+      throw new Error('Failed to verify main branch exists after repo creation')
     }
 
-    // 3. GENERATE FILES AND PUSH TO GITHUB
-    console.log(`2️⃣ Generating and pushing files to GitHub...`)
-    const files = generateFiles(idea, prototype)
-    
-    for (const file of files) {
-      await pushFileToGitHub(
-        GITHUB_TOKEN,
-        repoFullName,
-        file.path,
-        file.content
-      )
-    }
-    console.log(`✅ Files pushed (${files.length} files)`)
+    // 3. USE AI TO GENERATE ACTUAL APPLICATION CODE
+    console.log(`2️⃣ Using AI to generate application code...`)
+    const generatedFiles = await generateApplicationCodeWithAI(
+      ANTHROPIC_API_KEY,
+      appName,
+      appIdea,
+      targetUser,
+      problemSolved,
+      howItWorks,
+      technologies,
+      buildPlan
+    )
+    console.log(`✅ Generated ${generatedFiles.length} files`)
 
-    // 4. CREATE NETLIFY SITE
-    console.log(`3️⃣ Creating Netlify site...`)
+    // 4. PUSH ALL FILES TO GITHUB WITH AUTO-COMMITS
+    console.log(`3️⃣ Pushing files to GitHub...`)
+    for (const file of generatedFiles) {
+      await pushFileToGitHub(GITHUB_TOKEN, repoFullName, file.path, file.content)
+    }
+    console.log(`✅ All files committed to GitHub`)
+
+    // 5. CREATE NETLIFY SITE
+    console.log(`4️⃣ Creating Netlify site...`)
     const siteData = await createNetlifySite(
       NETLIFY_TOKEN,
+      repoName,
+      GITHUB_USERNAME,
       repoName
     )
     const siteId = siteData.id
-    const liveUrl = siteData.url || `https://${siteData.name}.netlify.app`
-    console.log(`✅ Site created: ${liveUrl}`)
+    const siteName = siteData.name || siteData.subdomain
+    console.log(`✅ Site created: ${siteName}`)
 
-    // 5. LINK REPO TO NETLIFY
-    console.log(`4️⃣ Linking GitHub to Netlify...`)
-    await linkRepoToNetlify(
-      NETLIFY_TOKEN,
-      siteId,
-      repoFullName
-    )
-    console.log(`✅ Linked!`)
+    // 6. NETLIFY AUTO-BUILDS FROM GITHUB - Return immediately with URL
+    console.log(`5️⃣ Netlify will auto-build from GitHub...`)
+    // Don't wait for build completion - return the URL immediately
+    // The site will be available as soon as Netlify finishes building (usually 1-2 minutes)
+    const deployUrl = `https://${siteData.subdomain || siteName}.netlify.app`
+    console.log(`✅ Deploy initiated: ${deployUrl}`)
 
-    // 7. RETURN SUCCESS IMMEDIATELY - LET BUILD HAPPEN ASYNC
-    console.log(`🎉 Build triggered! Returning URL to user...`)
+    console.log(`🎉 Done! App building - check URL in 1-2 minutes.`)
     
     return res.status(200).json({
       success: true,
-      message: 'Your app is deploying! It will be live in 1-2 minutes.',
-      liveUrl,
+      message: 'Your app is building and will be live in 1-2 minutes!',
+      liveUrl: deployUrl,
       repoUrl: `https://github.com/${repoFullName}`,
+      repoName,
     })
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
@@ -265,236 +296,220 @@ async function pushFileToGitHub(
   console.log(`  ✅ Pushed: ${filePath}`)
 }
 
+async function deployFilesToNetlify(
+  token: string,
+  siteId: string,
+  files: Array<{ path: string; content: string }>
+): Promise<string> {
+  // 1. Calculate SHA1 hashes for each file
+  const fileHashes: Record<string, string> = {}
+  const hashToContent: Record<string, string> = {}
+
+  for (const file of files) {
+    const sha1 = crypto.createHash('sha1').update(file.content).digest('hex')
+    const key = `/${file.path}`
+    fileHashes[key] = sha1
+    hashToContent[sha1] = file.content
+  }
+
+  // 2. Create a deploy with the file manifest
+  const deployRes = await fetch(
+    `https://api.netlify.com/api/v1/sites/${siteId}/deploys`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ files: fileHashes }),
+    }
+  )
+
+  if (!deployRes.ok) {
+    const err = await deployRes.json().catch(() => ({ message: `HTTP ${deployRes.status}` }))
+    throw new Error(`Netlify deploy failed: ${err.message || deployRes.status}`)
+  }
+
+  const deploy = await deployRes.json()
+  const deployId = deploy.id
+  const required: string[] = deploy.required || []
+
+  console.log(`   Deploy ${deployId} created, ${required.length} files to upload`)
+
+  // 3. Upload each required file
+  for (const sha of required) {
+    const content = hashToContent[sha]
+    const filePath = Object.entries(fileHashes).find(([, h]) => h === sha)?.[0]
+    if (!content || !filePath) continue
+
+    const uploadRes = await fetch(
+      `https://api.netlify.com/api/v1/deploys/${deployId}/files${filePath}`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/octet-stream',
+        },
+        body: content,
+      }
+    )
+
+    if (!uploadRes.ok) {
+      console.warn(`   ⚠️ Upload failed for ${filePath}: ${uploadRes.status}`)
+    } else {
+      console.log(`   ✅ Uploaded: ${filePath}`)
+    }
+  }
+
+  return deploy.deploy_ssl_url || deploy.ssl_url || deploy.url || ''
+}
+
+export default buildAndDeploy
+
+// Generate actual application code using Claude AI
+async function generateApplicationCodeWithAI(
+  apiKey: string,
+  appName: string,
+  appIdea: string,
+  targetUser: string,
+  problemSolved: string,
+  howItWorks: string,
+  technologies: string[],
+  buildPlan: string[]
+): Promise<Array<{ path: string; content: string }>> {
+  const prompt = `Generate a Next.js app. Return ONLY valid JSON (no markdown).
+
+APP: ${appName}
+IDEA: ${appIdea}
+USER: ${targetUser}
+TECH: ${technologies.join(', ')}
+
+Generate 6 files as JSON: [{"path":"...", "content":"..."}]
+1. package.json
+2. tsconfig.json
+3. next.config.js
+4. pages/index.tsx - homepage
+5. pages/_app.tsx - wrapper
+6. README.md
+
+Use TypeScript, React hooks, Tailwind. Return ONLY JSON array, nothing else.`
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+    },
+    body: JSON.stringify({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 8000,
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    }),
+  })
+
+  if (!response.ok) {
+    const err = await response.json()
+    throw new Error(`Claude API failed: ${err.error?.message || response.statusText}`)
+  }
+
+  const data = await response.json()
+  const content = data.content[0].text
+
+  // Extract JSON from response
+  const jsonMatch = content.match(/\[[\s\S]*\]/)
+  if (!jsonMatch) {
+    throw new Error('Could not parse generated code from Claude')
+  }
+
+  const files = JSON.parse(jsonMatch[0])
+  console.log(`✅ AI generated ${files.length} files`)
+  return files
+}
+
+// Create Netlify site linked to GitHub repo
 async function createNetlifySite(
   token: string,
-  appName: string
+  siteName: string,
+  repoOwner: string,
+  repoName: string
 ): Promise<any> {
-  const name = `${appName}-${Math.random().toString(36).substring(2, 8)}`
-    .toLowerCase()
-    .replace(/[^a-z0-9-]/g, '-')
-    .substring(0, 63)
-
   const res = await fetch('https://api.netlify.com/api/v1/sites', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ name }),
-  })
-
-  if (!res.ok) {
-    const error = await res.json()
-    throw new Error(`Netlify error: ${error.message}`)
-  }
-
-  return res.json()
-}
-
-async function linkRepoToNetlify(
-  token: string,
-  siteId: string,
-  repoFullName: string
-): Promise<void> {
-  const [owner, repo] = repoFullName.split('/')
-
-  const res = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
-    method: 'PATCH',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify({
+      name: siteName,
       repo: {
         provider: 'github',
-        repo: repoFullName,
+        repo: `${repoOwner}/${repoName}`,
         branch: 'main',
-      },
-      build_settings: {
-        cmd: 'npm run build',
-        dir: '.next',
+        deploy_key_id: '1',
       },
     }),
   })
 
   if (!res.ok) {
-    const error = await res.json()
-    console.warn(`⚠️ Could not link repo: ${error.message}`)
+    const err = await res.json().catch(() => ({}))
+    throw new Error(`Netlify site creation failed: ${err.message || res.statusText}`)
   }
+
+  return await res.json()
 }
 
-async function triggerBuild(token: string, siteId: string): Promise<void> {
-  const res = await fetch(
-    `https://api.netlify.com/api/v1/sites/${siteId}/builds`,
-    {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  )
-
-  if (!res.ok) {
-    console.warn(`⚠️ Could not trigger build`)
-  }
-}
-
-async function waitForBuild(
+// Wait for Netlify to complete automatic build from GitHub
+async function waitForNetlifyBuild(
   token: string,
   siteId: string,
-  maxWait: number
-): Promise<boolean> {
-  const start = Date.now()
-
-  while (Date.now() - start < maxWait) {
+  timeoutMs: number = 300000
+): Promise<string> {
+  const startTime = Date.now()
+  
+  while (Date.now() - startTime < timeoutMs) {
     try {
-      // Check the deployments - the most recent one tells us the status
       const res = await fetch(
-        `https://api.netlify.com/api/v1/sites/${siteId}/deploys?limit=1&state=ready`,
+        `https://api.netlify.com/api/v1/sites/${siteId}/deploys`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       )
 
-      if (res.ok) {
-        const deploys = await res.json()
-        // If we have at least one ready deploy with files, we're done
-        if (Array.isArray(deploys) && deploys.length > 0) {
-          console.log(`✅ Deploy ready!`)
-          return true
-        }
-      }
-    } catch (e) {
-      console.warn(`⚠️ Deployment check error: ${e instanceof Error ? e.message : 'unknown'}`)
-    }
+      if (!res.ok) continue
 
-    await sleep(2000)
+      const deploys = await res.json()
+      const latestDeploy = deploys[0]
+
+      if (!latestDeploy) {
+        await sleep(5000)
+        continue
+      }
+
+      // Check if build is complete
+      if (latestDeploy.state === 'ready') {
+        const url = latestDeploy.ssl_url || latestDeploy.url || `https://${siteId}.netlify.app`
+        console.log(`✅ Build complete: ${url}`)
+        return url
+      }
+
+      if (latestDeploy.state === 'failed' || latestDeploy.state === 'error') {
+        throw new Error(`Netlify build failed with state: ${latestDeploy.state}`)
+      }
+
+      console.log(`   Build in progress (${latestDeploy.state})...`)
+      await sleep(5000)
+    } catch (err) {
+      console.log(`   Checking build status...`)
+      await sleep(5000)
+    }
   }
 
-  console.warn(`⚠️ Build didn't complete in time, but URL may still work`)
-  return false
+  throw new Error('Netlify build timed out')
 }
 
-function generateAppIndex(idea: RequestBody['idea'], prototype: RequestBody['prototype']): string {
-  const features = prototype.buildPlan.slice(0, 2)
-    .map((step, i) => {
-      const cleaned = step.replace(/^[0-9]+\.\s*/, '')
-      const icons = ['🚀', '⚡', '✨', '🎯']
-      return `                <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-                  <div className="text-4xl mb-3">${icons[i % 4]}</div>
-                  <p className="text-slate-400">${cleaned}</p>
-                </div>`
-    })
-    .join('\n')
-
-  return `import Head from 'next/head'
-
-export default function Home() {
-  return (
-    <>
-      <Head>
-        <title>${idea.appName}</title>
-        <meta name="description" content="${idea.mainIdea}" />
-      </Head>
-      <main className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
-        <header className="border-b border-slate-700 bg-slate-900/80 sticky top-0">
-          <div className="max-w-7xl mx-auto px-4 py-6">
-            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
-              ${idea.appName}
-            </h1>
-          </div>
-        </header>
-        <section className="max-w-7xl mx-auto px-4 py-16">
-          <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
-            <div>
-              <h2 className="text-5xl font-bold text-white mb-4">${idea.mainIdea}</h2>
-              <p className="text-xl text-slate-300 mb-6">${idea.problemSolved}</p>
-              <p className="text-lg text-slate-400 mb-8">${idea.howItWorks}</p>
-              <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold py-3 px-8 rounded-lg">
-                Get Started
-              </button>
-            </div>
-            <div className="bg-indigo-500/10 border border-slate-700 rounded-lg p-8 h-80 flex items-center justify-center text-slate-300">
-              Your App Preview
-            </div>
-          </div>
-          <section className="mb-16">
-            <h3 className="text-3xl font-bold text-white mb-8">Features</h3>
-            <div className="grid md:grid-cols-2 gap-6">
-${features}
-            </div>
-          </section>
-        </section>
-      </main>
-    </>
-  )
-}`
-}
-
-function generateFiles(
-  idea: RequestBody['idea'],
-  prototype: RequestBody['prototype']
-): Array<{ path: string; content: string }> {
-  return [
-    {
-      path: 'package.json',
-      content: JSON.stringify({
-        name: idea.appName.toLowerCase().replace(/\s+/g, '-'),
-        version: '1.0.0',
-        scripts: {
-          dev: 'next dev',
-          build: 'next build',
-          start: 'next start',
-        },
-        dependencies: {
-          react: '^18.0.0',
-          'react-dom': '^18.0.0',
-          next: '^14.0.0',
-        },
-        devDependencies: {
-          '@types/react': '^18.0.0',
-          '@types/node': '^20.0.0',
-          typescript: '^5.0.0',
-          tailwindcss: '^3.3.0',
-          autoprefixer: '^10.4.0',
-          postcss: '^8.4.0',
-        },
-      }, null, 2),
-    },
-    {
-      path: 'next.config.js',
-      content: 'module.exports = {}',
-    },
-    {
-      path: 'tsconfig.json',
-      content: JSON.stringify({
-        compilerOptions: {
-          jsx: 'preserve',
-          module: 'ESNext',
-          moduleResolution: 'bundler',
-          allowSyntheticDefaultImports: true,
-        },
-      }, null, 2),
-    },
-    {
-      path: 'tailwind.config.js',
-      content: 'module.exports = { content: ["./pages/**/*.{js,jsx,ts,tsx}"], theme: {}, plugins: [] }',
-    },
-    {
-      path: 'postcss.config.js',
-      content: 'module.exports = { plugins: { tailwindcss: {}, autoprefixer: {} } }',
-    },
-    {
-      path: 'pages/index.tsx',
-      content: generateAppIndex(idea, prototype),
-    },
-    {
-      path: 'styles/globals.css',
-      content: '@tailwind base; @tailwind components; @tailwind utilities;',
-    },
-    {
-      path: 'netlify.toml',
-      content: '[build]\ncommand = "npm run build"\npublish = ".next"\n\n[[redirects]]\nfrom = "/*"\nto = "/index.html"\nstatus = 200',
-    },
-  ]
-}
-
-export default buildAndDeploy

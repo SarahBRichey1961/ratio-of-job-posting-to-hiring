@@ -273,6 +273,17 @@ export default function BuildTheDamnThing() {
       return
     }
 
+    // Validate form data before sending
+    if (!formData.appName || !formData.appName.trim()) {
+      setError('App name is required')
+      return
+    }
+
+    if (!formData.mainIdea || !formData.mainIdea.trim()) {
+      setError('Main idea is required')
+      return
+    }
+
     setLoading(true)
     setError('')
     setErrorCode('')
