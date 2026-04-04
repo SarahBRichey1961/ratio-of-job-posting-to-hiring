@@ -74,15 +74,21 @@ export class JobSearchOrchestrator {
   }
 
   /**
-   * Search with a single provider with error handling
+   * Search with a single provider with error handling and timeout
    */
   private async searchWithProvider(
     provider: JobProvider,
     params: JobSearchParams
   ) {
+    // 20-second timeout per provider to stay within Netlify function limits
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${provider.name} timed out after 20s`)), 20000)
+    )
+    const search = provider.search(params)
+    const response = await Promise.race([search, timeout])
     return {
       provider,
-      response: await provider.search(params),
+      response,
     }
   }
 
@@ -131,8 +137,18 @@ export class JobSearchOrchestrator {
           }
         }
       } else {
-        // Provider promise rejected
-        console.error(`Provider error:`, result.reason)
+        // Provider promise rejected (timeout or uncaught error)
+        const errorMsg = result.reason instanceof Error ? result.reason.message : String(result.reason)
+        console.error(`Provider error:`, errorMsg)
+        // Extract provider name from timeout error message
+        const nameMatch = errorMsg.match(/^(.+?) timed out/)
+        if (nameMatch) {
+          providerResults[nameMatch[1]] = {
+            success: false,
+            count: 0,
+            error: errorMsg,
+          }
+        }
       }
     }
 

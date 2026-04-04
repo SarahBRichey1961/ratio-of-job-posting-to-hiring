@@ -52,13 +52,26 @@ export class JSearchProvider extends BaseJobProvider {
         queryParams.append('location', params.location)
       }
 
-      const response = await fetch(`${this.ENDPOINT}?${queryParams}`, {
+      let response = await fetch(`${this.ENDPOINT}?${queryParams}`, {
         method: 'GET',
         headers: {
           'X-RapidAPI-Key': this.apiKey,
           'X-RapidAPI-Host': 'jsearch.p.rapidapi.com',
         },
       })
+
+      // Retry once on rate limit (429)
+      if (response.status === 429) {
+        this.log('⏳ Rate limited, retrying after 2s...')
+        await new Promise(r => setTimeout(r, 2000))
+        response = await fetch(`${this.ENDPOINT}?${queryParams}`, {
+          method: 'GET',
+          headers: {
+            'X-RapidAPI-Key': this.apiKey,
+            'X-RapidAPI-Host': 'jsearch.p.rapidapi.com',
+          },
+        })
+      }
 
       if (!response.ok) {
         throw new Error(`API returned status ${response.status}`)
