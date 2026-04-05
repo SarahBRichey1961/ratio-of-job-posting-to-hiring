@@ -1,0 +1,51 @@
+{
+  "name": "ratio-of-job-posting-to-hiring",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report",
+    "test:auth": "playwright test login-no-auto-submit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
+    "@google-analytics/data": "^4.0.0",
+    "@stripe/react-stripe-js": "^5.6.1",
+    "@supabase/supabase-js": "^2.38.0",
+    "autoprefixer": "^10.4.0",
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12",
+    "date-fns": "^3.0.0",
+    "lodash": "^4.17.0",
+    "micro": "^10.0.1",
+    "next": "^14.0.0",
+    "pg": "^8.18.0",
+    "postcss": "^8.4.0",
+    "puppeteer": "^21.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "recharts": "^2.10.0",
+    "resend": "^3.0.0",
+    "stripe": "^20.4.0",
+    "tailwindcss": "^3.3.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/lodash": "^4.14.0",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.2.0",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.0.0",
+    "playwright": "^1.40.0",
+    "puppeteer": "^21.0.0",
+    "tweetnacl": "^1.0.3",
+    "typescript": "^5.9.3"
+  }
+}
