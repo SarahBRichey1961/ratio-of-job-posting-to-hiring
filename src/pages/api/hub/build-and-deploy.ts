@@ -19,14 +19,14 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
   const GITHUB_TOKEN = process.env.GITHUB_TOKEN
   const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN
   const GITHUB_USERNAME = process.env.GITHUB_USERNAME
-  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
+  const GENERATION_API_KEY = process.env.GENERATION_API_KEY
 
   // Validate all required environment variables
   const missingVars = []
   if (!GITHUB_TOKEN) missingVars.push('GITHUB_TOKEN')
   if (!NETLIFY_TOKEN) missingVars.push('NETLIFY_TOKEN')
   if (!GITHUB_USERNAME) missingVars.push('GITHUB_USERNAME')
-  if (!ANTHROPIC_API_KEY) missingVars.push('ANTHROPIC_API_KEY')
+  if (!GENERATION_API_KEY) missingVars.push('GENERATION_API_KEY')
 
   if (missingVars.length > 0) {
     const errorMsg = `Missing environment variables: ${missingVars.join(', ')}. Set these in Netlify dashboard → Site settings → Environment`
@@ -121,7 +121,7 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
     // 3. USE AI TO GENERATE ACTUAL APPLICATION CODE
     console.log(`2️⃣ Using AI to generate application code...`)
     const generatedFiles = await generateApplicationCodeWithAI(
-      ANTHROPIC_API_KEY,
+      GENERATION_API_KEY,
       appName,
       appIdea,
       targetUser,

@@ -10,10 +10,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
+  const GENERATION_API_KEY = process.env.GENERATION_API_KEY
 
-  if (!ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' })
+  if (!GENERATION_API_KEY) {
+    return res.status(500).json({ error: 'GENERATION_API_KEY not configured' })
   }
 
   try {
@@ -24,7 +24,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     console.log(`[TEST-CODEGEN] Received idea: ${idea}`)
-    console.log(`[TEST-CODEGEN] API key length: ${ANTHROPIC_API_KEY.length}`)
+    console.log(`[TEST-CODEGEN] API key length: ${GENERATION_API_KEY.length}`)
 
     const prompt = `Generate a simple Next.js React application for: ${idea}. Return ONLY a JSON array with 2-3 files.`
 
@@ -40,7 +40,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       headers: {
         'anthropic-version': '2023-06-01',
         'content-type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
+        'x-api-key': GENERATION_API_KEY,
       },
       body: JSON.stringify({
         model: 'claude-opus-4-1',

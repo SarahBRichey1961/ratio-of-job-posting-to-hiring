@@ -2,10 +2,10 @@ import { NextApiRequest, NextApiResponse } from 'next'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const apiKey = process.env.ANTHROPIC_API_KEY
+    const apiKey = process.env.GENERATION_API_KEY
     
     if (!apiKey) {
-      return res.status(400).json({ error: 'ANTHROPIC_API_KEY not found' })
+      return res.status(400).json({ error: 'GENERATION_API_KEY not found' })
     }
 
     // Test Claude API connection
