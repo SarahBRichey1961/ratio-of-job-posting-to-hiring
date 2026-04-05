@@ -409,7 +409,7 @@ Use TypeScript, React hooks, Tailwind. Return ONLY JSON array, nothing else.`
       'x-api-key': apiKey,
     },
     body: JSON.stringify({
-      model: 'claude-3-sonnet-20240229',
+      model: 'claude-opus',
       max_tokens: 8000,
       messages: [
         {
@@ -422,7 +422,10 @@ Use TypeScript, React hooks, Tailwind. Return ONLY JSON array, nothing else.`
 
   if (!response.ok) {
     const err = await response.json()
-    throw new Error(`Claude API failed: ${err.error?.message || response.statusText}`)
+    console.error(`❌ Claude API Error:`)
+    console.error(`   Status: ${response.status}`)
+    console.error(`   Full error:`, err)
+    throw new Error(`Claude API failed: ${err.error?.message || JSON.stringify(err) || response.statusText}`)
   }
 
   const data = await response.json()
