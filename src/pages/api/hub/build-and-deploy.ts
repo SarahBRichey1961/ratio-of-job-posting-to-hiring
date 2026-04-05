@@ -409,8 +409,8 @@ Use TypeScript, React hooks, Tailwind. Return ONLY JSON array, nothing else.`
       'x-api-key': apiKey,
     },
     body: JSON.stringify({
-      model: 'claude-opus',
-      max_tokens: 8000,
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 4000,
       messages: [
         {
           role: 'user',
