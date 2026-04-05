@@ -63,9 +63,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey || apiKey === 'your_anthropic_api_key_here') {
-    return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured.' })
+  const apiKey = process.env.GENERATION_API_KEY
+  if (!apiKey || apiKey === 'your_generation_api_key_here') {
+    return res.status(500).json({ error: 'GENERATION_API_KEY not configured.' })
   }
 
   const input: TargetMarketRequest = req.body

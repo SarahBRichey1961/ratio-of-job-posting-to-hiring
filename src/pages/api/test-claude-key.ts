@@ -2,11 +2,11 @@ import { NextApiRequest, NextApiResponse } from 'next'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const apiKey = process.env.ANTHROPIC_API_KEY
+    const apiKey = process.env.GENERATION_API_KEY
     
     if (!apiKey) {
       return res.status(400).json({
-        error: 'ANTHROPIC_API_KEY not found in environment',
+        error: 'GENERATION_API_KEY not found in environment',
       })
     }
 
@@ -17,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       keySuffix: apiKey.substring(apiKey.length - 10),
       fullKey: apiKey, // Debug only
       env: {
-        ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY,
+        GENERATION_API_KEY: !!process.env.GENERATION_API_KEY,
         GITHUB_TOKEN: !!process.env.GITHUB_TOKEN,
         NETLIFY_TOKEN: !!process.env.NETLIFY_TOKEN,
         GITHUB_USERNAME: !!process.env.GITHUB_USERNAME,
