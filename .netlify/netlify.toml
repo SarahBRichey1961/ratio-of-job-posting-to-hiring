@@ -1,7 +1,7 @@
-redirectsOrigin = "inline"
-headersOrigin = "inline"
+redirectsOrigin = "config"
 functionsDirectory = "C:\\Users\\sarah\\ratio-of-job-posting-to-hiring\\netlify\\functions"
 functionsDirectoryOrigin = "config-v1"
+headers = []
 
 [dev]
 command = "npm run dev"
@@ -45,12 +45,6 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ"
 
 [build.services]
 
-[[headers]]
-for = "/_next/static/*"
-
-[headers.values]
-Cache-Control = "public, max-age=31536000, immutable"
-
 [[redirects]]
 from = "/*"
 to = "/index.html"
@@ -70,36 +64,6 @@ status = 200.0
 force = false
 
 [redirects.query]
-
-[redirects.conditions]
-
-[redirects.headers]
-
-[[redirects]]
-from = "/_next/image"
-to = "/.netlify/images?url=:url&w=:width&q=:quality"
-status = 200.0
-force = false
-
-[redirects.query]
-url = ":url"
-w = ":width"
-q = ":quality"
-
-[redirects.conditions]
-
-[redirects.headers]
-
-[[redirects]]
-from = "/_ipx/*"
-to = "/.netlify/images?url=:url&w=:width&q=:quality"
-status = 200.0
-force = false
-
-[redirects.query]
-url = ":url"
-w = ":width"
-q = ":quality"
 
 [redirects.conditions]
 
