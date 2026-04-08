@@ -73,135 +73,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (session?.user) {
               // Use the main client - Supabase handles auth automatically
-              // No need to create a new client instance
               const dbClient = client
 
-              console.log('👤 Attempting to fetch profile for user:', session.user.id)
+              console.log('👤 Auth session found for user:', session.user.id)
 
-              // Create abort controller for profile fetch
-              const abortController = new AbortController()
-              let profileFetchCompleted = false
-
-              // Set timeout to abort profile fetch (prevent RLS hanging)
-              const profileFetchTimeout = setTimeout(() => {
-                if (!profileFetchCompleted) {
-                  abortController.abort()
-                  console.warn('⏱️ Profile fetch timeout (2s) - using fallback and continuing')
-                  if (isMounted) {
-                    setProfile({
-                      id: session.user.id,
-                      email: session.user.email || '',
-                      role: 'viewer',
-                      created_at: new Date().toISOString(),
-                    })
-                    setIsLoading(false)
-                    console.log('✅ Auth isLoading set to false (timeout fallback)')
-                  }
-                }
-              }, 2000)
-
-              try {
-                // Fetch user profile with timeout protection
-                const { data: profileData, error: fetchError } = await dbClient
-                  .from('user_profiles')
-                  .select('*')
-                  .eq('id', session.user.id)
-                  .maybeSingle()
-
-                profileFetchCompleted = true
-                clearTimeout(profileFetchTimeout)
-
-                console.log('📊 Profile fetch result:', {
-                  userID: session.user.id,
-                  hasData: !!profileData,
-                  hasError: !!fetchError,
-                  errorCode: fetchError?.code,
-                  errorMessage: fetchError?.message,
+              // IMPORTANT: Profile was created during signup with authenticated client
+              // Skip expensive profile fetch - use default profile
+              // Profile fetch is unreliable because auth.uid() may not be available yet in listener context
+              if (isMounted) {
+                setProfile({
+                  id: session.user.id,
+                  email: session.user.email || '',
+                  role: 'viewer',
+                  created_at: new Date().toISOString(),
                 })
-
-                if (!isMounted) return
-
-                if (!profileData && fetchError && fetchError.code !== 'PGRST116') {
-                  // Table might not exist yet - use default profile
-                  console.log('⚠️ Profile fetch error:', fetchError.code, '- setting default profile')
-                  // Set default profile and continue
-                  if (isMounted) {
-                    setProfile({
-                      id: session.user.id,
-                      email: session.user.email || '',
-                      role: 'viewer',
-                      created_at: new Date().toISOString(),
-                    })
-                    setIsLoading(false)
-                    console.log('✅ Auth isLoading set to false (profile error fallback)')
-                  }
-                  return
-                }
-
-                if (!profileData) {
-                  console.log('⚠️ Profile not found, attempting to create default profile')
-                  // Try to create the profile now that user is authenticated
-                  const { data: createdProfile, error: createError } = await dbClient
-                    .from('user_profiles')
-                    .insert({
-                      id: session.user.id,
-                      email: session.user.email || '',
-                      role: 'viewer',
-                    })
-                    .select()
-                    .single()
-
-                  console.log('📝 Profile create result:', {
-                    created: !!createdProfile,
-                    error: createError?.message,
-                  })
-
-                  if (!isMounted) return
-
-                  if (createError) {
-                    console.error('❌ Could not create profile:', createError.code, createError.message)
-                    // Set a default profile anyway to allow user to continue
-                    if (isMounted) {
-                      setProfile({
-                        id: session.user.id,
-                        email: session.user.email || '',
-                        role: 'viewer',
-                        created_at: new Date().toISOString(),
-                      })
-                      setIsLoading(false)
-                      console.log('✅ Auth isLoading set to false (profile create error fallback)')
-                    }
-                  } else {
-                    if (isMounted) {
-                      setProfile(createdProfile as UserProfile)
-                      setIsLoading(false)
-                      console.log('✅ Auth isLoading set to false (profile created)')
-                    }
-                  }
-                } else {
-                  console.log('✅ Profile found, setting profile')
-                  if (isMounted) {
-                    setProfile(profileData as UserProfile)
-                    setIsLoading(false)
-                    console.log('✅ Auth isLoading set to false (profile loaded)')
-                  }
-                }
-              } catch (profileErr) {
-                console.error('⚠️ Exception during profile fetch:', (profileErr as any).message)
-                if (profileFetchCompleted === false) {
-                  clearTimeout(profileFetchTimeout)
-                  profileFetchCompleted = true
-                }
-                if (isMounted) {
-                  setProfile({
-                    id: session.user.id,
-                    email: session.user.email || '',
-                    role: 'viewer',
-                    created_at: new Date().toISOString(),
-                  })
-                  setIsLoading(false)
-                  console.log('✅ Auth isLoading set to false (profile fetch exception)')
-                }
+                setIsLoading(false)
+                console.log('✅ Auth isLoading set to false (using signup profile)')
               }
             } else {
               if (isMounted) {
@@ -255,7 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Authentication service is not available. Please try again or contact support.')
       }
       
-      // Sign up the user
+      // 1. Sign up the user
       const { data: signUpData, error: signUpError } = await client.auth.signUp({
         email,
         password,
@@ -267,16 +154,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('User creation failed')
       }
 
-      console.log('User signed up:', signUpData.user.id)
+      console.log('✅ User account created:', signUpData.user.id)
 
-      // Auto sign in after signup
+      // 2. Auto sign in after signup
       const { data: signInData, error: signInError } = await client.auth.signInWithPassword({
         email,
         password,
       })
 
       if (signInError) {
-        console.error('Auto sign-in after signup failed:', signInError)
+        console.error('❌ Auto sign-in after signup failed:', signInError)
         throw signInError
       }
 
@@ -284,15 +171,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Session not created after signup')
       }
 
-      console.log('User auto-signed in, profile creation will be handled by listener')
-      // The onAuthStateChange listener will now fire and handle profile creation
-      
+      console.log('✅ User auto-signed in')
+
+      // 3. Create profile asynchronously in background - DON'T WAIT
+      if (signInData.session?.access_token && signInData.user?.id) {
+        // Fire and forget - profile will be created async
+        const { createClient } = await import('@supabase/supabase-js')
+        const authClient = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          {
+            global: {
+              headers: {
+                Authorization: `Bearer ${signInData.session.access_token}`,
+              },
+            },
+          }
+        )
+
+        // Fire and forget - non-blocking profile creation
+        // Don't wait or track - it completes async in background
+        ;(async () => {
+          try {
+            await authClient
+              .from('user_profiles')
+              .insert([
+                {
+                  id: signInData.user.id,
+                  email: signInData.user.email || email,
+                  role: 'viewer',
+                },
+              ])
+            console.log('✅ Profile created async')
+          } catch (err: any) {
+            console.warn('⚠️ Profile creation async failed (non-blocking):', err.message)
+          }
+        })()
+      }
+
       return {
         user: signInData.user,
         session: signInData.session,
       }
     } catch (error: any) {
-      console.error('Sign-up error:', error)
+      console.error('❌ Sign-up error:', error)
       throw error
     } finally {
       setIsLoading(false)

@@ -11,6 +11,8 @@ interface IdeaFormData {
   targetUser: string
   problemSolved: string
   howItWorks: string
+  hobbies?: string
+  interests?: string
 }
 
 interface ClarifyingQuestions {
@@ -29,7 +31,7 @@ interface Prototype {
 }
 
 export default function BuildTheDamnThing() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
   const router = useRouter()
   // Step 1: App name only
   // Step 2: Idea form
@@ -58,13 +60,27 @@ export default function BuildTheDamnThing() {
   const [answers, setAnswers] = useState<string[]>([])
   const [prototype, setPrototype] = useState<Prototype | null>(null)
 
+  // Show loading state while auth is initializing
+  if (authLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <p className="text-slate-400">Loading...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  // Redirect to login if not authenticated, pass redirect param to return here
   if (!isAuthenticated) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-screen">
           <div className="text-center">
             <p className="text-slate-400 mb-4">Please log in to use this feature</p>
-            <Link href="/auth/login" className="text-indigo-400 hover:text-indigo-300">
+            <Link href="/auth/login?redirect=/hub/build" className="text-indigo-400 hover:text-indigo-300">
               Go to Login
             </Link>
           </div>
@@ -235,7 +251,7 @@ export default function BuildTheDamnThing() {
 
   const handleReset = () => {
     setStep(1)
-    setFormData({ appName: '', mainIdea: '', targetUser: '', problemSolved: '', howItWorks: '' })
+    setFormData({ appName: '', mainIdea: '', targetUser: '', problemSolved: '', howItWorks: '', hobbies: '', interests: '' })
     setClarifyingQuestions(null)
     setAnswers([])
     setPrototype(null)
@@ -287,70 +303,87 @@ export default function BuildTheDamnThing() {
     setLoading(true)
     setError('')
     setErrorCode('')
-    setDeploymentStatus('Building your project...')
+    setDeploymentStatus('🚀 Building Magic...')
 
     try {
-      const response = await fetch('/api/hub/build-and-deploy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          appName: formData.appName,
-          appIdea: formData.mainIdea,
-          targetUser: formData.targetUser,
-          problemSolved: formData.problemSolved,
-          howItWorks: formData.howItWorks,
-          technologies: (editedPrototype || prototype)?.technologies || [],
-          buildPlan: (editedPrototype || prototype)?.buildPlan || [],
-        }),
-      })
+      // Setup abort controller with 120 second timeout (backend timeout is 120s)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 120000)
 
-      if (!response.ok) {
-        let errorData: any = {}
-        let errorMsg = 'Failed to build and deploy'
-        
-        // Try to parse as JSON, but handle HTML error pages
-        const contentType = response.headers.get('content-type')
-        if (contentType?.includes('application/json')) {
-          try {
-            errorData = await response.json()
-            if (errorData.missing) {
-              errorMsg = `⚠️ Missing setup: ${errorData.missing.join(', ')}\n\n${errorData.instructions}`
-            } else {
-              errorMsg = errorData.error || errorMsg
+      try {
+        const response = await fetch('/api/hub/build-and-deploy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            appName: formData.appName,
+            appIdea: formData.mainIdea,
+            targetUser: formData.targetUser,
+            problemSolved: formData.problemSolved,
+            howItWorks: formData.howItWorks,
+            hobbies: formData.hobbies,
+            interests: formData.interests,
+            technologies: (editedPrototype || prototype)?.technologies || [],
+            buildPlan: (editedPrototype || prototype)?.buildPlan || [],
+          }),
+          // @ts-ignore
+          signal: controller.signal,
+        })
+
+        clearTimeout(timeoutId)
+
+        if (!response.ok) {
+          let errorData: any = {}
+          let errorMsg = 'Failed to build and deploy'
+          
+          // Try to parse as JSON, but handle HTML error pages
+          const contentType = response.headers.get('content-type')
+          if (contentType?.includes('application/json')) {
+            try {
+              errorData = await response.json()
+              if (errorData.missing) {
+                errorMsg = `⚠️ Missing setup: ${errorData.missing.join(', ')}\n\n${errorData.instructions}`
+              } else {
+                errorMsg = errorData.error || errorMsg
+              }
+            } catch (e) {
+              console.error('Failed to parse error response:', e)
             }
-          } catch (e) {
-            console.error('Failed to parse error response:', e)
           }
+          
+          // Handle specific status codes
+          if (response.status === 409) {
+            // Conflict - app name already taken
+            setErrorCode('REPO_ALREADY_EXISTS')
+            const appName = errorData.appName || formData.appName
+            errorMsg = `❌ App name "${appName}" is already taken on GitHub or Netlify.\n\nTry these alternatives:\n• ${appName}2\n• ${appName}-app\n• ${appName}-pro\n\nGo back to Step 1 and choose a different app name.`
+          } else if (response.status === 504) {
+            setErrorCode('')
+            errorMsg = `Server timeout (504). The build is taking longer than expected. Check your GitHub and Netlify accounts to see the status.`
+          } else if (response.status === 500) {
+            setErrorCode('')
+            errorMsg = `Server error (500). ${errorMsg}`
+          }
+          
+          throw new Error(errorMsg)
         }
-        
-        // Handle specific status codes
-        if (response.status === 409) {
-          // Conflict - app name already taken
-          setErrorCode('REPO_ALREADY_EXISTS')
-          const appName = errorData.appName || formData.appName
-          errorMsg = `❌ App name "${appName}" is already taken on GitHub or Netlify.\n\nTry these alternatives:\n• ${appName}2\n• ${appName}-app\n• ${appName}-pro\n\nGo back to Step 1 and choose a different app name.`
-        } else if (response.status === 504) {
-          setErrorCode('')
-          errorMsg = `Server timeout (504). This sometimes happens with large deployments. Try building with fewer files or wait a moment and try again.`
-        } else if (response.status === 500) {
-          setErrorCode('')
-          errorMsg = `Server error (500). ${errorMsg}`
-        }
-        
-        throw new Error(errorMsg)
-      }
 
-      setDeploymentStatus('Deploying to Netlify & waiting for build...')
-      const data = await response.json()
-      
-      setDeploymentStatus('✅ Build complete! Launching your app...')
-      setBuildLiveUrl(data.liveUrl)
-      setStep(6) // Show success/live app screen (step 6)
-      
-      // Small delay before auto-launching to let UI update
-      setTimeout(() => {
-        window.open(data.liveUrl, '_blank')
-      }, 1500)
+        const data = await response.json()
+        
+        setDeploymentStatus('✅ Successfully deployed! Launching your app...')
+        setBuildLiveUrl(data.liveUrl)
+        setStep(6) // Show success/live app screen (step 6)
+        
+        // Small delay before auto-launching to let UI update
+        setTimeout(() => {
+          window.open(data.liveUrl, '_blank')
+        }, 1500)
+      } catch (fetchErr: any) {
+        clearTimeout(timeoutId)
+        if (fetchErr.name === 'AbortError') {
+          throw new Error('Build took too long (timeout after 2 minutes). Your app may still be building - check your GitHub and Netlify accounts.')
+        }
+        throw fetchErr
+      }
     } catch (err) {
       const errorMsg = (err as Error).message || 'Error building and deploying. Please try again.'
       console.error('Build error:', errorMsg)
@@ -631,6 +664,35 @@ export default function BuildTheDamnThing() {
                   onChange={handleInputChange}
                   placeholder="e.g., Managers create a team → invite team members → members set daily goals → app tracks goal completion, not idle time → generates weekly insight reports"
                   rows={4}
+                  className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              {/* Hobbies & Interests */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-3">
+                  Your Hobbies & Interests 🎮
+                </label>
+                <textarea
+                  name="hobbies"
+                  value={formData.hobbies || ''}
+                  onChange={handleInputChange}
+                  placeholder="e.g., gaming, fitness, music production, writing, photography"
+                  rows={3}
+                  className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-3">
+                  What Are You Most Interested In? 💡
+                </label>
+                <textarea
+                  name="interests"
+                  value={formData.interests || ''}
+                  onChange={handleInputChange}
+                  placeholder="e.g., AI/ML, blockchain, data visualization, social networking, robotics, sustainability"
+                  rows={3}
                   className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                 />
               </div>

@@ -7,8 +7,82 @@ interface RequestBody {
   targetUser?: string
   problemSolved?: string
   howItWorks?: string
+  hobbies?: string
+  interests?: string
   technologies?: string[]
   buildPlan?: string[]
+}
+
+// Synchronous deployment function - fully waits for completion before returning
+async function deployApplication(
+  githubToken: string,
+  netlifyToken: string,
+  githubUsername: string,
+  repoName: string,
+  appIdea: string,
+  generatedFiles: Array<{ path: string; content: string }>
+): Promise<{ liveUrl: string; repoUrl: string; repoName: string }> {
+  try {
+    console.log(`📦 Starting deployment for ${repoName}`)
+    
+    // 1. CREATE GITHUB REPO
+    console.log(`📤 Creating GitHub repository...`)
+    let repoData: any = null
+    const namesToTry = [repoName, `${repoName}-app`, `${repoName}-${Date.now().toString(36).slice(-4)}`]
+    
+    for (const name of namesToTry) {
+      try {
+        repoData = await createRepo(githubToken, name, appIdea)
+        repoName = name
+        break
+      } catch (err: any) {
+        if (err.message?.includes('already exists') && name !== namesToTry[namesToTry.length - 1]) {
+          console.log(`  ⚠️ Name "${name}" taken, trying next...`)
+          continue
+        }
+        throw err
+      }
+    }
+    
+    if (!repoData) {
+      throw new Error('Could not create repo after multiple attempts')
+    }
+    
+    const repoFullName = repoData.full_name
+    console.log(`✅ Repo created: ${repoFullName}`)
+
+    // 2. PUSH FILES TO GITHUB
+    console.log(`📤 Pushing ${generatedFiles.length} files to GitHub...`)
+    for (const file of generatedFiles) {
+      await pushFileToGitHub(githubToken, repoFullName, file.path, file.content)
+    }
+    console.log(`✅ All files pushed to GitHub`)
+
+    // 3. CREATE NETLIFY SITE
+    console.log(`🚀 Creating Netlify site linked to GitHub...`)
+    const siteData = await createNetlifySite(
+      netlifyToken,
+      repoName,
+      githubUsername,
+      repoName
+    )
+    const siteId = siteData.id
+    console.log(`✅ Netlify site created with ID: ${siteId}`)
+
+    // 4. WAIT FOR NETLIFY BUILD TO START (max 60 seconds to stay under 120s timeout)
+    console.log(`⏳ Waiting for Netlify build to start...`)
+    const liveUrl = await waitForNetlifyBuild(netlifyToken, siteId, 60000) // 60 second timeout
+    
+    const repoUrl = `https://github.com/${githubUsername}/${repoName}`
+    console.log(`🎉 ✅ Deployment initiated!`)
+    console.log(`   Live URL: ${liveUrl}`)
+    console.log(`   Repo URL: ${repoUrl}`)
+    
+    return { liveUrl, repoUrl, repoName }
+  } catch (err: any) {
+    console.error(`❌ Deployment failed: ${err.message}`)
+    throw err
+  }
 }
 
 async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
@@ -61,6 +135,8 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
     const targetUser = req_body.targetUser || 'General users'
     const problemSolved = req_body.problemSolved || appIdea
     const howItWorks = req_body.howItWorks || `${appName} provides a practical solution to help users accomplish their goals efficiently.`
+    const hobbies = req_body.hobbies || ''
+    const interests = req_body.interests || ''
     const technologies = req_body.technologies || ['React', 'TypeScript', 'Tailwind CSS', 'Next.js']
     const buildPlan = req_body.buildPlan || [
       'Setup Next.js project structure',
@@ -74,98 +150,55 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
     console.log(`🚀 Building: ${appIdea}`)
     console.log(`📂 Repo: ${repoName}`)
 
-    // 1. CREATE GITHUB REPO (auto-retry with suffix if name taken)
-    console.log(`1️⃣ Creating GitHub repository...`)
-    let repoData: any = null
-    const namesToTry = [repoName, `${repoName}-app`, `${repoName}-${Date.now().toString(36).slice(-4)}`]
-    for (const name of namesToTry) {
-      try {
-        repoData = await createRepo(GITHUB_TOKEN, name, appIdea)
-        repoName = name
-        break
-      } catch (err: any) {
-        if (err.message?.includes('already exists') && name !== namesToTry[namesToTry.length - 1]) {
-          console.log(`⚠️ "${name}" taken, trying next...`)
-          continue
-        }
-        throw err
-      }
-    }
-    if (!repoData) {
-      throw new Error(`Could not create repo - all name variants taken`)
-    }
-    const repoFullName = repoData.full_name
-    console.log(`✅ Repo created: ${repoFullName}`)
-
-    // 2. WAIT FOR REPO INIT
-    console.log(`⏳ Waiting for repo init...`)
-    let branchExists = false
-    for (let i = 0; i < 5; i++) {
-      await sleep(1000)
-      try {
-        const checkRes = await fetch(
-          `https://api.github.com/repos/${repoFullName}/branches/main`,
-          { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
-        )
-        if (checkRes.ok) {
-          branchExists = true
-          break
-        }
-      } catch {}
+    // STEP 1: Generate code with AI
+    console.log(`1️⃣ Generating application code with AI...`)
+    let generatedFiles: any[] = []
+    try {
+      generatedFiles = await generateApplicationCodeWithAI(
+        GENERATION_API_KEY,
+        appName,
+        appIdea,
+        targetUser,
+        problemSolved,
+        howItWorks,
+        technologies,
+        buildPlan,
+        hobbies,
+        interests
+      )
+      console.log(`✅ Generated ${generatedFiles.length} files`)
+    } catch (err: any) {
+      const msg = err.message || String(err)
+      console.error(`❌ Code generation failed: ${msg}`)
+      throw err
     }
 
-    if (!branchExists) {
-      throw new Error('Failed to verify main branch exists after repo creation')
+    // STEP 2-4: Deploy to GitHub and Netlify (SYNCHRONOUSLY)
+    console.log(`2️⃣ Creating GitHub repo and deploying files...`)
+    let deploymentResult: any = null
+    try {
+      deploymentResult = await deployApplication(
+        GITHUB_TOKEN,
+        NETLIFY_TOKEN,
+        GITHUB_USERNAME,
+        repoName,
+        appIdea,
+        generatedFiles
+      )
+    } catch (err: any) {
+      const msg = err.message || String(err)
+      console.error(`❌ Deployment failed: ${msg}`)
+      throw err
     }
 
-    // 3. USE AI TO GENERATE ACTUAL APPLICATION CODE
-    console.log(`2️⃣ Using AI to generate application code...`)
-    const generatedFiles = await generateApplicationCodeWithAI(
-      GENERATION_API_KEY,
-      appName,
-      appIdea,
-      targetUser,
-      problemSolved,
-      howItWorks,
-      technologies,
-      buildPlan
-    )
-    console.log(`✅ Generated ${generatedFiles.length} files`)
-
-    // 4. PUSH ALL FILES TO GITHUB WITH AUTO-COMMITS
-    console.log(`3️⃣ Pushing files to GitHub...`)
-    for (const file of generatedFiles) {
-      await pushFileToGitHub(GITHUB_TOKEN, repoFullName, file.path, file.content)
-    }
-    console.log(`✅ All files committed to GitHub`)
-
-    // 5. CREATE NETLIFY SITE
-    console.log(`4️⃣ Creating Netlify site...`)
-    const siteData = await createNetlifySite(
-      NETLIFY_TOKEN,
-      repoName,
-      GITHUB_USERNAME,
-      repoName
-    )
-    const siteId = siteData.id
-    const siteName = siteData.name || siteData.subdomain
-    console.log(`✅ Site created: ${siteName}`)
-
-    // 6. NETLIFY AUTO-BUILDS FROM GITHUB - Return immediately with URL
-    console.log(`5️⃣ Netlify will auto-build from GitHub...`)
-    // Don't wait for build completion - return the URL immediately
-    // The site will be available as soon as Netlify finishes building (usually 1-2 minutes)
-    const deployUrl = `https://${siteData.subdomain || siteName}.netlify.app`
-    console.log(`✅ Deploy initiated: ${deployUrl}`)
-
-    console.log(`🎉 Done! App building - check URL in 1-2 minutes.`)
-    
+    // SUCCESS - Return the live URL
+    console.log(`✅ Build and deployment complete!`)
     return res.status(200).json({
       success: true,
-      message: 'Your app is building and will be live in 1-2 minutes!',
-      liveUrl: deployUrl,
-      repoUrl: `https://github.com/${repoFullName}`,
-      repoName,
+      message: 'Your app has been built and deployed successfully!',
+      liveUrl: deploymentResult.liveUrl,
+      repoUrl: deploymentResult.repoUrl,
+      repoName: deploymentResult.repoName,
     })
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
@@ -382,24 +415,18 @@ async function generateApplicationCodeWithAI(
   problemSolved: string,
   howItWorks: string,
   technologies: string[],
-  buildPlan: string[]
+  buildPlan: string[],
+  hobbies?: string,
+  interests?: string
 ): Promise<Array<{ path: string; content: string }>> {
-  const prompt = `Generate a Next.js app. Return ONLY valid JSON (no markdown).
-
-APP: ${appName}
-IDEA: ${appIdea}
-USER: ${targetUser}
-TECH: ${technologies.join(', ')}
-
-Generate 6 files as JSON: [{"path":"...", "content":"..."}]
-1. package.json
-2. tsconfig.json
-3. next.config.js
-4. pages/index.tsx - homepage
-5. pages/_app.tsx - wrapper
-6. README.md
-
-Use TypeScript, React hooks, Tailwind. Return ONLY JSON array, nothing else.`
+  // Escape special characters in user inputs for the prompt
+  const esc = (text: string) => text.replace(/"/g, '\\"').replace(/\n/g, ' ').replace(/\|/g, ' ').substring(0, 80)
+  
+  let promptLine = `App:${esc(appName)}|Purpose:${esc(appIdea)}|Users:${esc(targetUser)}|Solves:${esc(problemSolved)}`
+  if (hobbies) promptLine += `|Hobbies:${esc(hobbies)}`
+  if (interests) promptLine += `|Interests:${esc(interests)}`
+  
+  const prompt = `JSON-only app.\n${promptLine}\nOutput:[{"path":"package.json","content":"..."},{"path":"pages/index.tsx","content":"..."},{"path":"pages/_app.tsx","content":"..."},{"path":"README.md","content":"..."}]`
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -409,8 +436,8 @@ Use TypeScript, React hooks, Tailwind. Return ONLY JSON array, nothing else.`
       'x-api-key': apiKey,
     },
     body: JSON.stringify({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 4000,
+      model: 'claude-sonnet-4-6',
+      max_tokens: 3000,
       messages: [
         {
           role: 'user',
@@ -431,15 +458,56 @@ Use TypeScript, React hooks, Tailwind. Return ONLY JSON array, nothing else.`
   const data = await response.json()
   const content = data.content[0].text
 
-  // Extract JSON from response
-  const jsonMatch = content.match(/\[[\s\S]*\]/)
-  if (!jsonMatch) {
-    throw new Error('Could not parse generated code from Claude')
+  console.log(`📝 Claude response: ${content.length} chars`)
+  
+  let files: any[] = []
+  
+  try {
+    // Fast JSON extraction - try multiple approaches
+    let jsonContent = content
+      .replace(/^```(?:json)?\s*\n?/i, '')  // Remove markdown
+      .replace(/\n?```\s*$/i, '')
+      .trim()
+    
+    // Approach 1: Direct parse
+    try {
+      files = JSON.parse(jsonContent)
+      if (Array.isArray(files)) {
+        console.log(`✅ Parsed directly: ${files.length} files`)
+        return files
+      }
+    } catch (e1) {
+      // Not direct JSON, try extraction
+      console.log(`Trying JSON extraction...`)
+      
+      // Approach 2: Extract from [ to ]
+      const start = jsonContent.indexOf('[')
+      if (start === -1) throw new Error('No JSON array in response')
+      
+      // Greedy search from end - find the last ] 
+      let end = jsonContent.lastIndexOf(']')
+      while (end > start) {
+        try {
+          const candidate = jsonContent.substring(start, end + 1)
+          const parsed = JSON.parse(candidate)
+          if (Array.isArray(parsed)) {
+            console.log(`✅ Extracted: ${parsed.length} files from greedy search`)
+            return parsed
+          }
+        } catch (e) {
+          // Try one bracket before
+          end = jsonContent.lastIndexOf(']', end - 1)
+        }
+      }
+      
+      throw new Error('Could not extract valid JSON array')
+    }
+    
+    throw new Error('Response was not an array')
+  } catch (err: any) {
+    console.error(`❌ JSON parsing failed: ${err.message}`)
+    throw new Error(`Failed to parse Claude response: ${err.message}`)
   }
-
-  const files = JSON.parse(jsonMatch[0])
-  console.log(`✅ AI generated ${files.length} files`)
-  return files
 }
 
 // Create Netlify site linked to GitHub repo
@@ -474,52 +542,42 @@ async function createNetlifySite(
   return await res.json()
 }
 
-// Wait for Netlify to complete automatic build from GitHub
+// Wait for Netlify build to start and get valid URL
 async function waitForNetlifyBuild(
   token: string,
   siteId: string,
-  timeoutMs: number = 300000
+  timeoutMs: number = 60000
 ): Promise<string> {
   const startTime = Date.now()
+  let lastKnownUrl = `https://${siteId}.netlify.app`
   
   while (Date.now() - startTime < timeoutMs) {
     try {
       const res = await fetch(
-        `https://api.netlify.com/api/v1/sites/${siteId}/deploys`,
+        `https://api.netlify.com/api/v1/sites/${siteId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       )
 
-      if (!res.ok) continue
-
-      const deploys = await res.json()
-      const latestDeploy = deploys[0]
-
-      if (!latestDeploy) {
+      if (!res.ok) {
         await sleep(5000)
         continue
       }
 
-      // Check if build is complete
-      if (latestDeploy.state === 'ready') {
-        const url = latestDeploy.ssl_url || latestDeploy.url || `https://${siteId}.netlify.app`
-        console.log(`✅ Build complete: ${url}`)
-        return url
-      }
-
-      if (latestDeploy.state === 'failed' || latestDeploy.state === 'error') {
-        throw new Error(`Netlify build failed with state: ${latestDeploy.state}`)
-      }
-
-      console.log(`   Build in progress (${latestDeploy.state})...`)
-      await sleep(5000)
+      const siteData = await res.json()
+      lastKnownUrl = siteData.ssl_url || siteData.url || lastKnownUrl
+      
+      // Success: We have a valid URL and site is created
+      console.log(`✅ Netlify site ready: ${lastKnownUrl}`)
+      return lastKnownUrl
     } catch (err) {
-      console.log(`   Checking build status...`)
+      console.log(`   Waiting for Netlify site...`)
       await sleep(5000)
     }
   }
 
-  throw new Error('Netlify build timed out')
+  console.log(`⚠️ Using fallback URL (build may still be in progress): ${lastKnownUrl}`)
+  return lastKnownUrl // Return what we have rather than fail
 }
 

@@ -4,80 +4,84 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const apiKey = process.env.GENERATION_API_KEY
 
   if (!apiKey) {
-    return res.status(400).json({
-      error: 'GENERATION_API_KEY not found',
-      env: {
-        GENERATION_API_KEY: !!process.env.GENERATION_API_KEY,
+    return res.status(400).json({ error: 'GENERATION_API_KEY not found' })
+  }
+
+  // Test app generation prompt
+  const prompt = `Generate a working Next.js app. Respond ONLY with JSON array.
+App: TestApp - "A test application"
+Users: "general users"
+Problem: "testing the system"
+Interests: "testing, quality assurance"
+
+4 files as JSON only:
+1. package.json - minimal
+2. pages/index.tsx - simple working component
+3. pages/_app.tsx - wrapper
+4. README.md - description
+
+[{"path":"package.json","content":"..."}...]`
+
+  try {
+    console.log('📨 Calling Claude API with app generation prompt...')
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
       },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 3000,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      }),
     })
-  }
 
-  console.log(`\n🧪 TESTING CLAUDE API DIRECT`)
-  console.log(`📝 API Key length: ${apiKey.length}`)
-  console.log(`📝 Key starts with: ${apiKey.substring(0, 20)}`)
+    console.log('📥 Got response, status:', response.status)
 
-  const models = [
-    'claude-opus',
-    'claude-3-opus-20240229',
-    'claude-3-sonnet-20240229',
-    'claude-3-haiku-20240307',
-    'claude-3.5-sonnet',
-    'claude-3-5-sonnet-20241022',
-  ]
-
-  const results: any = {}
-
-  for (const model of models) {
-    try {
-      console.log(`\n🔍 Testing model: ${model}`)
-
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
-          'x-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: 100,
-          messages: [
-            {
-              role: 'user',
-              content: 'Say hello',
-            },
-          ],
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        console.error(`❌ Model ${model} failed: ${response.status}`)
-        console.error(`   Error:`, data)
-        results[model] = {
-          status: response.status,
-          error: data.error?.message || data.error?.type || JSON.stringify(data),
-        }
-      } else {
-        console.log(`✅ Model ${model} WORKS!`)
-        results[model] = {
-          status: response.status,
-          success: true,
-          message: data.content?.[0]?.text?.substring(0, 50),
-        }
-      }
-    } catch (err: any) {
-      console.error(`❌ Model ${model} exception:`, err.message)
-      results[model] = {
-        error: err.message,
-      }
+    if (!response.ok) {
+      const err = await response.json()
+      console.error('❌ API error:', err)
+      return res.status(response.status).json({ error: err })
     }
-  }
 
-  return res.status(200).json({
-    tested: models,
-    results,
-    recommendation: Object.entries(results).find(([_, v]: any) => v.success)?.[0] || 'NONE WORKED',
-  })
+    const data = await response.json()
+    const content = data.content[0].text
+
+    console.log('✅ Response received from Claude')
+    console.log('   Length:', content.length)
+    console.log('   First 500 chars:', content.substring(0, 500))
+    console.log('   Last 300 chars:', content.substring(Math.max(0, content.length - 300)))
+
+    // Try to parse as JSON
+    let canParse = false
+    let parseError = null
+    try {
+      JSON.parse(content)
+      canParse = true
+    } catch (e: any) {
+      parseError = e.message
+    }
+
+    // Return the full response for analysis
+    return res.status(200).json({
+      success: true,
+      length: content.length,
+      canParse,
+      parseError,
+      first500: content.substring(0, 500),
+      last300: content.substring(Math.max(0, content.length - 300)),
+      fullResponse: content,
+    })
+  } catch (err: any) {
+    console.error('❌ Exception:', err.message)
+    return res.status(500).json({ error: err.message })
+  }
 }
