@@ -17,3 +17,6 @@ yarn-error.log*
 .turbo/
 .vercel
 .env*.local
+
+# Local Netlify folder
+.netlify
