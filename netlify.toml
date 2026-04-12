@@ -14,6 +14,15 @@
   command = "npm run dev"
   port = 3000
 
+# Redirect old domain to new domain
+[[redirects]]
+  from = "/*"
+  to = "https://take-the-reins.ai/:splat"
+  status = 301
+  force = true
+  [redirects.conditions]
+    Host = "takethereigns.ai"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
