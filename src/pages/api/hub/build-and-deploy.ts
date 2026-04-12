@@ -516,6 +516,8 @@ async function createNetlifySite(
   repoOwner: string,
   repoName: string
 ): Promise<any> {
+  // First, create the site without repo (simpler, more reliable)
+  console.log(`📍 Creating Netlify site: ${siteName}`)
   const res = await fetch('https://api.netlify.com/api/v1/sites', {
     method: 'POST',
     headers: {
@@ -524,23 +526,45 @@ async function createNetlifySite(
     },
     body: JSON.stringify({
       name: siteName,
-      repo: {
-        provider: 'github',
-        repo: `${repoOwner}/${repoName}`,
-        branch: 'main',
-        deploy_key_id: '1',
-      },
     }),
   })
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(`Netlify site creation failed: ${err.message || res.statusText}`)
+    console.error(`❌ Netlify response:`, err)
+    throw new Error(`Netlify site creation failed: ${err.message || err.status || res.statusText}`)
   }
 
   const siteData = await res.json()
   const siteId = siteData.id
   console.log(`✅ Netlify site created: ${siteId}`)
+
+  // Now link it to the GitHub repo
+  console.log(`🔗 Linking to GitHub repo: ${repoOwner}/${repoName}`)
+  const linkRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      repo: {
+        provider: 'github',
+        repo: `${repoOwner}/${repoName}`,
+        branch: 'main',
+        allow_auto_builds: true,
+        allowed_branches: ['main'],
+      },
+    }),
+  })
+
+  if (!linkRes.ok) {
+    const err = await linkRes.json().catch(() => ({}))
+    console.warn(`⚠️ Could not link GitHub repo: ${linkRes.status}`, err)
+    // Don't fail entirely - site is created, just repo linking failed
+  } else {
+    console.log(`✅ GitHub repo linked`)
+  }
 
   // Configure build settings
   console.log(`⚙️ Configuring build settings...`)
@@ -554,7 +578,6 @@ async function createNetlifySite(
       build_settings: {
         cmd: 'npm run build',
         dir: '.next',
-        functions_dir: 'netlify/functions',
         base: '',
       },
     }),
