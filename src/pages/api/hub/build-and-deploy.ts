@@ -93,14 +93,14 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
   const GITHUB_TOKEN = process.env.GITHUB_TOKEN
   const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN
   const GITHUB_USERNAME = process.env.GITHUB_USERNAME
-  const GENERATION_API_KEY = process.env.GENERATION_API_KEY
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 
   // Validate all required environment variables
   const missingVars = []
   if (!GITHUB_TOKEN) missingVars.push('GITHUB_TOKEN')
   if (!NETLIFY_TOKEN) missingVars.push('NETLIFY_TOKEN')
   if (!GITHUB_USERNAME) missingVars.push('GITHUB_USERNAME')
-  if (!GENERATION_API_KEY) missingVars.push('GENERATION_API_KEY')
+  if (!OPENAI_API_KEY) missingVars.push('OPENAI_API_KEY')
 
   if (missingVars.length > 0) {
     const errorMsg = `Missing environment variables: ${missingVars.join(', ')}. Set these in Netlify dashboard → Site settings → Environment`
@@ -155,7 +155,7 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
     let generatedFiles: any[] = []
     try {
       generatedFiles = await generateApplicationCodeWithAI(
-        GENERATION_API_KEY,
+        OPENAI_API_KEY,
         appName,
         appIdea,
         targetUser,
@@ -428,15 +428,14 @@ async function generateApplicationCodeWithAI(
   
   const prompt = `JSON-only app.\n${promptLine}\nOutput:[{"path":"package.json","content":"..."},{"path":"pages/index.tsx","content":"..."},{"path":"pages/_app.tsx","content":"..."},{"path":"README.md","content":"..."}]`
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: 'gpt-4-turbo',
       max_tokens: 3000,
       messages: [
         {
@@ -449,16 +448,16 @@ async function generateApplicationCodeWithAI(
 
   if (!response.ok) {
     const err = await response.json()
-    console.error(`❌ Claude API Error:`)
+    console.error(`❌ OpenAI API Error:`)
     console.error(`   Status: ${response.status}`)
     console.error(`   Full error:`, err)
-    throw new Error(`Claude API failed: ${err.error?.message || JSON.stringify(err) || response.statusText}`)
+    throw new Error(`OpenAI API failed: ${err.error?.message || JSON.stringify(err) || response.statusText}`)
   }
 
   const data = await response.json()
-  const content = data.content[0].text
+  const content = data.choices[0].message.content
 
-  console.log(`📝 Claude response: ${content.length} chars`)
+  console.log(`📝 OpenAI response: ${content.length} chars`)
   
   let files: any[] = []
   
