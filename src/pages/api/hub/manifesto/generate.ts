@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import axios from 'axios'
 import { getSupabase } from '@/lib/supabase'
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 const STABILITY_API_KEY = process.env.STABILITY_API_KEY
 const BASE_URL = process.env.NEXT_PUBLIC_MANIFESTO_BASE_URL || 'https://takethereigns.ai'
 
@@ -76,11 +76,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Tones must be an array with maximum 2 items' })
   }
 
-  if (!ANTHROPIC_API_KEY) {
-    console.error('ANTHROPIC_API_KEY is not configured')
+  if (!OPENAI_API_KEY) {
+    console.error('OPENAI_API_KEY is not configured')
     return res.status(500).json({ 
-      error: 'AI API key not configured. Please set ANTHROPIC_API_KEY in your environment variables.',
-      details: 'Missing ANTHROPIC_API_KEY'
+      error: 'AI API key not configured. Please set OPENAI_API_KEY in your environment variables.',
+      details: 'Missing OPENAI_API_KEY'
     })
   }
 
@@ -135,12 +135,12 @@ ${questionAnswerPairs}${pronounsInstruction}${toneInstructions}
 
 Write the manifesto now. Make it powerful, personal, and true.`
 
-    console.log('Calling Anthropic API with', questions.length, 'questions')
+    console.log('Calling OpenAI API with', questions.length, 'questions')
 
     const response = await axios.post(
-      'https://api.anthropic.com/v1/messages',
+      'https://api.openai.com/v1/chat/completions',
       {
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'gpt-4-turbo',
         max_tokens: 800,
         messages: [
           {
@@ -151,14 +151,13 @@ Write the manifesto now. Make it powerful, personal, and true.`
       },
       {
         headers: {
-          'x-api-key': ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
       }
     )
 
-    const manifesto = response.data.content[0]?.text
+    const manifesto = response.data.choices[0]?.message?.content
 
     if (!manifesto) {
       console.error('No content in Anthropic response')
