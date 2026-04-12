@@ -538,7 +538,51 @@ async function createNetlifySite(
     throw new Error(`Netlify site creation failed: ${err.message || res.statusText}`)
   }
 
-  return await res.json()
+  const siteData = await res.json()
+  const siteId = siteData.id
+  console.log(`✅ Netlify site created: ${siteId}`)
+
+  // Configure build settings
+  console.log(`⚙️ Configuring build settings...`)
+  const buildRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      build_settings: {
+        cmd: 'npm run build',
+        dir: '.next',
+        functions_dir: 'netlify/functions',
+        base: '',
+      },
+    }),
+  })
+
+  if (!buildRes.ok) {
+    console.warn(`⚠️ Could not set build settings: ${buildRes.status}`)
+  } else {
+    console.log(`✅ Build settings configured`)
+  }
+
+  // Trigger manual deploy to start the build
+  console.log(`🚀 Triggering initial deploy...`)
+  const deployRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/builds`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!deployRes.ok) {
+    console.warn(`⚠️ Could not trigger deploy: ${deployRes.status}`)
+  } else {
+    console.log(`✅ Deploy triggered`)
+  }
+
+  return siteData
 }
 
 // Wait for Netlify build to start and get valid URL
