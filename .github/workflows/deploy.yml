@@ -40,9 +40,9 @@ jobs:
         timeout-minutes: 30
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
-          NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID || '4ed2dba4-221d-4d33-b65c-69b3e48eabe9' }}
+          NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID || '272a8153-2c55-4767-ab4b-35b29dec5be5' }}
         run: |
-          SITE_ID="${NETLIFY_SITE_ID:-4ed2dba4-221d-4d33-b65c-69b3e48eabe9}"
+          SITE_ID="${NETLIFY_SITE_ID:-272a8153-2c55-4767-ab4b-35b29dec5be5}"
           echo "Deploying to site: $SITE_ID"
           
           # Verify token by testing API access
