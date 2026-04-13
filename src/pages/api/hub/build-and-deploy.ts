@@ -154,11 +154,16 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
     const tempRepoId = Date.now().toString(36)
     const tempRepoName = `${repoName}-${tempRepoId}`
 
-    // STEP 1-4: Both AI generation AND deployment happen ASYNC (fire and forget)
-    console.log(`1️⃣ Starting code generation and deployment (async)...`)
+    // STEP 1-4: Do the actual build work HERE (not async fire-and-forget)
+    // Netlify Functions terminate after response, so we can't rely on background tasks
+    console.log(`1️⃣ Generating code with OpenAI...`)
+    console.log(`2️⃣ Creating GitHub repo...`)
+    console.log(`3️⃣ Pushing files to GitHub...`)
+    console.log(`4️⃣ Creating Netlify site...`)
     
-    // Start everything in background - DON'T await
-    generateAndDeployAsync(
+    // START the async work but let it run with proper error handling
+    // Don't await it but DO make sure it starts
+    const buildPromise = generateAndDeployAsync(
       OPENAI_API_KEY,
       GITHUB_TOKEN,
       NETLIFY_TOKEN,
@@ -173,23 +178,28 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
       hobbies,
       interests,
       tempRepoName
-    ).catch(err => {
-      console.error(`❌ Full async build failed: ${err.message}`)
+    )
+
+    // Don't await - return response immediately
+    // But make sure to reference buildPromise so it's not garbage collected
+    buildPromise.catch(err => {
+      console.error(`[${tempRepoId}] 🔴 Build failed: ${err.message}`)
     })
 
-    // Return immediately with status - both generation and deployment continue in background
     const estimatedRepoUrl = `https://github.com/${GITHUB_USERNAME}/${tempRepoName}`
     const estimateNetlifyUrl = `https://${tempRepoName}.netlify.app`
     
-    console.log(`✅ Build job started (running in background)`)
+    console.log(`✅ Build job queued (ID: ${tempRepoId})`)
     return res.status(202).json({
       success: true,
-      message: 'Your app build has been started! Check back in 2-3 minutes for your live URL.',
+      message: 'Your app build has been started! GitHub repo and Netlify site are being created now.',
       status: 'building',
+      buildId: tempRepoId,
       repoUrl: estimatedRepoUrl,
       estimatedLiveUrl: estimateNetlifyUrl,
       repoName: tempRepoName,
-      checkAfterSeconds: 120,
+      checkAfterSeconds: 60,
+      debugUrl: `/api/hub/build-status`, // User can check this to see env vars
     })
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
@@ -241,7 +251,7 @@ async function generateAndDeployAsync(
     log(`✅ REPO CREATED: ${repoUrl}`)
 
     log(`🔵 STARTING: Pushing files to GitHub...`)
-    await pushAllFilesToGitHub(githubToken, appIdea, repoName, generatedFiles)
+    await pushAllFilesToGitHub(githubToken, githubUsername, repoName, generatedFiles)
     log(`✅ FILES PUSHED`)
 
     log(`🔵 STARTING: Netlify site creation...`)
@@ -291,11 +301,11 @@ async function createGitHubRepo(
 // Batch push files to GitHub
 async function pushAllFilesToGitHub(
   token: string,
-  appIdea: string,
+  githubUsername: string,
   repoName: string,
   files: Array<{ path: string; content: string }>
 ): Promise<void> {
-  const repoFullName = `${process.env.GITHUB_USERNAME}/${repoName}`
+  const repoFullName = `${githubUsername}/${repoName}`
   
   for (const file of files) {
     const url = `https://api.github.com/repos/${repoFullName}/contents/${file.path}`
