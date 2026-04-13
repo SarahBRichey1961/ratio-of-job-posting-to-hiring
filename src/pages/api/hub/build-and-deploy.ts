@@ -215,9 +215,12 @@ async function generateAndDeployAsync(
   interests: string,
   repoName: string
 ): Promise<void> {
+  const logId = Date.now().toString(36)
+  const log = (msg: string) => console.log(`[${logId}] ${msg}`)
+  
   try {
     // STEP 1: Generate code
-    console.log(`[async] Generating code...`)
+    log(`🔵 STARTING: Generating code with AI...`)
     const generatedFiles = await generateApplicationCodeWithAI(
       openaiKey,
       appName,
@@ -230,26 +233,193 @@ async function generateAndDeployAsync(
       hobbies,
       interests
     )
-    console.log(`[async] Generated ${generatedFiles.length} files`)
+    log(`✅ GENERATED: ${generatedFiles.length} files`)
 
     // STEP 2: Deploy
-    console.log(`[async] Starting deployment...`)
-    await deployApplication(
-      githubToken,
-      netlifyToken,
-      githubUsername,
-      repoName,
-      appIdea,
-      generatedFiles
-    )
-    console.log(`[async] Background deployment completed successfully`)
+    log(`🔵 STARTING: GitHub repo creation...`)
+    const repoUrl = await createGitHubRepo(githubToken, repoName, appIdea)
+    log(`✅ REPO CREATED: ${repoUrl}`)
+
+    log(`🔵 STARTING: Pushing files to GitHub...`)
+    await pushAllFilesToGitHub(githubToken, appIdea, repoName, generatedFiles)
+    log(`✅ FILES PUSHED`)
+
+    log(`🔵 STARTING: Netlify site creation...`)
+    const netlifyUrl = await createAndLinkNetlifySite(netlifyToken, repoName, githubUsername, generatedFiles)
+    log(`✅ NETLIFY SITE CREATED: ${netlifyUrl}`)
+
+    log(`🟢 COMPLETE: Build and deployment finished`)
+    log(`   GitHub: ${repoUrl}`)
+    log(`   Live: ${netlifyUrl}`)
   } catch (err: any) {
-    console.error(`❌ Background generation/deployment error: ${err.message}`)
-    // Error is logged but not thrown - user can check GitHub/Netlify status
+    log(`🔴 FAILED: ${err.message}`)
+    log(`Stack: ${err.stack?.split('\n').slice(0, 3).join(' | ')}`)
+    // Error is logged - user can check /api/hub/build-status endpoint for details
   }
 }
 
-// Async version that runs deployment in background (fire-and-forget)
+// Improved GitHub repo creation
+async function createGitHubRepo(
+  token: string,
+  repoName: string,
+  description: string
+): Promise<string> {
+  const res = await fetch('https://api.github.com/user/repos', {
+    method: 'POST',
+    headers: {
+      Authorization: `token ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/vnd.github.v3+json',
+    },
+    body: JSON.stringify({
+      name: repoName,
+      description: description.slice(0, 100),
+      private: false,
+      auto_init: true,
+    }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: `HTTP ${res.status}` }))
+    throw new Error(`GitHub API ${res.status}: ${err.message}`)
+  }
+
+  const data = await res.json()
+  return data.html_url
+}
+
+// Batch push files to GitHub
+async function pushAllFilesToGitHub(
+  token: string,
+  appIdea: string,
+  repoName: string,
+  files: Array<{ path: string; content: string }>
+): Promise<void> {
+  const repoFullName = `${process.env.GITHUB_USERNAME}/${repoName}`
+  
+  for (const file of files) {
+    const url = `https://api.github.com/repos/${repoFullName}/contents/${file.path}`
+    const encoded = Buffer.from(file.content).toString('base64')
+
+    // Get existing SHA if file exists
+    let sha: string | undefined
+    try {
+      const getRes = await fetch(url, {
+        headers: { Authorization: `token ${token}` },
+      })
+      if (getRes.ok) {
+        const data = await getRes.json()
+        sha = data.sha
+      }
+    } catch (e) {
+      // File might not exist yet
+    }
+
+    // Create or update file
+    const putRes = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Authorization: `token ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/vnd.github.v3+json',
+      },
+      body: JSON.stringify({
+        message: `Add ${file.path}`,
+        content: encoded,
+        branch: 'main',
+        ...(sha && { sha }),
+      }),
+    })
+
+    if (!putRes.ok) {
+      const err = await putRes.json().catch(() => ({ message: `HTTP ${putRes.status}` }))
+      throw new Error(`Failed to push ${file.path}: ${err.message}`)
+    }
+  }
+}
+
+// Create Netlify site and link to GitHub
+async function createAndLinkNetlifySite(
+  token: string,
+  siteName: string,
+  gitHubUsername: string,
+  files: Array<{ path: string; content: string }>
+): Promise<string> {
+  // Create site
+  const createRes = await fetch('https://api.netlify.com/api/v1/sites', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ name: siteName }),
+  })
+
+  if (!createRes.ok) {
+    const err = await createRes.json().catch(() => ({ message: `HTTP ${createRes.status}` }))
+    throw new Error(`Netlify API ${createRes.status}: ${err.message}`)
+  }
+
+  const site = await createRes.json()
+  const siteId = site.id
+  let siteUrl = site.ssl_url || site.url
+
+  // Link to GitHub
+  const linkRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      repo: {
+        provider: 'github',
+        repo: `${gitHubUsername}/${siteName}`,
+        branch: 'main',
+        allow_auto_builds: true,
+      },
+    }),
+  })
+
+  if (!linkRes.ok) {
+    console.warn(`[warn] Could not link GitHub to Netlify: ${linkRes.status}`)
+  }
+
+  // Configure build
+  const buildRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      build_settings: {
+        cmd: 'npm ci --legacy-peer-deps && npm run build',
+        dir: '.next',
+        functions_dir: 'netlify/functions',
+      },
+    }),
+  })
+
+  if (!buildRes.ok) {
+    console.warn(`[warn] Could not configure build: ${buildRes.status}`)
+  }
+
+  // Trigger deploy
+  const deployRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/builds`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!deployRes.ok) {
+    console.warn(`[warn] Could not trigger deploy: ${deployRes.status}`)
+  }
+
+  return siteUrl
+}
 
 
 function sanitizeRepoName(name: string): string {
