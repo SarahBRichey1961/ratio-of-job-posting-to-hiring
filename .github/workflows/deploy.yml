@@ -18,11 +18,13 @@ jobs:
       
       - name: Install dependencies
         run: npm ci --legacy-peer-deps --no-fund
+        timeout-minutes: 20
       
       - name: Build
         run: npm run build
+        timeout-minutes: 30
         env:
-          NODE_OPTIONS: "--max_old_space_size=4096"
+          NODE_OPTIONS: "--max_old_space_size=8192"
           NEXT_PUBLIC_SUPABASE_URL: https://eikhrkharihagaorqqcf.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ
       
@@ -35,6 +37,7 @@ jobs:
           echo "Build output verified: .next directory exists"
       
       - name: Deploy to Netlify
+        timeout-minutes: 30
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
           NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID || '4ed2dba4-221d-4d33-b65c-69b3e48eabe9' }}
@@ -53,17 +56,29 @@ jobs:
             echo "✓ Token verified"
           fi
           
-          # Build site.zip with all .next content
-          echo "Creating deployment zip..."
+          # Show .next size before compression
+          echo "Build directory size:"
+          du -sh .next || echo "Cannot determine size"
+          
+          # Build optimized site.zip - exclude unnecessary files
+          echo "Creating optimized deployment zip..."
           cd .next
-          zip -r ../site.zip . -q
+          zip -r ../site.zip . -q \
+            -x "cache/*" \
+            "*.map" \
+            ".env*" \
+            "node_modules/*"
           cd ..
           
-          # Deploy directly via Netlify REST API
-          echo "Uploading to Netlify..."
+          FILE_SIZE=$(ls -lh site.zip | awk '{print $5}')
+          echo "Deployment package size: $FILE_SIZE"
+          
+          # Deploy directly via Netlify REST API with longer timeout
+          echo "Uploading to Netlify (this may take a few minutes)..."
           RESPONSE=$(curl -X POST \
             -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
             -H "Content-Type: application/zip" \
+            --max-time 900 \
             --data-binary @site.zip \
             "https://api.netlify.com/api/v1/sites/$SITE_ID/deploys?title=GitHub%20Actions%20Deploy" \
             -w "\n%{http_code}")
