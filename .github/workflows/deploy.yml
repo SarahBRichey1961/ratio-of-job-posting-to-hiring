@@ -56,24 +56,33 @@ jobs:
             echo "✓ Token verified"
           fi
           
-          # Show .next size before compression
-          echo "Build directory size:"
-          du -sh .next || echo "Cannot determine size"
+          # Deploy from 'out' directory (static HTML export)
+          echo "Checking deployment directories..."
+          if [ -d "out" ]; then
+            echo "✓ Using 'out' directory (static export)"
+            DEPLOY_DIR="out"
+          elif [ -d ".next" ]; then
+            echo "⚠️  'out' directory not found, falling back to '.next'"
+            DEPLOY_DIR=".next"
+          else
+            echo "✗ ERROR: Neither 'out' nor '.next' directory found!"
+            exit 1
+          fi
           
-          # Build optimized site.zip - exclude unnecessary files
-          echo "Creating optimized deployment zip..."
-          cd .next
-          zip -r ../site.zip . -q \
-            -x "cache/*" \
-            "*.map" \
-            ".env*" \
-            "node_modules/*"
+          # Show deployment directory size
+          echo "Deployment directory size:"
+          du -sh "$DEPLOY_DIR" || echo "Cannot determine size"
+          
+          # Build deployment zip
+          echo "Creating deployment zip from $DEPLOY_DIR..."
+          cd "$DEPLOY_DIR"
+          zip -r ../site.zip . -q
           cd ..
           
           FILE_SIZE=$(ls -lh site.zip | awk '{print $5}')
           echo "Deployment package size: $FILE_SIZE"
           
-          # Deploy directly via Netlify REST API with longer timeout
+          # Deploy directly via Netlify REST API
           echo "Uploading to Netlify (this may take a few minutes)..."
           RESPONSE=$(curl -X POST \
             -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
