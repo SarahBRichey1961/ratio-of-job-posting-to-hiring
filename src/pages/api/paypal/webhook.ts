@@ -77,7 +77,7 @@ async function upsertAccount(
     user_id: userId,
     payment_status: 'paid',
     subscription_type: planType,
-    paddle_checkout_id: paymentId,
+    payment_id: paymentId,
     subscription_end_date: subscriptionEndDate,
     updated_at: new Date().toISOString(),
   }
