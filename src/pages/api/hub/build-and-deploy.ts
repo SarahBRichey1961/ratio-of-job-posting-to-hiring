@@ -651,7 +651,20 @@ async function generateApplicationCodeWithAI(
   if (hobbies) promptLine += `|Hobbies:${esc(hobbies)}`
   if (interests) promptLine += `|Interests:${esc(interests)}`
   
-  const prompt = `JSON-only app.\n${promptLine}\nOutput:[{"path":"package.json","content":"..."},{"path":"pages/index.tsx","content":"..."},{"path":"pages/_app.tsx","content":"..."},{"path":"README.md","content":"..."}]`
+  const prompt = `Generate a complete, buildable Next.js 14 app as JSON array ONLY. No markdown, no explanation.
+${promptLine}
+
+Files MUST include (complete and working):
+1. package.json - with exact dependencies: "next": "14.2.35", "react": "^18", "react-dom": "^18"
+2. next.config.js - standard config with output: 'standalone'
+3. tsconfig.json - standard Next.js TypeScript config
+4. pages/_app.tsx - React component with proper imports
+5. pages/index.tsx - Landing page with working code
+6. .gitignore - standard Node.js entries (node_modules, .env, .next, etc)
+7. README.md - brief description
+
+Return ONLY valid JSON array. Example format:
+[{"path":"package.json","content":"{\\"name\\":\\"app\\",\\"version\\":\\"1.0.0\\",\\"dependencies\\":{\\"next\\":\\"14.2.35\\",\\"react\\":\\"^18\\",\\"react-dom\\":\\"^18\\"}}"},...]`
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -661,7 +674,8 @@ async function generateApplicationCodeWithAI(
     },
     body: JSON.stringify({
       model: 'gpt-4-turbo',
-      max_tokens: 3000,
+      max_tokens: 4000,
+      temperature: 0.7,
       messages: [
         {
           role: 'user',
@@ -698,7 +712,6 @@ async function generateApplicationCodeWithAI(
       files = JSON.parse(jsonContent)
       if (Array.isArray(files)) {
         console.log(`✅ Parsed directly: ${files.length} files`)
-        return files
       }
     } catch (e1) {
       // Not direct JSON, try extraction
@@ -715,8 +728,9 @@ async function generateApplicationCodeWithAI(
           const candidate = jsonContent.substring(start, end + 1)
           const parsed = JSON.parse(candidate)
           if (Array.isArray(parsed)) {
+            files = parsed
             console.log(`✅ Extracted: ${parsed.length} files from greedy search`)
-            return parsed
+            break
           }
         } catch (e) {
           // Try one bracket before
@@ -724,13 +738,50 @@ async function generateApplicationCodeWithAI(
         }
       }
       
-      throw new Error('Could not extract valid JSON array')
+      if (files.length === 0) {
+        throw new Error('Could not extract valid JSON array')
+      }
     }
     
-    throw new Error('Response was not an array')
+    if (!Array.isArray(files) || files.length === 0) {
+      throw new Error('Response was not a valid file array')
+    }
+    
+    // Validate critical files exist
+    const pathsGenerated = files.map(f => f.path)
+    const criticalFiles = ['package.json', 'pages/index.tsx', 'pages/_app.tsx', 'tsconfig.json', 'next.config.js']
+    const missing = criticalFiles.filter(f => !pathsGenerated.includes(f))
+    
+    if (missing.length > 0) {
+      console.warn(`⚠️ Missing critical files: ${missing.join(', ')}`)
+      console.warn(`Generated files: ${pathsGenerated.join(', ')}`)
+      // Don't fail - add minimal files if missing
+      if (!pathsGenerated.includes('tsconfig.json')) {
+        files.push({
+          path: 'tsconfig.json',
+          content: JSON.stringify({"compilerOptions":{"target":"es2017","lib":["dom","dom.iterable","esnext"],"jsx":"preserve","module":"esnext","moduleResolution":"bundler","allowJs":true,"skipLibCheck":true,"strict":false,"forceConsistentCasingInFileNames":true,"noEmit":true,"esModuleInterop":true,"isolatedModules":true},"include":["next-env.d.ts","**/*.ts","**/*.tsx",".next/types/**/*.ts"],"exclude":["node_modules"]}, null, 2)
+        })
+      }
+      if (!pathsGenerated.includes('next.config.js')) {
+        files.push({
+          path: 'next.config.js',
+          content: '/** @type {import("next").NextConfig} */\nconst nextConfig = { output: "standalone" };\nmodule.exports = nextConfig;'
+        })
+      }
+      if (!pathsGenerated.includes('.gitignore')) {
+        files.push({
+          path: '.gitignore',
+          content: 'node_modules\n.env\n.env.local\n.next\nout\nbuild\n.DS_Store'
+        })
+      }
+    }
+    
+    console.log(`📦 Generated ${files.length} files for deployment`)
+    return files
+    
   } catch (err: any) {
     console.error(`❌ JSON parsing failed: ${err.message}`)
-    throw new Error(`Failed to parse Claude response: ${err.message}`)
+    throw new Error(`Failed to parse response: ${err.message}`)
   }
 }
 
