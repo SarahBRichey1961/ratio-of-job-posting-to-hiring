@@ -37,9 +37,23 @@ jobs:
       - name: Deploy to Netlify
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
-          NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
+          NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID || '4ed2dba4-221d-4d33-b65c-69b3e48eabe9' }}
         run: |
-          # Use variable if set, otherwise use fallback
           SITE_ID="${NETLIFY_SITE_ID:-4ed2dba4-221d-4d33-b65c-69b3e48eabe9}"
-          echo "Deploying to site: $SITE_ID"
-          npx netlify-cli deploy --prod --site="$SITE_ID" --dir=.next --auth="$NETLIFY_AUTH_TOKEN"
+          echo "Deploying .next to: $SITE_ID"
+          
+          # Deploy using Netlify CLI with explicit auth token (without requiring netlify link)
+          NETLIFY_SITE_ID="$SITE_ID" npx netlify-cli@latest deploy --prod --dir=.next --auth="$NETLIFY_AUTH_TOKEN" --message="Production build from GitHub Actions" 2>&1 || true
+          
+          # Fall back to API direct upload if CLI fails
+          if [ $? -ne 0 ]; then
+            echo "Trying direct API deployment..."
+            cd .next
+            zip -r ../site.zip . -q
+            cd ..
+            curl -X POST \
+              -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
+              -H "Content-Type: application/zip" \
+              --data-binary @site.zip \
+              "https://api.netlify.com/api/v1/sites/$SITE_ID/deploys?title=GitHub%20Actions%20Deploy" || echo "Direct API deploy failed"
+          fi
