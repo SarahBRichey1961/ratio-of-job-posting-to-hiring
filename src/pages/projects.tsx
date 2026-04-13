@@ -80,8 +80,16 @@ export default function ProjectsPage() {
       }
 
       const data = await response.json()
-      setBuildProgress(`✅ Building complete! Your app is deploying...`)
-      setLiveUrl(data.liveUrl || `https://${data.repoName}.netlify.app`)
+      
+      // Handle async response (202) - build is happening in background
+      if (response.status === 202 || data.status === 'building') {
+        setBuildProgress(`✅ Build started! Your app is being built and deployed.\n\n📂 Repository: ${data.repoUrl}\n🌐 Estimated URL: ${data.estimatedLiveUrl}\n\n⏳ Check back in 2-3 minutes!`)
+        setLiveUrl(data.estimatedLiveUrl || `https://${data.repoName}.netlify.app`)
+      } else {
+        // Sync build (legacy)
+        setBuildProgress(`✅ Building complete! Your app is deploying...`)
+        setLiveUrl(data.liveUrl || `https://${data.repoName}.netlify.app`)
+      }
     } catch (err: any) {
       setError(err.message || 'Build failed')
       setStep('ideas')

@@ -306,9 +306,9 @@ export default function BuildTheDamnThing() {
     setDeploymentStatus('🚀 Building Magic...')
 
     try {
-      // Setup abort controller with 120 second timeout (backend timeout is 120s)
+      // Setup abort controller with 60 second timeout (new async endpoint returns quickly)
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 120000)
+      const timeoutId = setTimeout(() => controller.abort(), 60000)
 
       try {
         const response = await fetch('/api/hub/build-and-deploy', {
@@ -369,18 +369,27 @@ export default function BuildTheDamnThing() {
 
         const data = await response.json()
         
-        setDeploymentStatus('✅ Successfully deployed! Launching your app...')
-        setBuildLiveUrl(data.liveUrl)
-        setStep(6) // Show success/live app screen (step 6)
-        
-        // Small delay before auto-launching to let UI update
-        setTimeout(() => {
-          window.open(data.liveUrl, '_blank')
-        }, 1500)
+        // Handle both sync (200) and async (202) responses
+        if (response.status === 202) {
+          // Async build - still building in background
+          setDeploymentStatus(`✅ Build started! Your app is being built and deployed.\n\n📂 Repository: ${data.repoUrl}\n🌐 Estimated URL: ${data.estimatedLiveUrl}\n\n⏳ Check back in 2-3 minutes for your live app!`)
+          setBuildLiveUrl(data.estimatedLiveUrl)
+          setStep(6) // Show success/status screen (step 6)
+        } else {
+          // Sync build completed (legacy, shouldn't happen with new code)
+          setDeploymentStatus('✅ Successfully deployed! Launching your app...')
+          setBuildLiveUrl(data.liveUrl)
+          setStep(6) // Show success/live app screen (step 6)
+          
+          // Small delay before auto-launching to let UI update
+          setTimeout(() => {
+            window.open(data.liveUrl, '_blank')
+          }, 1500)
+        }
       } catch (fetchErr: any) {
         clearTimeout(timeoutId)
         if (fetchErr.name === 'AbortError') {
-          throw new Error('Build took too long (timeout after 2 minutes). Your app may still be building - check your GitHub and Netlify accounts.')
+          throw new Error('Build request took too long. Your app may still be building - check your GitHub and Netlify accounts.')
         }
         throw fetchErr
       }

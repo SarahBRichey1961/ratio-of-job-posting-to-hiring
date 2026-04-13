@@ -150,7 +150,7 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
     console.log(`🚀 Building: ${appIdea}`)
     console.log(`📂 Repo: ${repoName}`)
 
-    // STEP 1: Generate code with AI
+    // STEP 1: Generate code with AI (ONLY sync operation)
     console.log(`1️⃣ Generating application code with AI...`)
     let generatedFiles: any[] = []
     try {
@@ -173,37 +173,68 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
       throw err
     }
 
-    // STEP 2-4: Deploy to GitHub and Netlify (SYNCHRONOUSLY)
-    console.log(`2️⃣ Creating GitHub repo and deploying files...`)
-    let deploymentResult: any = null
-    try {
-      deploymentResult = await deployApplication(
-        GITHUB_TOKEN,
-        NETLIFY_TOKEN,
-        GITHUB_USERNAME,
-        repoName,
-        appIdea,
-        generatedFiles
-      )
-    } catch (err: any) {
-      const msg = err.message || String(err)
-      console.error(`❌ Deployment failed: ${msg}`)
-      throw err
-    }
+    // Generate temp repo name for this build
+    const tempRepoId = Date.now().toString(36)
+    const tempRepoName = `${repoName}-${tempRepoId}`
 
-    // SUCCESS - Return the live URL
-    console.log(`✅ Build and deployment complete!`)
-    return res.status(200).json({
+    // STEP 2-4: Deploy to GitHub and Netlify (ASYNC - fire and forget)
+    console.log(`2️⃣ Starting deployment to GitHub and Netlify (async)...`)
+    
+    // Don't wait for this - return immediately
+    deployApplicationAsync(
+      GITHUB_TOKEN,
+      NETLIFY_TOKEN,
+      GITHUB_USERNAME,
+      tempRepoName,
+      appIdea,
+      generatedFiles
+    ).catch(err => {
+      console.error(`❌ Async deployment failed: ${err.message}`)
+    })
+
+    // Return immediately with status - the build continues in background
+    const estimatedRepoUrl = `https://github.com/${GITHUB_USERNAME}/${tempRepoName}`
+    const estimateNetlifyUrl = `https://${tempRepoName}.netlify.app`
+    
+    console.log(`✅ Build job started (running in background)`)
+    return res.status(202).json({
       success: true,
-      message: 'Your app has been built and deployed successfully!',
-      liveUrl: deploymentResult.liveUrl,
-      repoUrl: deploymentResult.repoUrl,
-      repoName: deploymentResult.repoName,
+      message: 'Your app build has been started! Check back in 2-3 minutes for your live URL.',
+      status: 'building',
+      repoUrl: estimatedRepoUrl,
+      estimatedLiveUrl: estimateNetlifyUrl,
+      repoName: tempRepoName,
+      checkAfterSeconds: 120,
     })
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
     console.error(`❌ Error: ${msg}`)
     return res.status(500).json({ error: msg })
+  }
+}
+
+// Async version that runs in background (fire-and-forget)
+async function deployApplicationAsync(
+  githubToken: string,
+  netlifyToken: string,
+  githubUsername: string,
+  repoName: string,
+  appIdea: string,
+  generatedFiles: Array<{ path: string; content: string }>
+): Promise<void> {
+  try {
+    await deployApplication(
+      githubToken,
+      netlifyToken,
+      githubUsername,
+      repoName,
+      appIdea,
+      generatedFiles
+    )
+    console.log(`✅ Background deployment completed successfully`)
+  } catch (err: any) {
+    console.error(`❌ Background deployment error: ${err.message}`)
+    // Error is logged but not thrown - user can check GitHub/Netlify status
   }
 }
 

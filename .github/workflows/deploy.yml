@@ -34,7 +34,20 @@ jobs:
             echo "ERROR: .next directory not created after build!"
             exit 1
           fi
-          echo "Build output verified: .next directory exists"
+          if [ ! -d "out" ]; then
+            echo "ERROR: out directory not created during static export!"
+            exit 1
+          fi
+          echo "Build output verified: .next and out directories exist"
+      
+      - name: Copy static assets for static export
+        run: |
+          echo "Copying Next.js static assets to output directory..."
+          if [ -d ".next/static" ]; then
+            mkdir -p out/_next/static
+            cp -r .next/static/* out/_next/static/
+            echo "✓ Static assets copied successfully"
+          fi
       
       - name: Deploy to Netlify
         timeout-minutes: 30
