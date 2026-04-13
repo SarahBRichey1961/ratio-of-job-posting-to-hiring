@@ -40,20 +40,45 @@ jobs:
           NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID || '4ed2dba4-221d-4d33-b65c-69b3e48eabe9' }}
         run: |
           SITE_ID="${NETLIFY_SITE_ID:-4ed2dba4-221d-4d33-b65c-69b3e48eabe9}"
-          echo "Deploying .next to: $SITE_ID"
+          echo "Deploying to site: $SITE_ID"
           
-          # Deploy using Netlify CLI with explicit auth token (without requiring netlify link)
-          NETLIFY_SITE_ID="$SITE_ID" npx netlify-cli@latest deploy --prod --dir=.next --auth="$NETLIFY_AUTH_TOKEN" --message="Production build from GitHub Actions" 2>&1 || true
+          # Verify token by testing API access
+          echo "Verifying token..."
+          TOKEN_CHECK=$(curl -s -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
+            "https://api.netlify.com/api/v1/sites/$SITE_ID" | grep -o '"id"' || true)
           
-          # Fall back to API direct upload if CLI fails
-          if [ $? -ne 0 ]; then
-            echo "Trying direct API deployment..."
-            cd .next
-            zip -r ../site.zip . -q
-            cd ..
-            curl -X POST \
-              -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
-              -H "Content-Type: application/zip" \
-              --data-binary @site.zip \
-              "https://api.netlify.com/api/v1/sites/$SITE_ID/deploys?title=GitHub%20Actions%20Deploy" || echo "Direct API deploy failed"
+          if [ -z "$TOKEN_CHECK" ]; then
+            echo "⚠️  Warning: Token may be invalid, but attempting deployment anyway..."
+          else
+            echo "✓ Token verified"
+          fi
+          
+          # Build site.zip with all .next content
+          echo "Creating deployment zip..."
+          cd .next
+          zip -r ../site.zip . -q
+          cd ..
+          
+          # Deploy directly via Netlify REST API
+          echo "Uploading to Netlify..."
+          RESPONSE=$(curl -X POST \
+            -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
+            -H "Content-Type: application/zip" \
+            --data-binary @site.zip \
+            "https://api.netlify.com/api/v1/sites/$SITE_ID/deploys?title=GitHub%20Actions%20Deploy" \
+            -w "\n%{http_code}")
+          
+          # Extract status code
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          echo "Response code: $HTTP_CODE"
+          echo "Response: $BODY"
+          
+          if [ "$HTTP_CODE" = "201" ] || [ "$HTTP_CODE" = "200" ]; then
+            echo "✓ Deployment successful!"
+            echo "$BODY" | grep -o '"url":"[^"]*"' || true
+          else
+            echo "✗ Deployment failed with HTTP $HTTP_CODE"
+            exit 1
           fi
