@@ -95,7 +95,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           user_id: userId,
           payment_status: 'paid',
           subscription_type: planType || 'onetime',
-          paddle_checkout_id: captureId,
+          payment_id: captureId,
           subscription_end_date: endDate,
           updated_at: new Date().toISOString(),
         }
