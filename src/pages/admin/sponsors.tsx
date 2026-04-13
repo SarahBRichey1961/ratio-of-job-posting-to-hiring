@@ -290,7 +290,7 @@ export default function AdminSponsorsPage() {
                       {/* Note about payments */}
                       <div className="mt-6 p-4 bg-yellow-900/20 border border-yellow-700 rounded-lg">
                         <p className="text-yellow-300 text-sm">
-                          <strong>Note:</strong> Credit card details are securely stored with our payment processor (Stripe) and are not displayed here for security reasons.
+                          <strong>Note:</strong> Credit card details are securely stored with our payment processor (Paddle) and are not displayed here for security reasons.
                           Contact the sponsor directly for payment inquiries.
                         </p>
                       </div>
