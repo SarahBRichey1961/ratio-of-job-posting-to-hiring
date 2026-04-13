@@ -14,6 +14,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+          cache: 'npm'
       
       - name: Install dependencies
         run: npm ci --legacy-peer-deps --no-fund
@@ -25,5 +26,16 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://eikhrkharihagaorqqcf.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ
       
+      - name: Verify build output
+        run: |
+          if [ ! -d ".next" ]; then
+            echo "ERROR: .next directory not created after build!"
+            exit 1
+          fi
+          echo "Build output verified: .next directory exists"
+      
       - name: Deploy to Netlify
-        run: npx netlify-cli deploy --prod --site=${{ vars.NETLIFY_SITE_ID || '4ed2dba4-221d-4d33-b65c-69b3e48eabe9' }} --dir=.next --auth=${{ secrets.NETLIFY_TOKEN }}
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
+          NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID || '4ed2dba4-221d-4d33-b65c-69b3e48eabe9' }}
+        run: npx netlify-cli deploy --prod --site=$NETLIFY_SITE_ID --dir=.next --auth=$NETLIFY_AUTH_TOKEN
