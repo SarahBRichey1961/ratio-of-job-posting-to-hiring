@@ -4,9 +4,6 @@ on:
   push:
     branches: [main]
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -16,7 +13,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '20'
           cache: 'npm'
       
       - name: Install dependencies
@@ -40,5 +37,5 @@ jobs:
       - name: Deploy to Netlify
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
-          NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID || '4ed2dba4-221d-4d33-b65c-69b3e48eabe9' }}
-        run: npx netlify-cli deploy --prod --site=$NETLIFY_SITE_ID --dir=.next --auth=$NETLIFY_AUTH_TOKEN
+          NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
+        run: npx netlify-cli deploy --prod --site="$NETLIFY_SITE_ID" --dir=.next
