@@ -18,6 +18,7 @@ yarn-error.log*
 .vercel
 .env*.local
 
-# Local Netlify folder
+# Allow .netlify/state.json to be committed
 .netlify
+!.netlify
 !.netlify/state.json
