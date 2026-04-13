@@ -38,4 +38,8 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
           NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
-        run: npx netlify-cli deploy --prod --site="$NETLIFY_SITE_ID" --dir=.next
+        run: |
+          # Use variable if set, otherwise use fallback
+          SITE_ID="${NETLIFY_SITE_ID:-4ed2dba4-221d-4d33-b65c-69b3e48eabe9}"
+          echo "Deploying to site: $SITE_ID"
+          npx netlify-cli deploy --prod --site="$SITE_ID" --dir=.next --auth="$NETLIFY_AUTH_TOKEN"
