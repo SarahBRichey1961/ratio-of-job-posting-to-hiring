@@ -355,6 +355,24 @@ async function createAndLinkNetlifySite(
   gitHubUsername: string,
   files: Array<{ path: string; content: string }>
 ): Promise<string> {
+  // Sanitize site name for Netlify (must be lowercase, alphanumeric + hyphens only, 3-63 chars)
+  const sanitized = siteName
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-')  // Replace invalid chars with hyphens
+    .replace(/--+/g, '-')  // Collapse multiple hyphens
+    .replace(/^-+|-+$/g, '')  // Remove leading/trailing hyphens
+    .substring(0, 63)  // Max 63 chars
+  
+  // Ensure minimum length (Netlify requires at least 3 chars)
+  let finalSiteName = sanitized
+  if (finalSiteName.length < 3) {
+    finalSiteName = sanitized + '-' + Math.random().toString(36).substring(2, 8)
+  }
+  
+  console.log(`🔧 Site name sanitization:`)
+  console.log(`   Original: "${siteName}"`)
+  console.log(`   Sanitized: "${finalSiteName}"`)
+  
   // Create site
   const createRes = await fetch('https://api.netlify.com/api/v1/sites', {
     method: 'POST',
@@ -362,19 +380,40 @@ async function createAndLinkNetlifySite(
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ name: siteName }),
+    body: JSON.stringify({ name: finalSiteName }),
   })
 
   if (!createRes.ok) {
     const err = await createRes.json().catch(() => ({ message: `HTTP ${createRes.status}` }))
-    throw new Error(`Netlify API ${createRes.status}: ${err.message}`)
+    console.error(`❌ Failed to CREATE Netlify site:`)
+    console.error(`   Status: ${createRes.status}`)
+    console.error(`   Response:`, err)
+    throw new Error(`Netlify site creation failed: ${err.message || err.description || createRes.statusText}`)
   }
 
   const site = await createRes.json()
   const siteId = site.id
-  let siteUrl = site.ssl_url || site.url
+  const siteName = site.name  // Use the actual site name returned by Netlify
+  
+  // Build the correct URL - Netlify always uses this format
+  let siteUrl = site.ssl_url || site.url || site.default_domain
+  
+  // Fallback: construct URL manually if not provided
+  if (!siteUrl) {
+    siteUrl = `https://${siteName}.netlify.app`
+  }
+  
+  // Ensure it's a full HTTPS URL
+  if (!siteUrl.startsWith('http')) {
+    siteUrl = `https://${siteUrl}`
+  }
+  
+  console.log(`✅ Netlify site created:`)
+  console.log(`   ID: ${siteId}`)
+  console.log(`   Name: ${siteName}`)
+  console.log(`   URL: ${siteUrl}`)
 
-  // Link to GitHub
+  // Link to GitHub (this triggers builds on push)
   const linkRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
     method: 'PATCH',
     headers: {
@@ -392,10 +431,16 @@ async function createAndLinkNetlifySite(
   })
 
   if (!linkRes.ok) {
-    console.warn(`[warn] Could not link GitHub to Netlify: ${linkRes.status}`)
+    const err = await linkRes.json().catch(() => ({ message: `HTTP ${linkRes.status}` }))
+    console.warn(`⚠️ Failed to LINK GitHub repo:`)
+    console.warn(`   Status: ${linkRes.status}`)
+    console.warn(`   Response:`, err)
+    console.warn(`   Build will still proceed, but auto-builds on push won't work`)
+  } else {
+    console.log(`✅ GitHub repo linked for auto-builds`)
   }
 
-  // Configure build
+  // Configure build settings
   const buildRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
     method: 'PATCH',
     headers: {
@@ -412,10 +457,16 @@ async function createAndLinkNetlifySite(
   })
 
   if (!buildRes.ok) {
-    console.warn(`[warn] Could not configure build: ${buildRes.status}`)
+    const err = await buildRes.json().catch(() => ({ message: `HTTP ${buildRes.status}` }))
+    console.warn(`⚠️ Failed to CONFIGURE build settings:`)
+    console.warn(`   Status: ${buildRes.status}`)
+    console.warn(`   Response:`, err)
+  } else {
+    console.log(`✅ Build settings configured`)
   }
 
   // Trigger deploy
+  console.log(`🚀 Triggering Netlify build...`)
   const deployRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/builds`, {
     method: 'POST',
     headers: {
@@ -425,7 +476,13 @@ async function createAndLinkNetlifySite(
   })
 
   if (!deployRes.ok) {
-    console.warn(`[warn] Could not trigger deploy: ${deployRes.status}`)
+    const err = await deployRes.json().catch(() => ({ message: `HTTP ${deployRes.status}` }))
+    console.warn(`⚠️ Failed to TRIGGER build:`)
+    console.warn(`   Status: ${deployRes.status}`)
+    console.warn(`   Response:`, err)
+  } else {
+    const deploy = await deployRes.json()
+    console.log(`✅ Build triggered with ID: ${deploy.id}`)
   }
 
   return siteUrl
