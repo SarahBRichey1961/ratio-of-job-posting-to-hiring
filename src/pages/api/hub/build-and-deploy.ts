@@ -393,14 +393,14 @@ async function createAndLinkNetlifySite(
 
   const site = await createRes.json()
   const siteId = site.id
-  const siteName = site.name  // Use the actual site name returned by Netlify
+  const createdSiteName = site.name  // Use the actual site name returned by Netlify
   
   // Build the correct URL - Netlify always uses this format
   let siteUrl = site.ssl_url || site.url || site.default_domain
   
   // Fallback: construct URL manually if not provided
   if (!siteUrl) {
-    siteUrl = `https://${siteName}.netlify.app`
+    siteUrl = `https://${createdSiteName}.netlify.app`
   }
   
   // Ensure it's a full HTTPS URL
@@ -410,7 +410,7 @@ async function createAndLinkNetlifySite(
   
   console.log(`✅ Netlify site created:`)
   console.log(`   ID: ${siteId}`)
-  console.log(`   Name: ${siteName}`)
+  console.log(`   Name: ${createdSiteName}`)
   console.log(`   URL: ${siteUrl}`)
 
   // Link to GitHub (this triggers builds on push)
@@ -423,7 +423,7 @@ async function createAndLinkNetlifySite(
     body: JSON.stringify({
       repo: {
         provider: 'github',
-        repo: `${gitHubUsername}/${siteName}`,
+        repo: `${gitHubUsername}/${createdSiteName}`,
         branch: 'main',
         allow_auto_builds: true,
       },
