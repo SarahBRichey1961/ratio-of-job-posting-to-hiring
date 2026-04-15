@@ -14,6 +14,11 @@ interface RequestBody {
 }
 
 /**
+ * Sleep utility
+ */
+const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms))
+
+/**
  * NEW APPROACH: Deploy directly to Netlify without GitHub
  * 1. Generate React app code
  * 2. Create deployment metadata
