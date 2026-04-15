@@ -101,8 +101,11 @@ async function deployToNetlifyDirect(
 ): Promise<string> {
   const siteName = sanitizeSiteName(appName)
   console.log(`   Creating site: ${siteName}`)
+  console.log(`   Token (first 20 chars): ${netlifyToken.substring(0, 20)}...`)
+  console.log(`   Files to upload: ${files.length}`)
 
   // 1. Create Netlify site
+  console.log(`   📡 Calling Netlify API...`)
   const createRes = await fetch('https://api.netlify.com/api/v1/sites', {
     method: 'POST',
     headers: {
@@ -112,9 +115,19 @@ async function deployToNetlifyDirect(
     body: JSON.stringify({ name: siteName }),
   })
 
+  console.log(`   Response Status: ${createRes.status}`)
   if (!createRes.ok) {
-    const err = await createRes.json().catch(() => ({ message: `HTTP ${createRes.status}` }))
-    throw new Error(`Failed to create Netlify site: ${err.message || err.description}`)
+    const errText = await createRes.text()
+    console.error(`❌ Netlify API Error Response (${createRes.status}):`, errText)
+    let err: any = {}
+    try {
+      err = JSON.parse(errText)
+    } catch {
+      err = { message: errText || `HTTP ${createRes.status}` }
+    }
+    const errorMsg = err.message || err.description || JSON.stringify(err) || `HTTP ${createRes.status}`
+    console.error(`❌ Error details:`, err)
+    throw new Error(`Failed to create Netlify site: ${errorMsg}`)
   }
 
   const siteData = await createRes.json()
