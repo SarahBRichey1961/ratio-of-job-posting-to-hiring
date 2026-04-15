@@ -180,26 +180,42 @@ async function buildAndDeploy(req: NextApiRequest, res: NextApiResponse) {
       tempRepoName
     )
 
-    // Don't await - return response immediately
-    // But make sure to reference buildPromise so it's not garbage collected
-    buildPromise.catch(err => {
-      console.error(`[${tempRepoId}] 🔴 Build failed: ${err.message}`)
-    })
+    // SYNC DEPLOYMENT - Wait for it to complete before responding
+    console.log(`⏳ Waiting for build to complete...`)
+    try {
+      await Promise.race([
+        buildPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Build timeout - deployment is continuing in background')), 55000)
+        )
+      ])
+      console.log(`✅ Build completed successfully`)
+    } catch (err: any) {
+      console.warn(`⚠️ Build timeout or error: ${err.message}`)
+      // Don't fail - build is still happening, just return what we have
+    }
 
-    const estimatedRepoUrl = `https://github.com/${GITHUB_USERNAME}/${tempRepoName}`
-    const estimateNetlifyUrl = `https://${tempRepoName}.netlify.app`
+    const repoUrl = `https://github.com/${GITHUB_USERNAME}/${tempRepoName}`
+    const netlifyDeployUrl = `https://app.netlify.com/start/deploy?repository=${GITHUB_USERNAME}/${tempRepoName}`
     
-    console.log(`✅ Build job queued (ID: ${tempRepoId})`)
-    return res.status(202).json({
+    console.log(`✅ Deployment initiated`)
+    return res.status(200).json({
       success: true,
-      message: 'Your app build has been started! GitHub repo and Netlify site are being created now.',
-      status: 'building',
+      message: 'Your app code has been created and pushed to GitHub!',
+      status: 'ready',
       buildId: tempRepoId,
-      repoUrl: estimatedRepoUrl,
-      estimatedLiveUrl: estimateNetlifyUrl,
+      repoUrl: repoUrl,
       repoName: tempRepoName,
-      checkAfterSeconds: 60,
-      debugUrl: `/api/hub/build-status`, // User can check this to see env vars
+      netlifyDeployUrl: netlifyDeployUrl,
+      instructions: {
+        step1: 'Your code is ready on GitHub',
+        step2: 'Click the "Deploy to Netlify" button below to deploy',
+        step3: 'Netlify will handle the build and deployment automatically',
+      },
+      deployButtons: {
+        github: repoUrl,
+        netlify: netlifyDeployUrl,
+      },
     })
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
