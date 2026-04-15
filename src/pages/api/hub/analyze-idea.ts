@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 
 interface IdeaFormData {
+  appName: string
   mainIdea: string
   targetUser: string
   problemSolved: string
@@ -13,87 +14,56 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { mainIdea, targetUser, problemSolved, howItWorks } = req.body as IdeaFormData
+    const { appName, mainIdea, targetUser, problemSolved, howItWorks } = req.body as IdeaFormData
 
-    if (!mainIdea || !targetUser || !problemSolved || !howItWorks) {
+    if (!appName || !mainIdea || !targetUser || !problemSolved || !howItWorks) {
       return res.status(400).json({ error: 'Missing required fields' })
     }
 
-    // Smart heuristic analysis - check if idea has sufficient detail
-    const ideaQuality = analyzeIdeaClarity(mainIdea, targetUser, problemSolved, howItWorks)
-    
-    if (ideaQuality.needsClarification) {
+    // Call the dynamic question generator endpoint
+    const generateResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/hub/generate-dynamic-questions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        appName,
+        mainIdea,
+        targetUser,
+        problemSolved,
+        howItWorks,
+      }),
+    })
+
+    if (!generateResponse.ok) {
+      console.error('Failed to generate dynamic questions')
+      // Fallback to basic questions if OpenAI fails
       return res.status(200).json({
-        questions: ideaQuality.questions,
+        questions: [
+          'What are the top 3 features that would make users love this app?',
+          'Who is your biggest competitor and how would you differentiate?',
+          'What is your primary monetization strategy?',
+          'What technology stack would work best for this?',
+          'What would success look like in the first 3 months?',
+          'What is the biggest technical challenge you foresee?',
+        ],
       })
     }
 
-    // Idea is clear! Signal to frontend to proceed with prototype generation
+    const data = await generateResponse.json()
     return res.status(200).json({
-      htmlMockup: '<div>Generating prototype...</div>',
-      userFlow: [],
-      feasibility: '',
-      buildPlan: [],
-      technologies: [],
-      testStrategy: '',
-      launchStrategy: '',
-      mvpTasks: [],
+      questions: data.questions || [],
     })
   } catch (err) {
     console.error('Error analyzing idea:', err)
-    const message = err instanceof Error ? err.message : 'Failed to analyze idea'
-    return res.status(500).json({ error: message })
+    // Fallback to basic questions
+    return res.status(200).json({
+      questions: [
+        'What are the top 3 features that would make users love this app?',
+        'Who is your biggest competitor and how would you differentiate?',
+        'What is your primary monetization strategy?',
+        'What technology stack would work best for this?',
+        'What would success look like in the first 3 months?',
+        'What is the biggest technical challenge you foresee?',
+      ],
+    })
   }
-}
-
-// Heuristic-based idea analysis that doesn't require external APIs
-function analyzeIdeaClarity(
-  mainIdea: string,
-  targetUser: string,
-  problemSolved: string,
-  howItWorks: string
-) {
-  const questions: string[] = []
-
-  // Check main idea clarity
-  if (mainIdea.length < 10) {
-    questions.push('Can you provide more details about your main idea? Be more specific about what it does.')
-  }
-  if (!hasKeywords(mainIdea, ['app', 'service', 'tool', 'platform', 'system', 'product', 'solution'])) {
-    questions.push('What type of product/service is this? (app, web service, tool, etc.)')
-  }
-
-  // Check target user clarity
-  if (targetUser.length < 10) {
-    questions.push('Who is your target user? Be specific about their role or characteristics.')
-  }
-  if (!hasKeywords(targetUser, ['business', 'team', 'freelancer', 'developer', 'designer', 'manager', 'user', 'customer', 'professional', 'student'])) {
-    questions.push('Describe specific characteristics of your target user (age, profession, skills, needs, etc.)')
-  }
-
-  // Check problem clarity
-  if (problemSolved.length < 15) {
-    questions.push('What specific problem does this solve? Describe it in more detail.')
-  }
-  if (!hasKeywords(problemSolved, ['time', 'cost', 'effort', 'complexity', 'pain', 'hard', 'difficult', 'waste', 'slow', 'manual'])) {
-    questions.push('What pain point or inefficiency does this address? Why is it a problem?')
-  }
-
-  // Check how it works clarity
-  if (howItWorks.length < 20) {
-    questions.push('Explain how your solution works - what are the main steps or features?')
-  }
-  if (!hasKeywords(howItWorks, ['step', 'then', 'after', 'first', 'next', 'process', 'flow', 'automatically', 'manually'])) {
-    questions.push('Walk through the main workflow or user flow. How do users interact with it?')
-  }
-
-  return {
-    needsClarification: questions.length > 0,
-    questions: questions.slice(0, 5), // Max 5 questions
-  }
-}
-
-function hasKeywords(text: string, keywords: string[]): boolean {
-  const lowerText = text.toLowerCase()
-  return keywords.some(keyword => lowerText.includes(keyword))
 }
