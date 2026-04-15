@@ -41,30 +41,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         messages: [
           {
             role: 'system' as const,
-            content: `You are a product strategy expert. Generate 6-8 specific, actionable questions to help refine and build this app. 
-            
-Questions should be:
-- Specific to THIS app's unique features and use case (not generic)
-- Focused on: features, target market segment, monetization, tech stack, timeline, success metrics
-- Concise and answerable (not too broad)
-- Progressive (build on each other)
+            content: `You are a product strategy expert. Your job is to ask DEEPLY SPECIFIC questions about THIS PARTICULAR APP IDEA - not generic product questions.
 
-Return ONLY a JSON array of question strings, no other text.
-Example format: ["Question 1?", "Question 2?", ...]`,
+Your questions should be:
+1. SPECIFIC TO THE EXACT TARGET USER mentioned (e.g., if target is "grandparents", ask about features/UX for older users, accessibility, their tech comfort level, how to reach them)
+2. SPECIFIC TO THE EXACT PROBLEM mentioned (ask how to validate it, who else has tried solving it, what the biggest blocker is)
+3. SPECIFIC TO THE EXACT USE CASE (not generic features - ask about THIS app's unique features)
+4. ABOUT: features specific to the target user, market validation, revenue model, differentiation, tech constraints, launch timeline
+
+Return ONLY a valid JSON array of 6-8 question strings. No markdown. No code blocks. Just the array.
+Example: ["Why did you choose to focus on this specific user segment?", "What feature would make grandparents most excited to use this?", ...]`,
           },
           {
             role: 'user' as const,
-            content: `App Name: ${appName}
-Main Idea: ${mainIdea}
+            content: `NOW GENERATE SPECIFIC QUESTIONS FOR THIS APP:
+
+App Name: ${appName}
+Main Idea: ${mainIdea}  
 Target User: ${targetUser}
-Problem Solved: ${problemSolved}
+Problem Being Solved: ${problemSolved}
 How It Works: ${howItWorks}
 
-Generate 6-8 specific questions to help build this app. Return ONLY valid JSON array, no markdown, no code blocks.`,
+Remember: Ask questions SPECIFIC to "${targetUser}" and THIS app's concept of "${mainIdea}". Not generic questions.
+Return ONLY valid JSON array, nothing else.`,
           },
         ],
-        temperature: 0.7,
-        max_tokens: 1000,
+        temperature: 0.8,
+        max_tokens: 1200,
       }),
     })
 

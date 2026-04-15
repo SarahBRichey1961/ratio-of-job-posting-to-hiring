@@ -34,17 +34,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
 
     if (!generateResponse.ok) {
-      console.error('Failed to generate dynamic questions')
-      // Fallback to basic questions if OpenAI fails
+      console.error('Failed to generate dynamic questions, using context-aware fallback')
+      // Fallback: Generate context-aware questions based on the actual app idea
+      const fallbackQuestions = [
+        `What specific features would make ${targetUser} excited to use "${appName}"?`,
+        `How would you know if "${mainIdea}" is successfully solving the problem for ${targetUser}?`,
+        `Who are the 3 main competitors or alternative solutions that ${targetUser} currently use instead?`,
+        `How would you reach and acquire ${targetUser} as your first 100 users?`,
+        `What's the biggest technical or logistical challenge in building this for ${targetUser}?`,
+        `What would you charge, and how would ${targetUser} prefer to pay (subscription, one-time, free)?`,
+      ]
       return res.status(200).json({
-        questions: [
-          'What are the top 3 features that would make users love this app?',
-          'Who is your biggest competitor and how would you differentiate?',
-          'What is your primary monetization strategy?',
-          'What technology stack would work best for this?',
-          'What would success look like in the first 3 months?',
-          'What is the biggest technical challenge you foresee?',
-        ],
+        questions: fallbackQuestions,
       })
     }
 
