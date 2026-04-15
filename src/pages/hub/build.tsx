@@ -369,18 +369,13 @@ export default function BuildTheDamnThing() {
 
         const data = await response.json()
         
-        // Handle new sync response with GitHub repo URL
-        if (data.success && data.repoUrl) {
-          setDeploymentStatus(`✅ Your app code is ready on GitHub!`)
-          setBuildLiveUrl(data.repoUrl) // Store GitHub URL for the deploy button
-          setStep(6) // Show success/deploy button screen
-        } else if (response.status === 202) {
-          // Legacy async response (shouldn't happen with new code)
-          setDeploymentStatus(`✅ Build started! Your app is being built and deployed.\n\n📂 Repository: ${data.repoUrl}\n🌐 Estimated URL: ${data.estimatedLiveUrl}\n\n⏳ Check back in 2-3 minutes for your live app!`)
-          setBuildLiveUrl(data.estimatedLiveUrl)
-          setStep(6)
+        if (data.success && data.liveUrl) {
+          // Success! App is live
+          setDeploymentStatus(`✅ Your app is live and ready to use!`)
+          setBuildLiveUrl(data.liveUrl)
+          setStep(6) // Show live app screen
         } else {
-          throw new Error('Unexpected response format')
+          throw new Error(data.error || 'Unknown error building app')
         }
       } catch (fetchErr: any) {
         clearTimeout(timeoutId)
@@ -1057,80 +1052,52 @@ export default function BuildTheDamnThing() {
             </div>
           </div>
         )}
-        {/* Step 6: Success - Deploy Button */}
+        {/* Step 6: Live App - Simple Success Screen */}
         {step === 6 && buildLiveUrl && (
           <div className="space-y-8">
             <div className="flex items-center gap-4">
               <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-600 text-white font-bold">
                 ✓
               </div>
-              <h2 className="text-4xl font-bold text-white">🎉 Your App Code is Ready!</h2>
+              <h2 className="text-4xl font-bold text-white">🎉 Your App is LIVE!</h2>
             </div>
 
-            <div className="bg-blue-900/30 border border-blue-700/50 rounded-xl p-8">
-              <h3 className="text-xl font-bold text-blue-100 mb-4">📂 Your Code on GitHub</h3>
-              <a
-                href={buildLiveUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-lg font-semibold mb-6"
-              >
-                🔗 {buildLiveUrl}
-                <span className="text-sm">↗️</span>
-              </a>
-              <p className="text-blue-100">
-                Your complete Vite + React app has been created and pushed to GitHub. Ready to deploy!
+            <div className="bg-green-900/30 border border-green-700/50 rounded-xl p-8 text-center">
+              <p className="text-green-200 mb-6 text-lg font-semibold">
+                ✨ Your app has been generated and deployed!
               </p>
-            </div>
+              <p className="text-green-300 mb-8 text-base">
+                Click the button below to visit your live app. It's ready to use!
+              </p>
 
-            <div className="bg-gradient-to-r from-purple-900 to-blue-900 border-2 border-purple-500 rounded-xl p-8 text-center">
-              <h3 className="text-2xl font-bold text-white mb-4">⚡ One-Click Deploy to Netlify</h3>
-              <p className="text-slate-200 mb-6">
-                Click the button below to deploy your app to Netlify. It will automatically build and go live!
-              </p>
               <button
-                onClick={() => {
-                  // Extract GitHub username and repo from the URL
-                  const match = buildLiveUrl.match(/github\.com\/([^/]+)\/([^/]+)/)
-                  if (match) {
-                    const [, username, repo] = match
-                    const deployUrl = `https://app.netlify.com/start/deploy?repository=https://github.com/${username}/${repo}#main`
-                    window.open(deployUrl, '_blank')
-                  }
-                }}
-                className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-12 rounded-lg transition text-xl mb-6 shadow-lg hover:shadow-xl"
+                onClick={() => window.open(buildLiveUrl, '_blank')}
+                className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-12 rounded-lg transition text-lg mb-6 shadow-lg"
               >
-                🚀 Deploy to Netlify Now
+                🚀 Visit Your App Now
               </button>
-              <p className="text-sm text-slate-300">
-                You'll be redirected to Netlify. Just click "Save & Deploy" and your app will be live in ~2 minutes!
-              </p>
+
+              <div className="bg-slate-900 border-2 border-green-500 rounded-lg p-6">
+                <p className="text-slate-400 text-sm mb-2 font-semibold">🌐 LIVE URL</p>
+                <a
+                  href={buildLiveUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-green-400 hover:text-green-300 text-lg font-mono break-all block"
+                >
+                  {buildLiveUrl}
+                </a>
+              </div>
             </div>
 
-            <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 space-y-3">
-              <h4 className="text-lg font-bold text-white">📋 What Happens Next:</h4>
-              <ol className="text-slate-300 space-y-2">
-                <li className="flex gap-3">
-                  <span className="text-green-400 font-bold">1.</span>
-                  <span>Click "Deploy to Netlify Now" above</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="text-green-400 font-bold">2.</span>
-                  <span>Connect your GitHub account (if prompted)</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="text-green-400 font-bold">3.</span>
-                  <span>Click "Save & Deploy"</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="text-green-400 font-bold">4.</span>
-                  <span>Wait 2-3 minutes for your app to build and deploy</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="text-green-400 font-bold">5.</span>
-                  <span>Your app will be LIVE on its own domain! 🎉</span>
-                </li>
-              </ol>
+            <div className="bg-blue-900/30 border border-blue-700/50 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-blue-100 mb-3">✨ What's Next?</h3>
+              <ul className="text-blue-100 space-y-2">
+                <li>✓ Your app is fully functional and ready to share</li>
+                <li>✓ It includes ChatGPT integration for smart features</li>
+                <li>✓ Share the URL with anyone - it's live on the internet</li>
+                <li>✓ Build another idea or customize this one!</li>
+              </ul>
             </div>
 
             <div className="flex gap-4">
