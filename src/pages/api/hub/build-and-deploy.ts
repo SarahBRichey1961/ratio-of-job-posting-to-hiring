@@ -14,6 +14,31 @@ interface RequestBody {
 }
 
 /**
+ * Get correct MIME type for file uploads
+ */
+function getMimeType(filePath: string): string {
+  const ext = filePath.toLowerCase().split('.').pop() || ''
+  const mimeTypes: Record<string, string> = {
+    'html': 'text/html; charset=utf-8',
+    'js': 'application/javascript',
+    'jsx': 'application/javascript',
+    'ts': 'text/typescript',
+    'tsx': 'text/typescript',
+    'css': 'text/css',
+    'json': 'application/json',
+    'md': 'text/markdown',
+    'txt': 'text/plain',
+    'svg': 'image/svg+xml',
+    'png': 'image/png',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'gif': 'image/gif',
+    'webp': 'image/webp',
+  }
+  return mimeTypes[ext] || 'application/octet-stream'
+}
+
+/**
  * Sleep utility
  */
 const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms))
@@ -201,7 +226,7 @@ async function deployToNetlifyDirect(
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${netlifyToken}`,
-          'Content-Type': 'application/octet-stream',
+          'Content-Type': getMimeType(filePath),
         },
         body: content,
       }
