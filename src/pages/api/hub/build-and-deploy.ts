@@ -229,19 +229,14 @@ async function generateAndDeployAsync(
   const log = (msg: string) => console.log(`[${logId}] ${msg}`)
   
   try {
-    // STEP 1: Generate code
-    log(`🔵 STARTING: Generating code with AI...`)
-    const generatedFiles = await generateApplicationCodeWithAI(
-      openaiKey,
+    // STEP 1: Generate code using proven Vite + React template
+    log(`🔵 STARTING: Generating Vite + React app...`)
+    const generatedFiles = generateReactViteApp(
       appName,
       appIdea,
       targetUser,
       problemSolved,
-      howItWorks,
-      technologies,
-      buildPlan,
-      hobbies,
-      interests
+      howItWorks
     )
     log(`✅ GENERATED: ${generatedFiles.length} files`)
 
@@ -440,7 +435,7 @@ async function createAndLinkNetlifySite(
     console.log(`✅ GitHub repo linked for auto-builds`)
   }
 
-  // Configure build settings
+  // Configure build settings for Vite + React
   const buildRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
     method: 'PATCH',
     headers: {
@@ -449,9 +444,9 @@ async function createAndLinkNetlifySite(
     },
     body: JSON.stringify({
       build_settings: {
-        cmd: 'npm ci --legacy-peer-deps && npm run build',
-        dir: '.next',
-        functions_dir: 'netlify/functions',
+        cmd: 'npm ci && npm run build',
+        dir: 'dist',  // Vite outputs to dist, not .next
+        base: '',
       },
     }),
   })
@@ -688,158 +683,314 @@ async function deployFilesToNetlify(
 
 export default buildAndDeploy
 
-// Generate actual application code using Claude AI
-async function generateApplicationCodeWithAI(
-  apiKey: string,
+// Generate a working Vite + React app with a simple, proven template
+function generateReactViteApp(
   appName: string,
   appIdea: string,
   targetUser: string,
   problemSolved: string,
-  howItWorks: string,
-  technologies: string[],
-  buildPlan: string[],
-  hobbies?: string,
-  interests?: string
-): Promise<Array<{ path: string; content: string }>> {
-  // Escape special characters in user inputs for the prompt
-  const esc = (text: string) => text.replace(/"/g, '\\"').replace(/\n/g, ' ').replace(/\|/g, ' ').substring(0, 80)
-  
-  let promptLine = `App:${esc(appName)}|Purpose:${esc(appIdea)}|Users:${esc(targetUser)}|Solves:${esc(problemSolved)}`
-  if (hobbies) promptLine += `|Hobbies:${esc(hobbies)}`
-  if (interests) promptLine += `|Interests:${esc(interests)}`
-  
-  const prompt = `Generate a complete, buildable Next.js 14 app as JSON array ONLY. No markdown, no explanation.
-${promptLine}
+  howItWorks: string
+): Array<{ path: string; content: string }> {
+  // Sanitize app name for CSS classes
+  const safeName = appName.replace(/[^a-z0-9]/gi, '')
 
-Files MUST include (complete and working):
-1. package.json - with exact dependencies: "next": "14.2.35", "react": "^18", "react-dom": "^18"
-2. next.config.js - standard config with output: 'standalone'
-3. tsconfig.json - standard Next.js TypeScript config
-4. pages/_app.tsx - React component with proper imports
-5. pages/index.tsx - Landing page with working code
-6. .gitignore - standard Node.js entries (node_modules, .env, .next, etc)
-7. README.md - brief description
-
-Return ONLY valid JSON array. Example format:
-[{"path":"package.json","content":"{\\"name\\":\\"app\\",\\"version\\":\\"1.0.0\\",\\"dependencies\\":{\\"next\\":\\"14.2.35\\",\\"react\\":\\"^18\\",\\"react-dom\\":\\"^18\\"}}"},...]`
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4-turbo',
-      max_tokens: 4000,
-      temperature: 0.7,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
+  // Create a simple, working React app using Vite
+  const files: Array<{ path: string; content: string }> = [
+    {
+      path: 'package.json',
+      content: JSON.stringify({
+        name: appName.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+        version: '1.0.0',
+        type: 'module',
+        scripts: {
+          dev: 'vite',
+          build: 'vite build',
+          preview: 'vite preview',
         },
-      ],
-    }),
-  })
-
-  if (!response.ok) {
-    const err = await response.json()
-    console.error(`❌ OpenAI API Error:`)
-    console.error(`   Status: ${response.status}`)
-    console.error(`   Full error:`, err)
-    throw new Error(`OpenAI API failed: ${err.error?.message || JSON.stringify(err) || response.statusText}`)
+        dependencies: {
+          react: '^18.2.0',
+          'react-dom': '^18.2.0',
+        },
+        devDependencies: {
+          '@vitejs/plugin-react': '^4.2.0',
+          vite: '^5.0.0',
+        },
+      }, null, 2),
+    },
+    {
+      path: 'vite.config.js',
+      content: `import react from '@vitejs/plugin-react'
+export default {
+  plugins: [react()],
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
   }
+}`,
+    },
+    {
+      path: 'index.html',
+      content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${appName}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+    #root { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>`,
+    },
+    {
+      path: 'src/main.jsx',
+      content: `import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
 
-  const data = await response.json()
-  const content = data.choices[0].message.content
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+)`,
+    },
+    {
+      path: 'src/App.jsx',
+      content: `import React, { useState } from 'react'
+import './App.css'
 
-  console.log(`📝 OpenAI response: ${content.length} chars`)
-  
-  let files: any[] = []
-  
-  try {
-    // Fast JSON extraction - try multiple approaches
-    let jsonContent = content
-      .replace(/^```(?:json)?\s*\n?/i, '')  // Remove markdown
-      .replace(/\n?```\s*$/i, '')
-      .trim()
-    
-    // Approach 1: Direct parse
-    try {
-      files = JSON.parse(jsonContent)
-      if (Array.isArray(files)) {
-        console.log(`✅ Parsed directly: ${files.length} files`)
-      }
-    } catch (e1) {
-      // Not direct JSON, try extraction
-      console.log(`Trying JSON extraction...`)
-      
-      // Approach 2: Extract from [ to ]
-      const start = jsonContent.indexOf('[')
-      if (start === -1) throw new Error('No JSON array in response')
-      
-      // Greedy search from end - find the last ] 
-      let end = jsonContent.lastIndexOf(']')
-      while (end > start) {
-        try {
-          const candidate = jsonContent.substring(start, end + 1)
-          const parsed = JSON.parse(candidate)
-          if (Array.isArray(parsed)) {
-            files = parsed
-            console.log(`✅ Extracted: ${parsed.length} files from greedy search`)
-            break
-          }
-        } catch (e) {
-          // Try one bracket before
-          end = jsonContent.lastIndexOf(']', end - 1)
-        }
-      }
-      
-      if (files.length === 0) {
-        throw new Error('Could not extract valid JSON array')
-      }
-    }
-    
-    if (!Array.isArray(files) || files.length === 0) {
-      throw new Error('Response was not a valid file array')
-    }
-    
-    // Validate critical files exist
-    const pathsGenerated = files.map(f => f.path)
-    const criticalFiles = ['package.json', 'pages/index.tsx', 'pages/_app.tsx', 'tsconfig.json', 'next.config.js']
-    const missing = criticalFiles.filter(f => !pathsGenerated.includes(f))
-    
-    if (missing.length > 0) {
-      console.warn(`⚠️ Missing critical files: ${missing.join(', ')}`)
-      console.warn(`Generated files: ${pathsGenerated.join(', ')}`)
-      // Don't fail - add minimal files if missing
-      if (!pathsGenerated.includes('tsconfig.json')) {
-        files.push({
-          path: 'tsconfig.json',
-          content: JSON.stringify({"compilerOptions":{"target":"es2017","lib":["dom","dom.iterable","esnext"],"jsx":"preserve","module":"esnext","moduleResolution":"bundler","allowJs":true,"skipLibCheck":true,"strict":false,"forceConsistentCasingInFileNames":true,"noEmit":true,"esModuleInterop":true,"isolatedModules":true},"include":["next-env.d.ts","**/*.ts","**/*.tsx",".next/types/**/*.ts"],"exclude":["node_modules"]}, null, 2)
-        })
-      }
-      if (!pathsGenerated.includes('next.config.js')) {
-        files.push({
-          path: 'next.config.js',
-          content: '/** @type {import("next").NextConfig} */\nconst nextConfig = { output: "standalone" };\nmodule.exports = nextConfig;'
-        })
-      }
-      if (!pathsGenerated.includes('.gitignore')) {
-        files.push({
-          path: '.gitignore',
-          content: 'node_modules\n.env\n.env.local\n.next\nout\nbuild\n.DS_Store'
-        })
-      }
-    }
-    
-    console.log(`📦 Generated ${files.length} files for deployment`)
-    return files
-    
-  } catch (err: any) {
-    console.error(`❌ JSON parsing failed: ${err.message}`)
-    throw new Error(`Failed to parse response: ${err.message}`)
-  }
+export default function App() {
+  const [step, setStep] = useState(1)
+  const [message, setMessage] = useState('')
+
+  return (
+    <div className="app-container">
+      <header className="header">
+        <h1>${appName}</h1>
+        <p className="tagline">${appIdea}</p>
+      </header>
+
+      <main className="main-content">
+        <section className="card">
+          <h2>About</h2>
+          <p><strong>For:</strong> ${targetUser}</p>
+          <p><strong>Problem:</strong> ${problemSolved}</p>
+        </section>
+
+        <section className="card">
+          <h2>How It Works</h2>
+          <p>${howItWorks}</p>
+        </section>
+
+        <section className="card interactive">
+          <h2>Try It Out</h2>
+          <div className="demo-form">
+            <input 
+              type="text" 
+              placeholder="Type something..." 
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+            />
+            <button onClick={() => alert('Feature: ' + message)}>Test Feature</button>
+            {message && <p className="demo-output">You entered: "{message}"</p>}
+          </div>
+        </section>
+
+        <footer className="footer">
+          <p>Built with ${appName}. Idea becoming reality! 🚀</p>
+        </footer>
+      </main>
+    </div>
+  )
+}`,
+    },
+    {
+      path: 'src/App.css',
+      content: `.app-container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  overflow: hidden;
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.header h1 {
+  font-size: 2.5em;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.tagline {
+  font-size: 1.2em;
+  opacity: 0.95;
+  font-weight: 300;
+}
+
+.main-content {
+  padding: 40px;
+}
+
+.card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  border-left: 4px solid #667eea;
+}
+
+.card h2 {
+  color: #333;
+  margin-bottom: 12px;
+  font-size: 1.5em;
+}
+
+.card p {
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.card p strong {
+  color: #333;
+}
+
+.interactive {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-left-color: #764ba2;
+}
+
+.interactive h2,
+.interactive p {
+  color: white;
+}
+
+.demo-form {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.demo-form input {
+  flex: 1;
+  min-width: 200px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1em;
+}
+
+.demo-form button {
+  padding: 12px 24px;
+  background: white;
+  color: #667eea;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.demo-form button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.demo-form button:active {
+  transform: translateY(0);
+}
+
+.demo-output {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 8px;
+  color: white;
+  font-style: italic;
+}
+
+.footer {
+  text-align: center;
+  padding: 20px;
+  background: #f8f9fa;
+  color: #666;
+  border-top: 1px solid #e0e0e0;
+}
+
+@media (max-width: 600px) {
+  .header h1 { font-size: 1.8em; }
+  .main-content { padding: 20px; }
+  .card { padding: 16px; }
+  .demo-form { flex-direction: column; }
+  .demo-form input { min-width: auto; }
+}`,
+    },
+    {
+      path: '.gitignore',
+      content: `node_modules
+dist
+.env
+.env.local
+.DS_Store
+*.log
+.vite`,
+    },
+    {
+      path: 'README.md',
+      content: `# ${appName}
+
+${appIdea}
+
+## Features
+- Simple, clean interface
+- Quick to understand and use
+- Interactive demo built in
+
+## Getting Started
+
+\`\`\`bash
+npm install
+npm run dev
+\`\`\`
+
+Visit http://localhost:5173 to see your app running.
+
+## Building for Production
+
+\`\`\`bash
+npm run build
+\`\`\`
+
+The app will be built and ready to deploy in the \`dist\` folder.
+
+## About
+**For:** ${targetUser}
+**Solves:** ${problemSolved}`,
+    },
+  ]
+
+  console.log(`📦 Generated ${files.length} files for Vite + React app`)
+  return files
 }
 
 // Create Netlify site linked to GitHub repo
