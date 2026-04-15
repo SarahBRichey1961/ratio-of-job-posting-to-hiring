@@ -214,7 +214,7 @@ export default function BuildTheDamnThing() {
   }
 
   const handleAnswersSubmit = async () => {
-    if (answers.some(a => !a.trim())) {
+    if (answers.some(a => !a || !a.trim())) {
       setError('Please answer all questions')
       return
     }
