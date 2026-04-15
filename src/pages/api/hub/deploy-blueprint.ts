@@ -264,10 +264,10 @@ function generateAppFromBlueprint(blueprint: BlueprintData): Array<{ path: strin
         <h2>Key Features</h2>
         <div class="features">
           ${features.slice(0, 6).map(feature => 
-            \`<div class="feature">
-              <h3>✨ \${feature.trim()}</h3>
-              <p>Designed to make your workflow smoother and more efficient.</p>
-            </div>\`
+            '<div class="feature">' +
+            '<h3>✨ ' + feature.trim() + '</h3>' +
+            '<p>Designed to make your workflow smoother and more efficient.</p>' +
+            '</div>'
           ).join('')}
         </div>
       </div>
