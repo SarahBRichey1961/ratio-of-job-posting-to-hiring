@@ -369,22 +369,18 @@ export default function BuildTheDamnThing() {
 
         const data = await response.json()
         
-        // Handle both sync (200) and async (202) responses
-        if (response.status === 202) {
-          // Async build - still building in background
+        // Handle new sync response with GitHub repo URL
+        if (data.success && data.repoUrl) {
+          setDeploymentStatus(`✅ Your app code is ready on GitHub!`)
+          setBuildLiveUrl(data.repoUrl) // Store GitHub URL for the deploy button
+          setStep(6) // Show success/deploy button screen
+        } else if (response.status === 202) {
+          // Legacy async response (shouldn't happen with new code)
           setDeploymentStatus(`✅ Build started! Your app is being built and deployed.\n\n📂 Repository: ${data.repoUrl}\n🌐 Estimated URL: ${data.estimatedLiveUrl}\n\n⏳ Check back in 2-3 minutes for your live app!`)
           setBuildLiveUrl(data.estimatedLiveUrl)
-          setStep(6) // Show success/status screen (step 6)
+          setStep(6)
         } else {
-          // Sync build completed (legacy, shouldn't happen with new code)
-          setDeploymentStatus('✅ Successfully deployed! Launching your app...')
-          setBuildLiveUrl(data.liveUrl)
-          setStep(6) // Show success/live app screen (step 6)
-          
-          // Small delay before auto-launching to let UI update
-          setTimeout(() => {
-            window.open(data.liveUrl, '_blank')
-          }, 1500)
+          throw new Error('Unexpected response format')
         }
       } catch (fetchErr: any) {
         clearTimeout(timeoutId)
@@ -1061,56 +1057,80 @@ export default function BuildTheDamnThing() {
             </div>
           </div>
         )}
-        {/* Step 6: Live App */}
+        {/* Step 6: Success - Deploy Button */}
         {step === 6 && buildLiveUrl && (
           <div className="space-y-8">
             <div className="flex items-center gap-4">
               <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-600 text-white font-bold">
                 ✓
               </div>
-              <h2 className="text-4xl font-bold text-white">🎉 Your App is Built, Tested & Live!</h2>
+              <h2 className="text-4xl font-bold text-white">🎉 Your App Code is Ready!</h2>
             </div>
 
-            <div className="bg-green-900/30 border border-green-700/50 rounded-xl p-8 text-center">
-              <p className="text-green-200 mb-6 text-lg font-semibold">
-                ✨ Your app has been built, deployed to GitHub, and is now live on Netlify!
-              </p>
-              <p className="text-green-300 mb-8 text-base">
-                The app should have opened in a new tab. Here's your live URL:
-              </p>
-              <div className="bg-slate-900 border-2 border-green-500 rounded-lg p-6 mb-6">
-                <p className="text-slate-400 text-sm mb-3 font-semibold">🌐 LIVE URL</p>
-                <a
-                  href={buildLiveUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-green-400 hover:text-green-300 text-2xl font-mono break-all font-bold block mb-4"
-                >
-                  {buildLiveUrl}
-                </a>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(buildLiveUrl)
-                    alert('URL copied to clipboard!')
-                  }}
-                  className="text-sm bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded transition"
-                >
-                  📋 Copy URL
-                </button>
-              </div>
-              <button
-                onClick={() => window.open(buildLiveUrl, '_blank')}
-                className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-8 rounded-lg transition text-lg mb-6"
+            <div className="bg-blue-900/30 border border-blue-700/50 rounded-xl p-8">
+              <h3 className="text-xl font-bold text-blue-100 mb-4">📂 Your Code on GitHub</h3>
+              <a
+                href={buildLiveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-lg font-semibold mb-6"
               >
-                👉 View Your Live App Now
-              </button>
+                🔗 {buildLiveUrl}
+                <span className="text-sm">↗️</span>
+              </a>
+              <p className="text-blue-100">
+                Your complete Vite + React app has been created and pushed to GitHub. Ready to deploy!
+              </p>
             </div>
 
-            <div className="bg-blue-900/30 border border-blue-700/50 rounded-xl p-6">
-              <p className="text-blue-200 font-semibold mb-2">✨ Your App is Live!</p>
-              <p className="text-blue-100">
-                Your app is being deployed right now. It should be live in 1-2 minutes. Refresh the live URL in a moment to see your app!
+            <div className="bg-gradient-to-r from-purple-900 to-blue-900 border-2 border-purple-500 rounded-xl p-8 text-center">
+              <h3 className="text-2xl font-bold text-white mb-4">⚡ One-Click Deploy to Netlify</h3>
+              <p className="text-slate-200 mb-6">
+                Click the button below to deploy your app to Netlify. It will automatically build and go live!
               </p>
+              <button
+                onClick={() => {
+                  // Extract GitHub username and repo from the URL
+                  const match = buildLiveUrl.match(/github\.com\/([^/]+)\/([^/]+)/)
+                  if (match) {
+                    const [, username, repo] = match
+                    const deployUrl = `https://app.netlify.com/start/deploy?repository=https://github.com/${username}/${repo}#main`
+                    window.open(deployUrl, '_blank')
+                  }
+                }}
+                className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-12 rounded-lg transition text-xl mb-6 shadow-lg hover:shadow-xl"
+              >
+                🚀 Deploy to Netlify Now
+              </button>
+              <p className="text-sm text-slate-300">
+                You'll be redirected to Netlify. Just click "Save & Deploy" and your app will be live in ~2 minutes!
+              </p>
+            </div>
+
+            <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 space-y-3">
+              <h4 className="text-lg font-bold text-white">📋 What Happens Next:</h4>
+              <ol className="text-slate-300 space-y-2">
+                <li className="flex gap-3">
+                  <span className="text-green-400 font-bold">1.</span>
+                  <span>Click "Deploy to Netlify Now" above</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-green-400 font-bold">2.</span>
+                  <span>Connect your GitHub account (if prompted)</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-green-400 font-bold">3.</span>
+                  <span>Click "Save & Deploy"</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-green-400 font-bold">4.</span>
+                  <span>Wait 2-3 minutes for your app to build and deploy</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-green-400 font-bold">5.</span>
+                  <span>Your app will be LIVE on its own domain! 🎉</span>
+                </li>
+              </ol>
             </div>
 
             <div className="flex gap-4">
@@ -1122,7 +1142,7 @@ export default function BuildTheDamnThing() {
               </button>
               <Link
                 href="/hub"
-                className="flex-1 text-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition"
+                className="flex-1 text-center bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
               >
                 Back to Hub
               </Link>
