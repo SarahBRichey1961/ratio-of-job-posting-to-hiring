@@ -325,79 +325,116 @@ function generateReactViteApp(
               <span class="step" data-step="3">3</span>
               <span class="step" data-step="4">4</span>
               <span class="step" data-step="5">5</span>
+              <span class="step" data-step="6">6</span>
+              <span class="step" data-step="7">7</span>
             </div>
             <div style="height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden;">
-              <div id="progress-bar" style="height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); width: 20%; transition: width 0.3s;"></div>
+              <div id="progress-bar" style="height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); width: 14%; transition: width 0.3s;"></div>
             </div>
           </div>
 
-          <!-- Step 1: Problem Statement -->
+          <!-- Step 1: Background -->
           <div class="form-step active" data-step="1">
-            <h2>Step 1: What's the Core Problem?</h2>
-            <p style="color: #666; margin-bottom: 20px;">Describe the problem your app will solve. Who suffers from this problem?</p>
-            <textarea id="problem" placeholder="e.g., Freelancers struggle to track time across multiple projects and clients..."></textarea>
+            <h2>Step 1: Your Background</h2>
+            <p style="color: #666; margin-bottom: 20px;">Tell us about your professional and educational background. What have you done?</p>
+            <textarea id="background" placeholder="e.g., 10 years as a software engineer, MBA in business, freelance designer since 2015..."></textarea>
             <div class="form-buttons">
               <button class="btn-next" onclick="nextStep()">Next</button>
             </div>
           </div>
 
-          <!-- Step 2: Target User & Revenue -->
+          <!-- Step 2: Skills & Expertise -->
           <div class="form-step" data-step="2">
-            <h2>Step 2: Who Will Pay & How?</h2>
-            <p style="color: #666; margin-bottom: 20px;">Define your ideal customer and revenue model.</p>
-            <label>Target Customer:</label>
-            <textarea id="target-user" placeholder="e.g., Independent developers, project managers, small design teams..."></textarea>
-            <label style="margin-top: 16px;">How They'll Pay (Select one):</label>
+            <h2>Step 2: Your Skills & Expertise</h2>
+            <p style="color: #666; margin-bottom: 20px;">What are you truly good at? List specific skills or domains where you excel.</p>
+            <textarea id="skills" placeholder="e.g., Full-stack development, UX design, data analysis, project management, copywriting..."></textarea>
+            <div class="form-buttons">
+              <button class="btn-prev" onclick="prevStep()">Back</button>
+              <button class="btn-next" onclick="nextStep()">Next</button>
+            </div>
+          </div>
+
+          <!-- Step 3: Interests & Hobbies -->
+          <div class="form-step" data-step="3">
+            <h2>Step 3: Your Interests & Passions</h2>
+            <p style="color: #666; margin-bottom: 20px;">What do you enjoy doing? What topics do you spend time learning about or discussing?</p>
+            <textarea id="interests" placeholder="e.g., AI/ML, entrepreneurship, fitness, personal finance, sustainable living, gaming..."></textarea>
+            <div class="form-buttons">
+              <button class="btn-prev" onclick="prevStep()">Back</button>
+              <button class="btn-next" onclick="nextStep()">Next</button>
+            </div>
+          </div>
+
+          <!-- Step 4: Manifesto & Values -->
+          <div class="form-step" data-step="4">
+            <h2>Step 4: Your Manifesto & Values</h2>
+            <p style="color: #666; margin-bottom: 20px;">What matters to you most? What problems in the world frustrate you? What change do you want to create?</p>
+            <textarea id="manifesto" placeholder="e.g., Making financial tools accessible to everyone, reducing complexity in people's lives, empowering creators, helping small businesses compete..."></textarea>
+            <div class="form-buttons">
+              <button class="btn-prev" onclick="prevStep()">Back</button>
+              <button class="btn-next" onclick="nextStep()">Next</button>
+            </div>
+          </div>
+
+          <!-- Step 5: Your Resume -->
+          <div class="form-step" data-step="5">
+            <h2>Step 5: Your Resume / Current Role</h2>
+            <p style="color: #666; margin-bottom: 20px;">What's your current situation? Are you employed, freelancing, already running a business?</p>
+            <textarea id="resume" placeholder="e.g., Currently a Software Engineer at TechCorp, previously led a team of 5, 2 failed startup attempts, currently looking for next opportunity..."></textarea>
+            <div class="form-buttons">
+              <button class="btn-prev" onclick="prevStep()">Back</button>
+              <button class="btn-next" onclick="nextStep()">Next</button>
+            </div>
+          </div>
+
+          <!-- Step 6: App Ideas Generated -->
+          <div class="form-step" data-step="6">
+            <h2>Step 6: Ideas Generated for You</h2>
+            <p style="color: #666; margin-bottom: 20px;">Based on your background, skills, interests, and values—here are potential income-generating apps you could build:</p>
+            <div id="ideas-list" style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px;"></div>
+            <label style="display: block; margin-top: 20px;">Which idea resonates most with you?</label>
+            <textarea id="chosen-idea" placeholder="Pick one of the ideas above and describe how you'd build it, or suggest your own idea..."></textarea>
+            <div class="form-buttons">
+              <button class="btn-prev" onclick="prevStep()">Back</button>
+              <button class="btn-next" onclick="nextStep()">Next</button>
+            </div>
+          </div>
+
+          <!-- Step 7: Business Model -->
+          <div class="form-step" data-step="7">
+            <h2>Step 7: Your Business Model & Blueprint</h2>
+            <p style="color: #666; margin-bottom: 20px;">Now let's validate your idea with business fundamentals.</p>
+            <label>Problem This App Solves:</label>
+            <textarea id="problem" placeholder="Who suffers? What's their pain?"></textarea>
+            <label style="margin-top: 16px;">Target Customer:</label>
+            <textarea id="target-user" placeholder="Who will pay? Describe them."></textarea>
+            <label style="margin-top: 16px;">Revenue Model:</label>
             <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
               <label style="display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer;"><input type="radio" name="revenue" value="subscription"> Monthly/Annual Subscription</label>
               <label style="display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer;"><input type="radio" name="revenue" value="one-time"> One-Time Purchase</label>
               <label style="display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer;"><input type="radio" name="revenue" value="freemium"> Freemium (Free + Premium)</label>
-              <label style="display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer;"><input type="radio" name="revenue" value="commission"> Commission/Revenue Share</label>
               <label style="display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer;"><input type="radio" name="revenue" value="other"> Other</label>
             </div>
+            <label style="margin-top: 16px;">Core Features (3-5):</label>
+            <textarea id="features" placeholder="Feature 1: ..., Feature 2: ..., Feature 3: ..."></textarea>
             <div class="form-buttons">
               <button class="btn-prev" onclick="prevStep()">Back</button>
-              <button class="btn-next" onclick="nextStep()">Next</button>
+              <button class="btn-next" onclick="nextStep()">Review</button>
             </div>
           </div>
 
-          <!-- Step 3: Core Features -->
-          <div class="form-step" data-step="3">
-            <h2>Step 3: What Are the Core Features?</h2>
-            <p style="color: #666; margin-bottom: 20px;">List 3-5 essential features that make your app valuable.</p>
-            <textarea id="features" placeholder="Feature 1: Time tracking across projects&#10;Feature 2: Automated invoice generation&#10;Feature 3: Client expense tracking&#10;..."></textarea>
-            <div class="form-buttons">
-              <button class="btn-prev" onclick="prevStep()">Back</button>
-              <button class="btn-next" onclick="nextStep()">Next</button>
-            </div>
-          </div>
-
-          <!-- Step 4: Competition & Differentiation -->
-          <div class="form-step" data-step="4">
-            <h2>Step 4: What Makes You Different?</h2>
-            <p style="color: #666; margin-bottom: 20px;">Who are competitors? What will you do better?</p>
-            <label>Existing Solutions (competitors):</label>
-            <textarea id="competitors" placeholder="e.g., Toggl, Harvest, Clockify..."></textarea>
-            <label style="margin-top: 16px;">Your Advantage:</label>
-            <textarea id="advantage" placeholder="e.g., Simpler pricing, better for freelancers, AI-powered insights..."></textarea>
-            <div class="form-buttons">
-              <button class="btn-prev" onclick="prevStep()">Back</button>
-              <button class="btn-next" onclick="nextStep()">Next</button>
-            </div>
-          </div>
-
-          <!-- Step 5: Review & Next Steps -->
-          <div class="form-step" data-step="5">
-            <h2>Step 5: Your App Blueprint</h2>
-            <p style="color: #666; margin-bottom: 20px;">Review your app idea. This is your roadmap to an income-generating business.</p>
-            <div id="summary" style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px;"></div>
+          <!-- Step 8: Final Review -->
+          <div class="form-step" data-step="8">
+            <h2>Step 8: Your Complete App Blueprint</h2>
+            <p style="color: #666; margin-bottom: 20px;">Here's your complete blueprint. You now have clarity on what to build and why.</p>
+            <div id="summary" style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px; line-height: 1.8;"></div>
             <label style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px; cursor: pointer;">
               <input type="checkbox" id="agree" style="margin-top: 4px;">
-              <span style="color: #666;">I'm ready to build this app and earn income with it</span>
+              <span style="color: #666;">I'm ready to share this blueprint with developers and start building</span>
             </label>
             <div class="form-buttons">
               <button class="btn-prev" onclick="prevStep()">Back</button>
-              <button id="launch-btn" class="btn-launch" onclick="launchApp()" disabled>Launch My App</button>
+              <button id="launch-btn" class="btn-launch" onclick="launchApp()" disabled>Confirm & Complete</button>
             </div>
           </div>
         </div>
@@ -406,6 +443,7 @@ function generateReactViteApp(
   </div>
   <script>
     let currentStep = 1;
+    const totalSteps = 8;
     
     function showStep(step) {
       // Hide all steps
@@ -417,11 +455,16 @@ function generateReactViteApp(
       document.querySelector(\`.step[data-step="\${step}"]\`).classList.add('active');
       
       // Update progress bar
-      const progress = (step / 5) * 100;
+      const progress = (step / totalSteps) * 100;
       document.getElementById('progress-bar').style.width = progress + '%';
       
+      // Generate ideas on step 6
+      if (step === 6) {
+        generateIdeas();
+      }
+      
       // Update summary on final step
-      if (step === 5) {
+      if (step === 8) {
         updateSummary();
       }
       
@@ -430,7 +473,7 @@ function generateReactViteApp(
     }
     
     function nextStep() {
-      if (currentStep < 5) {
+      if (currentStep < totalSteps) {
         currentStep++;
         showStep(currentStep);
       }
@@ -443,22 +486,103 @@ function generateReactViteApp(
       }
     }
     
+    function generateIdeas() {
+      const background = document.getElementById('background').value;
+      const skills = document.getElementById('skills').value;
+      const interests = document.getElementById('interests').value;
+      const manifesto = document.getElementById('manifesto').value;
+      
+      // Generate contextual ideas based on their input
+      const ideas = [];
+      
+      // Parse skills for idea generation
+      const skillsList = skills.toLowerCase();
+      const interestsList = interests.toLowerCase();
+      
+      if (skillsList.includes('design') || skillsList.includes('ux') || skillsList.includes('ui')) {
+        ideas.push('Design System Generator - AI tool that creates consistent design systems from brand guidelines');
+        ideas.push('Accessibility Audit SaaS - Automated tool to check and improve web accessibility');
+      }
+      
+      if (skillsList.includes('develop') || skillsList.includes('engineer') || skillsList.includes('code')) {
+        ideas.push('Developer Productivity Tool - Streamline repetitive coding tasks with templates and automation');
+        ideas.push('Code Review Automation - AI-powered code review to catch issues before human review');
+      }
+      
+      if (skillsList.includes('market') || skillsList.includes('business') || skillsList.includes('sales')) {
+        ideas.push('Lead Generation Platform - Help small businesses identify and reach their ideal customers');
+        ideas.push('Sales Pipeline Analyzer - Predict deal closure rates and optimize sales process');
+      }
+      
+      if (interestsList.includes('finance') || interestsList.includes('money') || interestsList.includes('investment')) {
+        ideas.push('Personal Finance Dashboard - Unified view of all accounts, investments, and spending');
+        ideas.push('Investment Portfolio Tracker - Automated tracking and rebalancing for small investors');
+      }
+      
+      if (interestsList.includes('fitness') || interestsList.includes('health') || interestsList.includes('wellness')) {
+        ideas.push('Workout Logging & Progress Tracker - Simple app for tracking exercises and seeing progress');
+        ideas.push('Nutrition Meal Planner - AI-generated meal plans based on dietary preferences');
+      }
+      
+      if (interestsList.includes('ai') || interestsList.includes('ml') || interestsList.includes('machine')) {
+        ideas.push('AI Writing Assistant - Domain-specific writing tool for your niche');
+        ideas.push('Data Analysis Tool - Simplify data visualization for non-technical users');
+      }
+      
+      if (manifesto.toLowerCase().includes('access') || manifesto.toLowerCase().includes('empower')) {
+        ideas.push('Skill Learning Platform - Make expert knowledge accessible to underserved communities');
+        ideas.push('Creator Monetization Tool - Help creators turn followers into sustainable income');
+      }
+      
+      // Always add a generic option
+      ideas.push('Your Own Custom Idea - Something unique to your vision and experience');
+      
+      // Remove duplicates and limit to 5-6
+      const uniqueIdeas = [...new Set(ideas)].slice(0, 6);
+      
+      const ideaHtml = uniqueIdeas.map((idea, i) => 
+        \`<div style="margin-bottom: 12px; padding: 12px; background: white; border-radius: 8px; border-left: 4px solid #667eea;"><strong>\${i+1}.</strong> \${idea}</div>\`
+      ).join('');
+      
+      document.getElementById('ideas-list').innerHTML = ideaHtml || '<p style="color: #999;">Fill in your background, skills, interests, and manifesto to see personalized ideas.</p>';
+    }
+    
     function updateSummary() {
+      const background = document.getElementById('background').value || '(Not filled)';
+      const skills = document.getElementById('skills').value || '(Not filled)';
+      const interests = document.getElementById('interests').value || '(Not filled)';
+      const manifesto = document.getElementById('manifesto').value || '(Not filled)';
+      const resume = document.getElementById('resume').value || '(Not filled)';
+      const chosenIdea = document.getElementById('chosen-idea').value || '(Not specified)';
       const problem = document.getElementById('problem').value || '(Not filled)';
       const targetUser = document.getElementById('target-user').value || '(Not filled)';
       const revenue = document.querySelector('input[name="revenue"]:checked')?.value || '(Not selected)';
       const features = document.getElementById('features').value || '(Not filled)';
-      const competitors = document.getElementById('competitors').value || '(Not filled)';
-      const advantage = document.getElementById('advantage').value || '(Not filled)';
       
       const summary = \`
-        <h3 style="color: #667eea; margin-bottom: 16px;">Your App Blueprint</h3>
-        <p><strong>Problem:</strong> \${problem}</p>
-        <p style="margin-top: 12px;"><strong>Target Customer:</strong> \${targetUser}</p>
-        <p style="margin-top: 12px;"><strong>Revenue Model:</strong> \${revenue}</p>
-        <p style="margin-top: 12px;"><strong>Core Features:</strong> \${features.split('\\n').filter(f => f.trim()).join('<br>')}</p>
-        <p style="margin-top: 12px;"><strong>Competitors:</strong> \${competitors}</p>
-        <p style="margin-top: 12px;"><strong>Your Advantage:</strong> \${advantage}</p>
+        <h3 style="color: #667eea; margin-bottom: 16px;">Your Complete App Blueprint</h3>
+        
+        <div style="margin-bottom: 20px;">
+          <h4 style="color: #333; margin-bottom: 8px;">About You</h4>
+          <p><strong>Background:</strong> \${background}</p>
+          <p style="margin-top: 8px;"><strong>Skills:</strong> \${skills}</p>
+          <p style="margin-top: 8px;"><strong>Interests:</strong> \${interests}</p>
+          <p style="margin-top: 8px;"><strong>Your Manifesto:</strong> \${manifesto}</p>
+          <p style="margin-top: 8px;"><strong>Current Situation:</strong> \${resume}</p>
+        </div>
+        
+        <div style="margin-bottom: 20px; padding: 16px; background: #e8eaf6; border-radius: 8px;">
+          <h4 style="color: #333; margin-bottom: 8px;">The App You Will Build</h4>
+          <p><strong>Your Idea:</strong> \${chosenIdea}</p>
+        </div>
+        
+        <div>
+          <h4 style="color: #333; margin-bottom: 8px;">Business Model</h4>
+          <p><strong>Problem Solved:</strong> \${problem}</p>
+          <p style="margin-top: 8px;"><strong>Target Customer:</strong> \${targetUser}</p>
+          <p style="margin-top: 8px;"><strong>Revenue Model:</strong> \${revenue}</p>
+          <p style="margin-top: 8px;"><strong>Core Features:</strong> \${features.split('\\n').filter(f => f.trim()).join(' • ')}</p>
+        </div>
       \`;
       
       document.getElementById('summary').innerHTML = summary;
@@ -473,19 +597,26 @@ function generateReactViteApp(
     });
     
     function launchApp() {
+      const background = document.getElementById('background').value;
+      const skills = document.getElementById('skills').value;
+      const interests = document.getElementById('interests').value;
+      const manifesto = document.getElementById('manifesto').value;
+      const chosenIdea = document.getElementById('chosen-idea').value;
       const problem = document.getElementById('problem').value;
       const targetUser = document.getElementById('target-user').value;
       const revenue = document.querySelector('input[name="revenue"]:checked')?.value;
       const features = document.getElementById('features').value;
       
-      if (problem && targetUser && revenue && features) {
-        // Show confirmation
-        alert('🚀 Your app idea is clear! Share this with developers to start building. You can track progress at https://take-the-reins.ai');
+      if (background && skills && interests && manifesto && chosenIdea && problem && targetUser && revenue && features) {
+        alert('🚀 Your app blueprint is complete!\\n\\nYou now have a clear vision for building an income-generating app. Share this with developers at https://take-the-reins.ai to start building!');
       } else {
-        alert('Please complete all fields before launching');
+        alert('Please complete all fields before finalizing.');
       }
     }
   </script>
+  <footer style="text-align: center; padding: 20px; background: #f8f9fa; color: #666; border-top: 1px solid #e0e0e0; margin-top: 40px;">
+    <p>Build your income-generating app with confidence and clarity</p>
+  </footer>
 </body>
 </html>`,
     },
