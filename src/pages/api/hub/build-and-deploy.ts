@@ -86,7 +86,9 @@ export default async function buildAndDeploy(req: NextApiRequest, res: NextApiRe
     })
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
-    console.error(`\n❌ BUILD FAILED: ${msg}\n`)
+    const stack = error instanceof Error ? error.stack : ''
+    console.error(`\n❌ BUILD FAILED: ${msg}`)
+    if (stack) console.error(`   Stack: ${stack.split('\n').slice(0, 3).join('\n   ')}`)
     return res.status(500).json({ error: msg })
   }
 }
@@ -106,18 +108,31 @@ async function deployToNetlifyDirect(
 
   // 1. Create Netlify site
   console.log(`   📡 Calling Netlify API...`)
-  const createRes = await fetch('https://api.netlify.com/api/v1/sites', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${netlifyToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ name: siteName }),
-  })
+  
+  let createRes: any
+  try {
+    createRes = await fetch('https://api.netlify.com/api/v1/sites', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${netlifyToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name: siteName }),
+    })
+  } catch (fetchError: any) {
+    const fetchMsg = fetchError instanceof Error ? fetchError.message : String(fetchError)
+    console.error(`❌ Fetch error (network/connection): ${fetchMsg}`)
+    throw new Error(`Network error calling Netlify API: ${fetchMsg}`)
+  }
 
   console.log(`   Response Status: ${createRes.status}`)
   if (!createRes.ok) {
-    const errText = await createRes.text()
+    let errText = ''
+    try {
+      errText = await createRes.text()
+    } catch (e) {
+      errText = `Could not read response body: ${e}`
+    }
     console.error(`❌ Netlify API Error Response (${createRes.status}):`, errText)
     let err: any = {}
     try {
