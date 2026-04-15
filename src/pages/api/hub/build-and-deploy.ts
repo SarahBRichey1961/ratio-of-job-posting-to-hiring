@@ -327,9 +327,11 @@ function generateReactViteApp(
               <span class="step" data-step="5">5</span>
               <span class="step" data-step="6">6</span>
               <span class="step" data-step="7">7</span>
+              <span class="step" data-step="8">8</span>
+              <span class="step" data-step="9">✓</span>
             </div>
             <div style="height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden;">
-              <div id="progress-bar" style="height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); width: 14%; transition: width 0.3s;"></div>
+              <div id="progress-bar" style="height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); width: 11%; transition: width 0.3s;"></div>
             </div>
           </div>
 
@@ -434,7 +436,23 @@ function generateReactViteApp(
             </label>
             <div class="form-buttons">
               <button class="btn-prev" onclick="prevStep()">Back</button>
-              <button id="launch-btn" class="btn-launch" onclick="launchApp()" disabled>Confirm & Complete</button>
+              <button id="launch-btn" class="btn-launch" onclick="generateAndDeploy()" disabled>Generate & Deploy My App</button>
+            </div>
+          </div>
+
+          <!-- Step 9: Deployment Progress -->
+          <div class="form-step" data-step="9">
+            <h2>Step 9: Your App Is Being Generated & Deployed</h2>
+            <p style="color: #666; margin-bottom: 20px;">This may take a moment. Your app is being created and deployed to a live URL...</p>
+            <div id="deployment-status" style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px; min-height: 100px; display: flex; align-items: center; justify-content: center;">
+              <div style="text-align: center;">
+                <div style="font-size: 2em; margin-bottom: 12px;">⏳</div>
+                <p style="color: #666;">Generating your app from your blueprint...</p>
+              </div>
+            </div>
+            <div id="deployment-result" style="display: none; background: #e8f5e9; padding: 20px; border-radius: 12px; margin-bottom: 20px; border-left: 4px solid #00c853;"></div>
+            <div class="form-buttons">
+              <button id="view-app-btn" class="btn-launch" onclick="viewApp()" disabled style="display: none;">View My Live App</button>
             </div>
           </div>
         </div>
@@ -443,7 +461,8 @@ function generateReactViteApp(
   </div>
   <script>
     let currentStep = 1;
-    const totalSteps = 8;
+    const totalSteps = 9;
+    let liveAppUrl = '';
     
     function showStep(step) {
       // Hide all steps
@@ -463,7 +482,7 @@ function generateReactViteApp(
         generateIdeas();
       }
       
-      // Update summary on final step
+      // Update summary on step 8
       if (step === 8) {
         updateSummary();
       }
@@ -492,10 +511,8 @@ function generateReactViteApp(
       const interests = document.getElementById('interests').value;
       const manifesto = document.getElementById('manifesto').value;
       
-      // Generate contextual ideas based on their input
       const ideas = [];
       
-      // Parse skills for idea generation
       const skillsList = skills.toLowerCase();
       const interestsList = interests.toLowerCase();
       
@@ -534,10 +551,8 @@ function generateReactViteApp(
         ideas.push('Creator Monetization Tool - Help creators turn followers into sustainable income');
       }
       
-      // Always add a generic option
       ideas.push('Your Own Custom Idea - Something unique to your vision and experience');
       
-      // Remove duplicates and limit to 5-6
       const uniqueIdeas = [...new Set(ideas)].slice(0, 6);
       
       const ideaHtml = uniqueIdeas.map((idea, i) => 
@@ -573,7 +588,7 @@ function generateReactViteApp(
         
         <div style="margin-bottom: 20px; padding: 16px; background: #e8eaf6; border-radius: 8px;">
           <h4 style="color: #333; margin-bottom: 8px;">The App You Will Build</h4>
-          <p><strong>Your Idea:</strong> \${chosenIdea}</p>
+          <p><strong>\${chosenIdea}</strong></p>
         </div>
         
         <div>
@@ -596,21 +611,96 @@ function generateReactViteApp(
       showStep(1);
     });
     
-    function launchApp() {
+    async function generateAndDeploy() {
       const background = document.getElementById('background').value;
       const skills = document.getElementById('skills').value;
       const interests = document.getElementById('interests').value;
       const manifesto = document.getElementById('manifesto').value;
+      const resume = document.getElementById('resume').value;
       const chosenIdea = document.getElementById('chosen-idea').value;
       const problem = document.getElementById('problem').value;
       const targetUser = document.getElementById('target-user').value;
       const revenue = document.querySelector('input[name="revenue"]:checked')?.value;
       const features = document.getElementById('features').value;
       
-      if (background && skills && interests && manifesto && chosenIdea && problem && targetUser && revenue && features) {
-        alert('🚀 Your app blueprint is complete!\\n\\nYou now have a clear vision for building an income-generating app. Share this with developers at https://take-the-reins.ai to start building!');
-      } else {
-        alert('Please complete all fields before finalizing.');
+      if (!background || !skills || !interests || !manifesto || !chosenIdea || !problem || !targetUser || !revenue || !features) {
+        alert('Please complete all fields before generating.');
+        return;
+      }
+
+      // Move to step 9
+      currentStep = 9;
+      showStep(currentStep);
+      
+      // Disable buttons during deployment
+      document.getElementById('view-app-btn').disabled = true;
+      
+      try {
+        // Call deploy-blueprint endpoint
+        const response = await fetch('/api/hub/deploy-blueprint', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            background,
+            skills,
+            interests,
+            manifesto,
+            resume,
+            chosenIdea,
+            problem,
+            targetUser,
+            revenue,
+            features,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Deployment failed');
+        }
+
+        const data = await response.json();
+        liveAppUrl = data.liveUrl;
+
+        // Show success message
+        const statusDiv = document.getElementById('deployment-status');
+        statusDiv.innerHTML = \`
+          <div style="text-align: center;">
+            <div style="font-size: 2em; margin-bottom: 12px;">✅</div>
+            <p style="color: #333; font-weight: 600;">Your app has been generated and deployed!</p>
+          </div>
+        \`;
+
+        // Show result with link
+        const resultDiv = document.getElementById('deployment-result');
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = \`
+          <h3 style="color: #00c853; margin-bottom: 16px;">🎉 Your App Is Live!</h3>
+          <p style="color: #333; margin-bottom: 12px;"><strong>App Name:</strong> \${chosenIdea}</p>
+          <p style="color: #333; margin-bottom: 12px;"><strong>Live URL:</strong> <a href="\${liveAppUrl}" target="_blank" style="color: #667eea; text-decoration: none;">\${liveAppUrl}</a></p>
+          <p style="color: #666; margin-bottom: 12px;">Your custom app has been deployed and is ready to be shared with customers.</p>
+          <p style="color: #666;">Next steps: Test your app, share the link with potential customers, and start earning income!</p>
+        \`;
+
+        // Enable view button
+        document.getElementById('view-app-btn').style.display = 'block';
+        document.getElementById('view-app-btn').disabled = false;
+
+      } catch (error) {
+        const statusDiv = document.getElementById('deployment-status');
+        statusDiv.innerHTML = \`
+          <div style="text-align: center;">
+            <div style="font-size: 2em; margin-bottom: 12px; color: #d32f2f;">❌</div>
+            <p style="color: #d32f2f; font-weight: 600;">Deployment Failed</p>
+            <p style="color: #666; margin-top: 8px;">\${error.message}</p>
+          </div>
+        \`;
+      }
+    }
+    
+    function viewApp() {
+      if (liveAppUrl) {
+        window.open(liveAppUrl, '_blank');
       }
     }
   </script>
