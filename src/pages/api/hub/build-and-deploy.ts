@@ -274,19 +274,38 @@ function generateReactViteApp(
     .header h1 { font-size: 2.5em; margin-bottom: 10px; font-weight: 700; }
     .tagline { font-size: 1.2em; opacity: 0.95; font-weight: 300; }
     .main-content { padding: 40px; }
-    .card { background: #f8f9fa; border-radius: 12px; padding: 24px; margin-bottom: 24px; border-left: 4px solid #667eea; }
-    .card h2 { color: #333; margin-bottom: 12px; font-size: 1.5em; }
-    .card p { color: #666; line-height: 1.6; margin-bottom: 8px; }
-    .card strong { color: #333; }
-    .interactive { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-left-color: #764ba2; }
-    .interactive h2, .interactive p { color: white; }
-    .demo-form { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
-    .demo-form input, .demo-form textarea { flex: 1; min-width: 200px; padding: 12px 16px; border: none; border-radius: 8px; font-size: 1em; }
-    .demo-form button { padding: 12px 24px; background: white; color: #667eea; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-    .demo-form button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-    .demo-output { width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.2); border-radius: 8px; color: white; font-style: italic; margin-top: 12px; }
+    
+    /* Form Wizard Styles */
+    .form-step { display: none; }
+    .form-step.active { display: block; animation: fadeIn 0.3s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    
+    .form-step h2 { color: #333; margin-bottom: 8px; font-size: 1.5em; }
+    .form-step p { color: #666; margin-bottom: 20px; }
+    .form-step label { display: block; color: #333; font-weight: 500; margin-bottom: 8px; margin-top: 16px; }
+    .form-step textarea, .form-step input[type="text"] { width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1em; font-family: inherit; resize: vertical; min-height: 100px; }
+    .form-step textarea:focus, .form-step input[type="text"]:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+    
+    .form-buttons { display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end; }
+    .btn-prev, .btn-next, .btn-launch { padding: 12px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-prev { background: #e0e0e0; color: #333; }
+    .btn-prev:hover { background: #d0d0d0; }
+    .btn-next { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .btn-next:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3); }
+    .btn-launch { background: linear-gradient(135deg, #00c853 0%, #1de9b6 100%); color: white; font-size: 1.1em; }
+    .btn-launch:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 200, 83, 0.3); }
+    .btn-launch:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    /* Step Indicators */
+    .step { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: #e0e0e0; color: #999; font-weight: 600; }
+    .step.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    
+    /* Summary */
+    #summary { line-height: 1.8; }
+    #summary strong { color: #667eea; }
+    
     .footer { text-align: center; padding: 20px; background: #f8f9fa; color: #666; border-top: 1px solid #e0e0e0; }
-    @media (max-width: 600px) { .header h1 { font-size: 1.8em; } .main-content { padding: 20px; } .card { padding: 16px; } .demo-form { flex-direction: column; } }
+    @media (max-width: 600px) { .header h1 { font-size: 1.8em; } .main-content { padding: 20px; } .form-buttons { flex-direction: column; } }
   </style>
 </head>
 <body>
@@ -297,143 +316,180 @@ function generateReactViteApp(
         <p class="tagline">${appIdea}</p>
       </header>
       <main class="main-content">
-        <section class="card">
-          <h2>About</h2>
-          <p><strong>For:</strong> ${targetUser}</p>
-          <p><strong>Problem:</strong> ${problemSolved}</p>
-        </section>
-        <section class="card">
-          <h2>How It Works</h2>
-          <p>${howItWorks}</p>
-        </section>
-        <section class="card interactive">
-          <h2>Try It Out</h2>
-          <div class="demo-form">
-            <input type="text" id="demo-input" placeholder="Enter your message..." />
-            <button onclick="handleDemo()">Send</button>
+        <div id="wizard">
+          <!-- Progress Bar -->
+          <div style="margin-bottom: 30px;">
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+              <span class="step active" data-step="1">1</span>
+              <span class="step" data-step="2">2</span>
+              <span class="step" data-step="3">3</span>
+              <span class="step" data-step="4">4</span>
+              <span class="step" data-step="5">5</span>
+            </div>
+            <div style="height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden;">
+              <div id="progress-bar" style="height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); width: 20%; transition: width 0.3s;"></div>
+            </div>
           </div>
-          <div id="demo-output" style="display:none;" class="demo-output"></div>
-        </section>
-        <footer class="footer">
-          <p>Built with ${appName} | Powered by AI</p>
-        </footer>
+
+          <!-- Step 1: Problem Statement -->
+          <div class="form-step active" data-step="1">
+            <h2>Step 1: What's the Core Problem?</h2>
+            <p style="color: #666; margin-bottom: 20px;">Describe the problem your app will solve. Who suffers from this problem?</p>
+            <textarea id="problem" placeholder="e.g., Freelancers struggle to track time across multiple projects and clients..."></textarea>
+            <div class="form-buttons">
+              <button class="btn-next" onclick="nextStep()">Next</button>
+            </div>
+          </div>
+
+          <!-- Step 2: Target User & Revenue -->
+          <div class="form-step" data-step="2">
+            <h2>Step 2: Who Will Pay & How?</h2>
+            <p style="color: #666; margin-bottom: 20px;">Define your ideal customer and revenue model.</p>
+            <label>Target Customer:</label>
+            <textarea id="target-user" placeholder="e.g., Independent developers, project managers, small design teams..."></textarea>
+            <label style="margin-top: 16px;">How They'll Pay (Select one):</label>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+              <label style="display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer;"><input type="radio" name="revenue" value="subscription"> Monthly/Annual Subscription</label>
+              <label style="display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer;"><input type="radio" name="revenue" value="one-time"> One-Time Purchase</label>
+              <label style="display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer;"><input type="radio" name="revenue" value="freemium"> Freemium (Free + Premium)</label>
+              <label style="display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer;"><input type="radio" name="revenue" value="commission"> Commission/Revenue Share</label>
+              <label style="display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer;"><input type="radio" name="revenue" value="other"> Other</label>
+            </div>
+            <div class="form-buttons">
+              <button class="btn-prev" onclick="prevStep()">Back</button>
+              <button class="btn-next" onclick="nextStep()">Next</button>
+            </div>
+          </div>
+
+          <!-- Step 3: Core Features -->
+          <div class="form-step" data-step="3">
+            <h2>Step 3: What Are the Core Features?</h2>
+            <p style="color: #666; margin-bottom: 20px;">List 3-5 essential features that make your app valuable.</p>
+            <textarea id="features" placeholder="Feature 1: Time tracking across projects&#10;Feature 2: Automated invoice generation&#10;Feature 3: Client expense tracking&#10;..."></textarea>
+            <div class="form-buttons">
+              <button class="btn-prev" onclick="prevStep()">Back</button>
+              <button class="btn-next" onclick="nextStep()">Next</button>
+            </div>
+          </div>
+
+          <!-- Step 4: Competition & Differentiation -->
+          <div class="form-step" data-step="4">
+            <h2>Step 4: What Makes You Different?</h2>
+            <p style="color: #666; margin-bottom: 20px;">Who are competitors? What will you do better?</p>
+            <label>Existing Solutions (competitors):</label>
+            <textarea id="competitors" placeholder="e.g., Toggl, Harvest, Clockify..."></textarea>
+            <label style="margin-top: 16px;">Your Advantage:</label>
+            <textarea id="advantage" placeholder="e.g., Simpler pricing, better for freelancers, AI-powered insights..."></textarea>
+            <div class="form-buttons">
+              <button class="btn-prev" onclick="prevStep()">Back</button>
+              <button class="btn-next" onclick="nextStep()">Next</button>
+            </div>
+          </div>
+
+          <!-- Step 5: Review & Next Steps -->
+          <div class="form-step" data-step="5">
+            <h2>Step 5: Your App Blueprint</h2>
+            <p style="color: #666; margin-bottom: 20px;">Review your app idea. This is your roadmap to an income-generating business.</p>
+            <div id="summary" style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px;"></div>
+            <label style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px; cursor: pointer;">
+              <input type="checkbox" id="agree" style="margin-top: 4px;">
+              <span style="color: #666;">I'm ready to build this app and earn income with it</span>
+            </label>
+            <div class="form-buttons">
+              <button class="btn-prev" onclick="prevStep()">Back</button>
+              <button id="launch-btn" class="btn-launch" onclick="launchApp()" disabled>Launch My App</button>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   </div>
   <script>
-    function handleDemo() {
-      const input = document.getElementById('demo-input');
-      const output = document.getElementById('demo-output');
-      if (input.value.trim()) {
-        output.textContent = 'You said: ' + input.value;
-        output.style.display = 'block';
+    let currentStep = 1;
+    
+    function showStep(step) {
+      // Hide all steps
+      document.querySelectorAll('.form-step').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+      
+      // Show current step
+      document.querySelector(\`.form-step[data-step="\${step}"]\`).classList.add('active');
+      document.querySelector(\`.step[data-step="\${step}"]\`).classList.add('active');
+      
+      // Update progress bar
+      const progress = (step / 5) * 100;
+      document.getElementById('progress-bar').style.width = progress + '%';
+      
+      // Update summary on final step
+      if (step === 5) {
+        updateSummary();
+      }
+      
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    function nextStep() {
+      if (currentStep < 5) {
+        currentStep++;
+        showStep(currentStep);
       }
     }
-    document.getElementById('demo-input').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') handleDemo();
+    
+    function prevStep() {
+      if (currentStep > 1) {
+        currentStep--;
+        showStep(currentStep);
+      }
+    }
+    
+    function updateSummary() {
+      const problem = document.getElementById('problem').value || '(Not filled)';
+      const targetUser = document.getElementById('target-user').value || '(Not filled)';
+      const revenue = document.querySelector('input[name="revenue"]:checked')?.value || '(Not selected)';
+      const features = document.getElementById('features').value || '(Not filled)';
+      const competitors = document.getElementById('competitors').value || '(Not filled)';
+      const advantage = document.getElementById('advantage').value || '(Not filled)';
+      
+      const summary = \`
+        <h3 style="color: #667eea; margin-bottom: 16px;">Your App Blueprint</h3>
+        <p><strong>Problem:</strong> \${problem}</p>
+        <p style="margin-top: 12px;"><strong>Target Customer:</strong> \${targetUser}</p>
+        <p style="margin-top: 12px;"><strong>Revenue Model:</strong> \${revenue}</p>
+        <p style="margin-top: 12px;"><strong>Core Features:</strong> \${features.split('\\n').filter(f => f.trim()).join('<br>')}</p>
+        <p style="margin-top: 12px;"><strong>Competitors:</strong> \${competitors}</p>
+        <p style="margin-top: 12px;"><strong>Your Advantage:</strong> \${advantage}</p>
+      \`;
+      
+      document.getElementById('summary').innerHTML = summary;
+    }
+    
+    // Enable launch button when checkbox is checked
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('agree').addEventListener('change', function() {
+        document.getElementById('launch-btn').disabled = !this.checked;
+      });
+      showStep(1);
     });
+    
+    function launchApp() {
+      const problem = document.getElementById('problem').value;
+      const targetUser = document.getElementById('target-user').value;
+      const revenue = document.querySelector('input[name="revenue"]:checked')?.value;
+      const features = document.getElementById('features').value;
+      
+      if (problem && targetUser && revenue && features) {
+        // Show confirmation
+        alert('🚀 Your app idea is clear! Share this with developers to start building. You can track progress at https://take-the-reins.ai');
+      } else {
+        alert('Please complete all fields before launching');
+      }
+    }
   </script>
 </body>
 </html>`,
     },
   ]
-}
-
-/**
- * Generate the main App.jsx component
- */
-function generateAppCode(
-  appName: string,
-  appIdea: string,
-  targetUser: string,
-  problemSolved: string,
-  howItWorks: string,
-  hasOpenAI: boolean
-): string {
-  return `import React, { useState } from 'react'
-import './App.css'
-
-export default function App() {
-  const [input, setInput] = useState('')
-  const [output, setOutput] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  const handleSubmit = async () => {
-    if (!input.trim()) return
-    
-    setLoading(true)
-    setOutput('Processing...')
-    
-    try {
-      ${
-        hasOpenAI
-          ? `
-      // Use ChatGPT API (requires API key in environment)
-      const response = await fetch('/api/app/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input })
-      })
-      
-      const data = await response.json()
-      setOutput(data.response || 'No response')
-      `
-          : `
-      // Demo: Echo the input
-      setOutput('You said: ' + input)
-      `
-      }
-    } catch (err) {
-      setOutput('Error: ' + err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div className="app-container">
-      <header className="header">
-        <h1>${appName}</h1>
-        <p className="tagline">${appIdea}</p>
-      </header>
-
-      <main className="main-content">
-        <section className="card">
-          <h2>About</h2>
-          <p><strong>For:</strong> ${targetUser}</p>
-          <p><strong>Solves:</strong> ${problemSolved}</p>
-        </section>
-
-        <section className="card">
-          <h2>How It Works</h2>
-          <p>${howItWorks}</p>
-        </section>
-
-        <section className="card interactive">
-          <h2>Try It Now</h2>
-          <div className="demo-form">
-            <input
-              type="text"
-              placeholder="Enter your message..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-              disabled={loading}
-            />
-            <button onClick={handleSubmit} disabled={loading}>
-              {loading ? 'Processing...' : 'Send'}
-            </button>
-          </div>
-          {output && <div className="demo-output">{output}</div>}
-        </section>
-
-        <footer className="footer">
-          <p>Built with ${appName} | Powered by AI</p>
-        </footer>
-      </main>
-    </div>
-  )
-}`
 }
 
 /**
