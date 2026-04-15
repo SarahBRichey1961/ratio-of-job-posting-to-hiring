@@ -569,11 +569,16 @@ function sanitizeSiteName(appName: string): string {
     .replace(/[^a-z0-9-]/g, '-')
     .replace(/--+/g, '-')
     .replace(/^-+|-+$/g, '')
-    .substring(0, 63)
+    .substring(0, 40)  // Leave room for unique suffix
 
-  // Ensure minimum length
-  if (sanitized.length < 3) {
-    sanitized = sanitized + '-' + Math.random().toString(36).substring(2, 8)
+  // Always add a unique suffix to avoid "subdomain must be unique" errors
+  // Use timestamp (13 chars) + random (8 chars) but keep under 63 char limit
+  const uniqueSuffix = '-' + Date.now().toString(36)
+  sanitized = sanitized + uniqueSuffix
+
+  // Ensure we don't exceed 63 chars
+  if (sanitized.length > 63) {
+    sanitized = sanitized.substring(0, 63)
   }
 
   return sanitized
