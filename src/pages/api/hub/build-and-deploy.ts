@@ -338,7 +338,6 @@ function generateReactViteApp(
     },
   ]
 }
-}
 
 /**
  * Generate the main App.jsx component
