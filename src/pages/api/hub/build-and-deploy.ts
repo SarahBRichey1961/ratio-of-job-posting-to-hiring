@@ -120,21 +120,26 @@ export default async function buildAndDeploy(req: NextApiRequest, res: NextApiRe
       : generateReactViteApp(appName, appIdea, targetUser, problemSolved, howItWorks)
     console.log(`   ✅ Generated ${files.length} files`)
 
-    // STEP 3: Return generated app for now
-    // TODO: Fix Netlify deployment with proper API authentication
-    console.log(`\n3️⃣ App generation complete (deployment handled separately)...`)
-    const appUrl = `https://take-the-reins.ai/app/${appName.toLowerCase().replace(/\s+/g, '-')}`
-    console.log(`   ✅ Generated: ${appUrl}`)
+    // STEP 3: Deploy to Netlify
+    console.log(`\n3️⃣ Deploying to Netlify...`)
+    let liveUrl: string
+    try {
+      liveUrl = await deployToNetlifyDirect(NETLIFY_TOKEN, appName, files)
+      console.log(`   ✅ Deployed: ${liveUrl}`)
+    } catch (deployErr) {
+      const deployMsg = deployErr instanceof Error ? deployErr.message : String(deployErr)
+      console.error(`\n❌ DEPLOYMENT FAILED: ${deployMsg}`)
+      throw new Error(`Failed to deploy app to Netlify: ${deployMsg}`)
+    }
 
-    console.log(`\n✨ APP GENERATED: ${appName}\n`)
+    console.log(`\n✨ APP BUILT AND DEPLOYED: ${appName}\n`)
 
     return res.status(200).json({
       success: true,
-      message: 'Your app has been generated with OpenAI!',
+      message: 'Your app has been built and deployed to Netlify!',
       appName: appName,
-      customAppHtml: customHtml,
-      status: 'generated',
-      notes: 'App HTML generated successfully. Deploy to production separately.',
+      liveUrl: liveUrl,
+      status: 'deployed',
     })
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
