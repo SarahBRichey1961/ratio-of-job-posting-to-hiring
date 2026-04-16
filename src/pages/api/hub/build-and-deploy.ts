@@ -196,15 +196,84 @@ NAVIGATION STRUCTURE:
 - Make all features easily accessible from navigation
 - Use buttons/links to switch between sections
 
-AI TEXT REWRITING API:
-If the app needs to transform/rewrite user input using AI, use this backend endpoint:
+SPECIAL HANDLING FOR GRANDPARENT APPS:
+If the app idea mentions "grandparent", "letter", or "correspondence":
+1. FIRST SCREEN: Collect user information
+   - Input field: "Your Name (Grandparent's name)" - text input
+   - Input field: "Your Location" - text input (city, state or just city)
+   - Button: "Continue" - saves info to localStorage
+   
+2. SECOND SCREEN: Letter composition
+   - Show the saved name and location at top (e.g., "Letter from [Name] in [Location]")
+   - Textarea: "Your message to your grandchild" - large text area for typing
+   - Button: "Transform into Letter" - calls the rewrite API with the user's info
+   - Show loading state: "Transforming your message into a heartfelt letter..."
+   
+3. DISPLAY REWRITTEN LETTER
+   - Prominently display the AI-generated letter
+   - Include the personalization: "Dear [Grandchild name], ... From your loving Grandpa/Grandma [Name] in [Location]"
+   - Button: "Copy Letter" - copy to clipboard
+   - Button: "Save Letter" - save to localStorage and show in history
+   
+4. VIEW SAVED LETTERS
+   - Tab or section showing all previously saved letters
+   - Display each with date created and a preview
+   - Ability to view full text, copy, or delete each letter
+
+AI TEXT REWRITING API (MUST BE USED):
+If the app needs to transform/rewrite user input using AI, ALWAYS use this backend API:
 - URL: https://take-the-reins.ai/api/hub/rewrite-with-ai
 - Method: POST
-- Body: { "text": "user input", "appName": "${appName}", "appIdea": "${appIdea}", "rewriteStyle": "letter" | "poem" | "professional" | "casual" }
+- Headers: { "Content-Type": "application/json" }
+- Body: { "text": "user input to rewrite", "appName": "${appName}", "appIdea": "${appIdea}", "rewriteStyle": "letter" }
 - Response: { "success": true, "original": "...", "rewritten": "..." }
-- For grandparent letters: use rewriteStyle: "letter"
-- For poems: use rewriteStyle: "poem"
-- This endpoint uses OpenAI to intelligently transform text according to the style
+- For grandparent letters: ALWAYS use rewriteStyle: "letter"
+
+JAVASCRIPT CODE EXAMPLE for calling the API:
+\`\`\`javascript
+async function rewriteWithAI(text, senderName, senderLocation) {
+  try {
+    const response = await fetch('https://take-the-reins.ai/api/hub/rewrite-with-ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: text,
+        appName: "${appName}",
+        appIdea: "${appIdea}",
+        rewriteStyle: "letter",
+        senderName: senderName,        // For grandparent apps: the grandparent's name
+        senderLocation: senderLocation // For grandparent apps: the grandparent's location
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error('API error: ' + response.status);
+    }
+    
+    const data = await response.json();
+    if (data.success) {
+      return data.rewritten;  // Use this as the output - the AI-transformed letter
+    } else {
+      throw new Error(data.error);
+    }
+  } catch (error) {
+    console.error('Rewrite failed:', error);
+    alert('Failed to transform message: ' + error.message);
+    return null;
+  }
+}
+\`\`\`
+
+REQUIREMENTS FOR AI REWRITING:
+1. ALWAYS show a loading spinner while waiting for the API response
+2. MUST display the rewritten result prominently in the UI
+3. Include error handling - show user if rewrite fails
+4. Store the result so user can see it or copy it
+5. For grandparent apps: pass senderName and senderLocation to personalize the letter
+6. Display both original and rewritten side-by-side if possible
+7. Make the "Transform/Rewrite" button functional and obvious
+8. Add "Copy" button so user can copy the generated letter
+9. Add "Save" button to save letter to localStorage with timestamp
 
 CRITICAL REQUIREMENTS:
 1. Generate a COMPLETE, WORKING single-file HTML+CSS+JavaScript app
@@ -216,11 +285,11 @@ CRITICAL REQUIREMENTS:
 7. Use Tailwind CSS from CDN (https://cdn.tailwindcss.com)
 8. Include all CSS and JavaScript inline - no external files
 9. Make the UI professional and modern
-10. If the app transforms/rewrites text with AI, integrate the rewrite API above
-11. Show loading state while waiting for AI rewriting
-12. Display both original and transformed text side-by-side or one after another
-13. Include local storage to persist user data so it's not lost on page reload
-14. Implement ALL major features - if you can only fit some features, choose the core ones and indicate which are essential
+10. If the app transforms/rewrites text with AI, MUST integrate the API call above
+11. Show loading spinner with "Transforming..." message while waiting for API response
+12. Display the rewritten text prominently after API returns
+13. Include error handling if the API call fails (show error message to user)
+14. Store data in localStorage so it persists across page refreshes
 
 IMPORTANT: This is the ACTUAL COMPLETE APP, not a demo or template. Users should be able to use EVERY FEATURE right away without switching apps or reloading.
 

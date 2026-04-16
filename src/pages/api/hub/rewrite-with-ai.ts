@@ -5,6 +5,9 @@ interface RequestBody {
   appName: string
   appIdea: string
   rewriteStyle?: string
+  senderName?: string        // For grandparent apps: the grandparent's name
+  senderLocation?: string    // For grandparent apps: the grandparent's location
+  recipientName?: string     // For grandparent apps: the grandchild's name (if available)
 }
 
 /**
@@ -12,6 +15,16 @@ interface RequestBody {
  * This allows Netlify-deployed apps to have AI functionality
  */
 export default async function rewriteWithAI(req: NextApiRequest, res: NextApiResponse) {
+  // CORS headers - allow all origins since this is for deployed Netlify apps
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end()
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
@@ -32,27 +45,37 @@ export default async function rewriteWithAI(req: NextApiRequest, res: NextApiRes
       return res.status(400).json({ error: 'Missing text to rewrite' })
     }
 
-    const { text, appName, appIdea, rewriteStyle } = body
+    const { text, appName, appIdea, rewriteStyle, senderName, senderLocation, recipientName } = body
 
     console.log(`\n📝 Rewrite request for: ${appName}`)
     console.log(`   Style: ${rewriteStyle || 'default'}`)
     console.log(`   Text length: ${text.length} chars`)
+    if (senderName) console.log(`   From: ${senderName}`)
+    if (senderLocation) console.log(`   Location: ${senderLocation}`)
 
     // Build the rewrite prompt based on app idea
     let prompt = ''
     
     if (appIdea && appIdea.includes('letter') && appIdea.includes('grandparent')) {
-      // Grandparent letter rewriting
+      // Grandparent letter rewriting with personalization
+      const signoff = senderName ? `With love from your grandparent,\n${senderName}${senderLocation ? ' in ' + senderLocation : ''}` : 'With all my love,'
+      const salutation = recipientName ? `Dear ${recipientName},` : 'Dear my loved one,'
+      
       prompt = `You are a heartwarming letter writer. Transform this message into a beautiful, kind letter from a loving grandparent to their grandchild.
 
 Original message:
 "${text}"
 
+PERSONALIZATION:
+- Start with: "${salutation}"
+- End with: "${signoff}"
+- Include the grandparent's wisdom, warmth, and deep affection throughout
+
 Write a warm, loving letter that captures the sentiment of the original message but elevates it with grandparental wisdom, affection, and tenderness. Include personal touches like terms of endearment and expressions of love.
 
 Keep it to 2-3 paragraphs.
 
-Return ONLY the letter text, no other commentary.`
+Return ONLY the complete letter (including the salutation and sign-off above), no other commentary.`
     } else if (rewriteStyle === 'poem') {
       prompt = `Transform this into a beautiful poem:
 
