@@ -184,11 +184,14 @@ How It Works: ${howItWorks}
 ${qaContext}
 
 IDENTIFY ALL FEATURES:
-Analyze the app idea and identify ALL distinct features/sections/pages:
+Analyze the app idea AND USER ANSWERS to identify ALL distinct features/sections/pages:
+- Check the answers for mentions of "write", "create", "compose", "letter", "poem" → include composition
+- Check the answers for mentions of "search", "find", "browse", "discover", "read", "view" → include discovery/search
 - If it's a "write AND view" app → include BOTH composition AND browsing sections
 - If it's a "create AND search" app → include BOTH creation AND search/discovery sections
 - If it mentions multiple actions → implement ALL of them
 - DO NOT OMIT ANY PART of the idea - if the user described something, build it
+- For grandparent apps: ALWAYS check if answers mention search/discovery and include that feature
 
 NAVIGATION STRUCTURE:
 - Create clear tabs, buttons, or sections to switch between features
@@ -197,28 +200,60 @@ NAVIGATION STRUCTURE:
 - Use buttons/links to switch between sections
 
 SPECIAL HANDLING FOR GRANDPARENT APPS:
-If the app idea mentions "grandparent", "letter", or "correspondence":
+If the app idea mentions "grandparent", "letter", "poem", "correspondence", "search", or "find":
+BUILD BOTH FEATURES if mentioned in answers:
+
+FEATURE 1: WRITE/CREATE LETTERS/POEMS (if mentioned in answers):
 1. FIRST SCREEN: Collect user information
    - Input field: "Your Name (Grandparent's name)" - text input
    - Input field: "Your Location" - text input (city, state or just city)
    - Button: "Continue" - saves info to localStorage
    
-2. SECOND SCREEN: Letter composition
+2. SECOND SCREEN: Composition (Letter or Poem - match the answer)
    - Show the saved name and location at top (e.g., "Letter from [Name] in [Location]")
    - Textarea: "Your message to your grandchild" - large text area for typing
-   - Button: "Transform into Letter" - calls the rewrite API with the user's info
-   - Show loading state: "Transforming your message into a heartfelt letter..."
+   - Check answers: if mentions "poem" → ask for poem topic; if mentions "letter" → ask for letter content
+   - Button: "Transform into [Letter/Poem]" - calls the rewrite API with the user's info
+   - Show loading state: "Transforming your message..."
    
-3. DISPLAY REWRITTEN LETTER
-   - Prominently display the AI-generated letter
-   - Include the personalization: "Dear [Grandchild name], ... From your loving Grandpa/Grandma [Name] in [Location]"
-   - Button: "Copy Letter" - copy to clipboard
-   - Button: "Save Letter" - save to localStorage and show in history
+3. DISPLAY REWRITTEN RESULT
+   - Prominently display the AI-generated letter/poem
+   - Include the personalization: "From your loving [Grandpa/Grandma] [Name] in [Location]"
+   - Button: "Copy" - copy to clipboard
+   - Button: "Save" - save to localStorage and show in history
    
-4. VIEW SAVED LETTERS
-   - Tab or section showing all previously saved letters
+4. VIEW SAVED LETTERS/POEMS
+   - Tab or section showing all previously saved items
    - Display each with date created and a preview
-   - Ability to view full text, copy, or delete each letter
+   - Ability to view full text, copy, or delete each item
+
+FEATURE 2: SEARCH/BROWSE/DISCOVER LETTERS/POEMS (if mentioned in answers):
+If answers mention "search", "find", "browse", "discover", or "grandkids read letters":
+1. SEARCH INTERFACE
+   - Input field: "Search by grandparent name" - search by name
+   - Input field: "Search by location" - search by city/state
+   - Dropdown or filter: "Type" - Filter by Letter, Poem, or All
+   - Button: "Search" - populate results below
+   
+2. BROWSE ALL / SEARCH RESULTS
+   - Display cards or list of available letters/poems
+   - Each item shows: Grandparent Name, Location, Type (Letter/Poem), Date, Preview (first 100 chars)
+   - Click to expand and read full text
+   - Show "No results found" if search returns nothing
+   
+3. VIEW FULL LETTER/POEM
+   - Display complete text
+   - Show sender info: "From [Name] in [Location]"
+   - Show type: "Letter" or "Poem"
+   - Button: "Copy Full Text" - copy to clipboard
+   - Button: "Share" - share via link or social
+   - Button: "Back to Results" - return to search/browse
+
+BOTH FEATURES MUST HAVE NAVIGATION:
+- Create TAB NAVIGATION or BUTTON NAVIGATION at the top
+- Tab 1: "Write [Letter/Poem]" - composition feature
+- Tab 2: "Search & Read" or "Browse Letters" - search/discovery feature
+- User can switch between tabs easily
 
 AI TEXT REWRITING API (MUST BE USED):
 If the app needs to transform/rewrite user input using AI, ALWAYS use this backend API:
@@ -279,19 +314,37 @@ CRITICAL REQUIREMENTS:
 1. Generate a COMPLETE, WORKING single-file HTML+CSS+JavaScript app
 2. The app MUST BE FUNCTIONAL - users should be able to USE it immediately
 3. MUST be SPECIFIC to the above idea - NOT generic, NOT a form asking for input
-4. Generate ALL features mentioned in the idea - nothing should be missing
-5. Include navigation to switch between all feature sections
-6. Make it interactive and polished
-7. Use Tailwind CSS from CDN (https://cdn.tailwindcss.com)
-8. Include all CSS and JavaScript inline - no external files
-9. Make the UI professional and modern
-10. If the app transforms/rewrites text with AI, MUST integrate the API call above
-11. Show loading spinner with "Transforming..." message while waiting for API response
-12. Display the rewritten text prominently after API returns
-13. Include error handling if the API call fails (show error message to user)
-14. Store data in localStorage so it persists across page refreshes
+4. Generate ALL FEATURES mentioned in the idea AND ANSWERS - nothing should be missing
+5. If answers mention "search" or "find" → MUST include search/discovery feature
+6. If answers mention "letter" or "poem" → MUST include composition feature
+7. If answers mention BOTH → MUST include BOTH with tab navigation or menu switching
+8. Include navigation to switch between all feature sections
+9. Make it interactive and polished
+10. Use Tailwind CSS from CDN (https://cdn.tailwindcss.com)
+11. Include all CSS and JavaScript inline - no external files
+12. Make the UI professional and modern
+13. If the app transforms/rewrites text with AI, MUST integrate the API call above
+14. Show loading spinner with "Transforming..." message while waiting for API response
+15. Display the rewritten text prominently after API returns
+16. Include error handling if the API call fails (show error message to user)
+17. Store data in localStorage so it persists across page refreshes
+18. For grandparent apps: Check if answers mention search/discovery and ALWAYS include that feature
 
 IMPORTANT: This is the ACTUAL COMPLETE APP, not a demo or template. Users should be able to use EVERY FEATURE right away without switching apps or reloading.
+
+FINAL VALIDATION CHECKLIST:
+Before you output the HTML, verify that your app includes:
+- [ ] All features mentioned in the APP IDEA - check all mentions of features
+- [ ] All features mentioned in USER ANSWERS - check if answers mention "search", "write", "compose", "read", etc.
+- [ ] If a grandparent app mentions both writing AND searching: both features are present with clear navigation
+- [ ] Tab navigation or button navigation to switch between features (if multiple features)
+- [ ] localStorage implementation for persistence
+- [ ] API integration if the app needs to rewrite/transform text
+- [ ] Error handling and loading states
+- [ ] Professional, polished UI
+- [ ] NO placeholder text asking users for input - the app should function as described, not as a form
+
+If any feature from the idea or answers is missing from your HTML, ADD IT before returning.
 
 RETURN ONLY: Complete HTML starting with <!DOCTYPE html>. No markdown. No code blocks. Just HTML.`
 
