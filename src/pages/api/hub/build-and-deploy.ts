@@ -183,17 +183,46 @@ Problem It Solves: ${problemSolved}
 How It Works: ${howItWorks}
 ${qaContext}
 
+IDENTIFY ALL FEATURES:
+Analyze the app idea and identify ALL distinct features/sections/pages:
+- If it's a "write AND view" app → include BOTH composition AND browsing sections
+- If it's a "create AND search" app → include BOTH creation AND search/discovery sections
+- If it mentions multiple actions → implement ALL of them
+- DO NOT OMIT ANY PART of the idea - if the user described something, build it
+
+NAVIGATION STRUCTURE:
+- Create clear tabs, buttons, or sections to switch between features
+- Start with the FIRST/MAIN feature visible by default
+- Make all features easily accessible from navigation
+- Use buttons/links to switch between sections
+
+AI TEXT REWRITING API:
+If the app needs to transform/rewrite user input using AI, use this backend endpoint:
+- URL: https://take-the-reins.ai/api/hub/rewrite-with-ai
+- Method: POST
+- Body: { "text": "user input", "appName": "${appName}", "appIdea": "${appIdea}", "rewriteStyle": "letter" | "poem" | "professional" | "casual" }
+- Response: { "success": true, "original": "...", "rewritten": "..." }
+- For grandparent letters: use rewriteStyle: "letter"
+- For poems: use rewriteStyle: "poem"
+- This endpoint uses OpenAI to intelligently transform text according to the style
+
 CRITICAL REQUIREMENTS:
 1. Generate a COMPLETE, WORKING single-file HTML+CSS+JavaScript app
 2. The app MUST BE FUNCTIONAL - users should be able to USE it immediately
 3. MUST be SPECIFIC to the above idea - NOT generic, NOT a form asking for input
-4. Include all features mentioned in the idea
-5. Make it interactive and polished
-6. Use Tailwind CSS from CDN (https://cdn.tailwindcss.com)
-7. Include all CSS and JavaScript inline - no external files
-8. Make the UI professional and modern
+4. Generate ALL features mentioned in the idea - nothing should be missing
+5. Include navigation to switch between all feature sections
+6. Make it interactive and polished
+7. Use Tailwind CSS from CDN (https://cdn.tailwindcss.com)
+8. Include all CSS and JavaScript inline - no external files
+9. Make the UI professional and modern
+10. If the app transforms/rewrites text with AI, integrate the rewrite API above
+11. Show loading state while waiting for AI rewriting
+12. Display both original and transformed text side-by-side or one after another
+13. Include local storage to persist user data so it's not lost on page reload
+14. Implement ALL major features - if you can only fit some features, choose the core ones and indicate which are essential
 
-IMPORTANT: This is the ACTUAL APP, not a demo or template. Users should be able to use it right away.
+IMPORTANT: This is the ACTUAL COMPLETE APP, not a demo or template. Users should be able to use EVERY FEATURE right away without switching apps or reloading.
 
 RETURN ONLY: Complete HTML starting with <!DOCTYPE html>. No markdown. No code blocks. Just HTML.`
 
