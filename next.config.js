@@ -3,8 +3,10 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: false,
   output: 'standalone',
-  experimental: {
-    optimizePackageImports: ['@supabase/supabase-js'],
+  staticPageGenerationTimeout: 300,
+  onDemandEntries: {
+    maxInactiveAge: 60 * 1000,
+    pagesBufferLength: 5,
   },
   async redirects() {
     return [
