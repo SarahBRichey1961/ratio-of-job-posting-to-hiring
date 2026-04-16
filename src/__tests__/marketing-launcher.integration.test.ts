@@ -169,7 +169,7 @@ describe('Marketing Launcher - End-to-End Tests', () => {
       const { data, error } = await authClient
         .from('marketing_campaigns')
         .select('*')
-        .eq('creator_id: testUser.id)
+        .eq('creator_id', testUser.id)
 
       expect(error).toBeNull()
       expect(data).toBeDefined()
