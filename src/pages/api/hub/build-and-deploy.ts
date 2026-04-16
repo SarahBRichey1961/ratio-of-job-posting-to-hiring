@@ -59,7 +59,7 @@ export default async function buildAndDeploy(req: NextApiRequest, res: NextApiRe
   }
 
   const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN
-  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 
   if (!NETLIFY_TOKEN) {
     console.error(`❌ NETLIFY_TOKEN missing`)
@@ -87,30 +87,30 @@ export default async function buildAndDeploy(req: NextApiRequest, res: NextApiRe
     console.log(`\n🚀 BUILD REQUEST: ${appName}`)
     console.log(`   Idea: ${appIdea}`)
 
-    // STEP 1: Generate custom app using Claude
-    console.log(`\n1️⃣ Generating custom app with Claude...`)
+    // STEP 1: Generate custom app using OpenAI
+    console.log(`\n1️⃣ Generating custom app with OpenAI...`)
     let customHtml = ''
     
-    if (ANTHROPIC_API_KEY) {
+    if (OPENAI_API_KEY) {
       try {
-        const claudeResponse = await generateCustomAppWithClaude(
+        const gptResponse = await generateCustomAppWithOpenAI(
           appName,
           appIdea,
           targetUser,
           problemSolved,
           howItWorks,
-          ANTHROPIC_API_KEY,
+          OPENAI_API_KEY,
           req_body.questions,
           req_body.answers
         )
-        customHtml = claudeResponse
+        customHtml = gptResponse
         console.log(`   ✅ Custom app generated (${customHtml.length} bytes)`)
-      } catch (claudeErr) {
-        console.warn(`   ⚠️ Claude generation failed, falling back to template:`, claudeErr instanceof Error ? claudeErr.message : String(claudeErr))
+      } catch (gptErr) {
+        console.warn(`   ⚠️ OpenAI generation failed, falling back to template:`, gptErr instanceof Error ? gptErr.message : String(gptErr))
         customHtml = ''
       }
     } else {
-      console.warn(`   ⚠️ ANTHROPIC_API_KEY not set, using template`)
+      console.warn(`   ⚠️ OPENAI_API_KEY not set, using template`)
     }
 
     // STEP 2: Generate files for deployment
@@ -145,9 +145,9 @@ export default async function buildAndDeploy(req: NextApiRequest, res: NextApiRe
 }
 
 /**
- * Generate custom app HTML using Claude
+ * Generate custom app HTML using OpenAI GPT-4o
  */
-async function generateCustomAppWithClaude(
+async function generateCustomAppWithOpenAI(
   appName: string,
   appIdea: string,
   targetUser: string,
@@ -191,46 +191,46 @@ IMPORTANT: This is the ACTUAL APP, not a demo or template. Users should be able 
 
 RETURN ONLY: Complete HTML starting with <!DOCTYPE html>. No markdown. No code blocks. Just HTML.`
 
-  console.log(`   📤 Sending to Claude...`)
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  console.log(`   📤 Sending to OpenAI...`)
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+      'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 6000,
+      model: 'gpt-4o',
       messages: [
         {
           role: 'user',
           content: prompt,
         },
       ],
+      temperature: 0.7,
+      max_tokens: 6000,
     }),
   })
 
   if (!response.ok) {
     const error = await response.text()
-    console.error(`   ❌ Claude API error (${response.status}):`, error)
-    throw new Error(`Claude API failed (${response.status}): ${error}`)
+    console.error(`   ❌ OpenAI API error (${response.status}):`, error)
+    throw new Error(`OpenAI API failed (${response.status}): ${error}`)
   }
 
   const data = await response.json()
-  const htmlContent = data.content[0]?.text
+  const htmlContent = data.choices?.[0]?.message?.content
 
   if (!htmlContent) {
-    console.error(`   ❌ No content in Claude response:`, data)
-    throw new Error('Empty response from Claude')
+    console.error(`   ❌ No content in OpenAI response:`, data)
+    throw new Error('Empty response from OpenAI')
   }
 
   if (!htmlContent.includes('<!DOCTYPE')) {
     console.error(`   ❌ Invalid HTML response (no DOCTYPE found). Content preview:`, htmlContent.substring(0, 200))
-    throw new Error('Invalid HTML response from Claude (missing DOCTYPE)')
+    throw new Error('Invalid HTML response from OpenAI (missing DOCTYPE)')
   }
 
-  console.log(`   ✅ Claude generated ${htmlContent.length} bytes of HTML`)
+  console.log(`   ✅ OpenAI generated ${htmlContent.length} bytes of HTML`)
   return htmlContent
 }
 
