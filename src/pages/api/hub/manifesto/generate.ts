@@ -4,7 +4,7 @@ import { getSupabase } from '@/lib/supabase'
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 const STABILITY_API_KEY = process.env.STABILITY_API_KEY
-const BASE_URL = process.env.NEXT_PUBLIC_MANIFESTO_BASE_URL || 'https://takethereigns.ai'
+const BASE_URL = process.env.NEXT_PUBLIC_MANIFESTO_BASE_URL || 'https://take-the-reins.ai'
 
 // Background function to generate Stability AI meme (fire and forget, don't wait)
 // Stability AI is 3-5x faster than DALL-E
