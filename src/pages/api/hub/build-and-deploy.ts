@@ -11,6 +11,8 @@ interface RequestBody {
   interests?: string
   technologies?: string[]
   buildPlan?: string[]
+  questions?: string[]
+  answers?: string[]
 }
 
 /**
@@ -57,7 +59,7 @@ export default async function buildAndDeploy(req: NextApiRequest, res: NextApiRe
   }
 
   const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN
-  const OPENAI_API_KEY = process.env.OPENAI_API_KEY
+  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
 
   if (!NETLIFY_TOKEN) {
     console.error(`❌ NETLIFY_TOKEN missing`)
@@ -85,19 +87,43 @@ export default async function buildAndDeploy(req: NextApiRequest, res: NextApiRe
     console.log(`\n🚀 BUILD REQUEST: ${appName}`)
     console.log(`   Idea: ${appIdea}`)
 
-    // STEP 1: Generate React + Vite app
-    console.log(`\n1️⃣ Generating app code...`)
-    const files = generateReactViteApp(appName, appIdea, targetUser, problemSolved, howItWorks, OPENAI_API_KEY)
+    // STEP 1: Generate custom app using Claude
+    console.log(`\n1️⃣ Generating custom app with Claude...`)
+    let customHtml = ''
+    
+    if (ANTHROPIC_API_KEY) {
+      try {
+        const claudeResponse = await generateCustomAppWithClaude(
+          appName,
+          appIdea,
+          targetUser,
+          problemSolved,
+          howItWorks,
+          ANTHROPIC_API_KEY,
+          req_body.questions,
+          req_body.answers
+        )
+        customHtml = claudeResponse
+        console.log(`   ✅ Custom app generated (${customHtml.length} bytes)`)
+      } catch (claudeErr) {
+        console.warn(`   ⚠️ Claude generation failed, falling back to template:`, claudeErr instanceof Error ? claudeErr.message : String(claudeErr))
+        customHtml = ''
+      }
+    } else {
+      console.warn(`   ⚠️ ANTHROPIC_API_KEY not set, using template`)
+    }
+
+    // STEP 2: Generate files for deployment
+    console.log(`\n2️⃣ Preparing deployment files...`)
+    const files = customHtml 
+      ? [{ path: 'index.html', content: customHtml }]
+      : generateReactViteApp(appName, appIdea, targetUser, problemSolved, howItWorks)
     console.log(`   ✅ Generated ${files.length} files`)
 
-    // STEP 2: Deploy to Netlify
-    console.log(`\n2️⃣ Deploying to Netlify...`)
+    // STEP 3: Deploy to Netlify
+    console.log(`\n3️⃣ Deploying to Netlify...`)
     const liveUrl = await deployToNetlifyDirect(NETLIFY_TOKEN, appName, files)
     console.log(`   ✅ Live at: ${liveUrl}`)
-
-    // STEP 3: Record in database (optional, for tracking)
-    console.log(`\n3️⃣ Recording app...`)
-    // TODO: Save to Supabase with app metadata
 
     console.log(`\n✨ APP COMPLETE: ${liveUrl}\n`)
 
@@ -116,6 +142,85 @@ export default async function buildAndDeploy(req: NextApiRequest, res: NextApiRe
     if (stack) console.error(`   Stack: ${stack.split('\n').slice(0, 3).join('\n   ')}`)
     return res.status(500).json({ error: msg })
   }
+}
+
+/**
+ * Generate custom app HTML using Claude
+ */
+async function generateCustomAppWithClaude(
+  appName: string,
+  appIdea: string,
+  targetUser: string,
+  problemSolved: string,
+  howItWorks: string,
+  apiKey: string,
+  questions?: string[],
+  answers?: string[]
+): Promise<string> {
+  // Build Q&A context if available
+  let qaContext = ''
+  if (questions && answers && questions.length > 0) {
+    qaContext = '\n\nUSER\'S DETAILED ANSWERS TO CLARIFYING QUESTIONS:\n'
+    questions.forEach((q, i) => {
+      qaContext += `Q: ${q}\nA: ${answers?.[i] || 'Not answered'}\n\n`
+    })
+    qaContext += 'Use these specific answers to build an app that directly addresses their needs.'
+  }
+
+  const prompt = `You are an expert web developer. Generate a CUSTOM, FUNCTIONAL web app that matches THIS SPECIFIC request.
+
+APP SPECIFICATION:
+- Name: ${appName}
+- Main Idea: ${appIdea}
+- Target User: ${targetUser}
+- Problem It Solves: ${problemSolved}
+- How It Works: ${howItWorks}
+${qaContext}
+
+CRITICAL REQUIREMENTS:
+1. Generate a COMPLETE, WORKING single-file HTML+CSS+JavaScript app
+2. The app should be SPECIFIC to the problem/user/idea above - NOT generic
+3. Make it functional and interactive
+4. Include realistic features that address the stated problem
+5. Use Tailwind CSS from CDN (https://cdn.tailwindcss.com)
+6. Make it professional and polished
+7. Include all CSS and JavaScript inline - no external files
+8. Add a favicon (use inline SVG data URI)
+
+RESPONSE: Return ONLY the complete HTML code, starting with <!DOCTYPE html>. No markdown. No code blocks. Just pure HTML.`
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 4000,
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    }),
+  })
+
+  if (!response.ok) {
+    const error = await response.text()
+    throw new Error(`Claude API failed (${response.status}): ${error}`)
+  }
+
+  const data = await response.json()
+  const htmlContent = data.content[0].text
+
+  if (!htmlContent || !htmlContent.includes('<!DOCTYPE')) {
+    throw new Error('Invalid HTML response from Claude')
+  }
+
+  return htmlContent
 }
 
 /**
@@ -243,19 +348,16 @@ async function deployToNetlifyDirect(
 }
 
 /**
- * Generate a complete Vite + React app with ChatGPT integration
+ * Generate a fallback app (used when Claude generation fails)
+ * This is customized to show the problem/solution/target user at least
  */
 function generateReactViteApp(
   appName: string,
   appIdea: string,
   targetUser: string,
   problemSolved: string,
-  howItWorks: string,
-  openaiKey?: string
+  howItWorks: string
 ): Array<{ path: string; content: string }> {
-  const sanitizedName = appName.replace(/[^a-z0-9]/gi, '')
-  const hasOpenAI = !!openaiKey
-
   return [
     {
       path: 'index.html',
@@ -265,6 +367,7 @@ function generateReactViteApp(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${appName}</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
@@ -347,6 +450,7 @@ function generateReactViteApp(
   </script>
   <footer style="text-align: center; padding: 20px; background: #f8f9fa; color: #666; border-top: 1px solid #e0e0e0; margin-top: 40px;">
     <p>Build your income-generating app with confidence and clarity</p>
+    <p style="margin-top: 12px; font-size: 0.9em; color: #999;">${appName} • Built for ${targetUser}</p>
   </footer>
 </body>
 </html>`,
