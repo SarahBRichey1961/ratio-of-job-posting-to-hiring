@@ -3,7 +3,7 @@ import { getSupabase, getAuthenticatedSupabase } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 
-const BASE_URL = process.env.NEXT_PUBLIC_MANIFESTO_BASE_URL || 'https://takethereigns.ai'
+const BASE_URL = process.env.NEXT_PUBLIC_MANIFESTO_BASE_URL || 'https://take-the-reins.ai'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
