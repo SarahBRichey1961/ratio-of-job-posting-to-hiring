@@ -324,6 +324,9 @@ export default function BuildTheDamnThing() {
             interests: formData.interests,
             technologies: (editedPrototype || prototype)?.technologies || [],
             buildPlan: (editedPrototype || prototype)?.buildPlan || [],
+            // Include clarifying questions and answers for custom app generation
+            questions: clarifyingQuestions?.questions || [],
+            answers: answers,
           }),
           // @ts-ignore
           signal: controller.signal,
