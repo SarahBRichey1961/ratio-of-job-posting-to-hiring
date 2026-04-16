@@ -1103,7 +1103,20 @@ export default function BuildTheDamnThing() {
               </ul>
             </div>
 
+            <div className="bg-indigo-900/30 border border-indigo-700/50 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-indigo-100 mb-3">🔄 Want to Refine Your App?</h3>
+              <p className="text-indigo-200 text-sm mb-4">
+                Click "Back to Questions" to review and modify the questions I asked you. You can add more requirements (like search functionality, poem writing options, etc.) and I'll regenerate your app with those improvements included. Same app URL - just better features!
+              </p>
+            </div>
+
             <div className="flex gap-4">
+              <button
+                onClick={() => setStep(4)}
+                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 px-6 rounded-lg transition"
+              >
+                ← Back to Questions
+              </button>
               <button
                 onClick={handleReset}
                 className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
