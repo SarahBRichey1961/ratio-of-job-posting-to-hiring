@@ -207,7 +207,7 @@ FEATURE 1: WRITE/CREATE LETTERS/POEMS (if mentioned in answers):
 1. FIRST SCREEN: Collect user information
    - Input field: "Your Name (Grandparent's name)" - text input
    - Input field: "Your Location" - text input (city, state or just city)
-   - Button: "Continue" - saves info to localStorage
+   - Button: "Continue" - saves info to sessionStorage (temporary)
    
 2. SECOND SCREEN: Composition (Letter or Poem - match the answer)
    - Show the saved name and location at top (e.g., "Letter from [Name] in [Location]")
@@ -220,12 +220,13 @@ FEATURE 1: WRITE/CREATE LETTERS/POEMS (if mentioned in answers):
    - Prominently display the AI-generated letter/poem
    - Include the personalization: "From your loving [Grandpa/Grandma] [Name] in [Location]"
    - Button: "Copy" - copy to clipboard
-   - Button: "Save" - save to localStorage and show in history
+   - Button: "Save" - SAVES TO DATABASE via API call to /api/hub/app-submission-save
    
 4. VIEW SAVED LETTERS/POEMS
    - Tab or section showing all previously saved items
+   - Call /api/hub/app-submission-search?appName=[APP_NAME]&name=[optional]&location=[optional]
    - Display each with date created and a preview
-   - Ability to view full text, copy, or delete each item
+   - Click to view full text via /api/hub/app-submission/[id]
 
 FEATURE 2: SEARCH/BROWSE/DISCOVER LETTERS/POEMS (if mentioned in answers):
 If answers mention "search", "find", "browse", "discover", or "grandkids read letters":
@@ -233,16 +234,16 @@ If answers mention "search", "find", "browse", "discover", or "grandkids read le
    - Input field: "Search by grandparent name" - search by name
    - Input field: "Search by location" - search by city/state
    - Dropdown or filter: "Type" - Filter by Letter, Poem, or All
-   - Button: "Search" - populate results below
+   - Button: "Search" - calls /api/hub/app-submission-search?appName=[APP_NAME]&name=[name]&location=[location]&type=[type]
    
 2. BROWSE ALL / SEARCH RESULTS
-   - Display cards or list of available letters/poems
+   - Displays results from database API call
    - Each item shows: Grandparent Name, Location, Type (Letter/Poem), Date, Preview (first 100 chars)
-   - Click to expand and read full text
+   - Click to expand and load full text via /api/hub/app-submission/[id]
    - Show "No results found" if search returns nothing
    
 3. VIEW FULL LETTER/POEM
-   - Display complete text
+   - Display complete text fetched from database
    - Show sender info: "From [Name] in [Location]"
    - Show type: "Letter" or "Poem"
    - Button: "Copy Full Text" - copy to clipboard
@@ -308,26 +309,29 @@ REQUIREMENTS FOR AI REWRITING:
 6. Display both original and rewritten side-by-side if possible
 7. Make the "Transform/Rewrite" button functional and obvious
 8. Add "Copy" button so user can copy the generated letter
-9. Add "Save" button to save letter to localStorage with timestamp
+9. Add "Save" button to save letter to DATABASE via /api/hub/app-submission-save
 
 CRITICAL REQUIREMENTS:
 1. Generate a COMPLETE, WORKING single-file HTML+CSS+JavaScript app
 2. The app MUST BE FUNCTIONAL - users should be able to USE it immediately
 3. MUST be SPECIFIC to the above idea - NOT generic, NOT a form asking for input
 4. Generate ALL FEATURES mentioned in the idea AND ANSWERS - nothing should be missing
-5. If answers mention "search" or "find" → MUST include search/discovery feature
-6. If answers mention "letter" or "poem" → MUST include composition feature
+5. If answers mention "search" or "find" → MUST include search/discovery feature using DATABASE API
+6. If answers mention "letter" or "poem" → MUST include composition feature with SAVE TO DATABASE
 7. If answers mention BOTH → MUST include BOTH with tab navigation or menu switching
 8. Include navigation to switch between all feature sections
 9. Make it interactive and polished
-10. Use Tailwind CSS from CDN (https://cdn.tailwindcss.com)
+10. Use Tailwind CSS from jsDelivr CDN (https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css) - production ready
 11. Include all CSS and JavaScript inline - no external files
 12. Make the UI professional and modern
 13. If the app transforms/rewrites text with AI, MUST integrate the API call above
 14. Show loading spinner with "Transforming..." message while waiting for API response
 15. Display the rewritten text prominently after API returns
 16. Include error handling if the API call fails (show error message to user)
-17. Store data in localStorage so it persists across page refreshes
+17. For save/search features: Use these DATABASE API endpoints (NOT localStorage):
+    - SAVE: POST /api/hub/app-submission-save with body { appName, appIdea, name, location, submissionType, content }
+    - SEARCH: GET /api/hub/app-submission-search?appName=[APP_NAME]&name=[optional]&location=[optional]&type=[optional]
+    - GET DETAIL: GET /api/hub/app-submission/[id]
 18. For grandparent apps: Check if answers mention search/discovery and ALWAYS include that feature
 
 IMPORTANT: This is the ACTUAL COMPLETE APP, not a demo or template. Users should be able to use EVERY FEATURE right away without switching apps or reloading.
@@ -536,7 +540,7 @@ function generateReactViteApp(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${appName}</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
   </style>
