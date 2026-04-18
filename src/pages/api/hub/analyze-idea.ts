@@ -25,6 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       `For ${targetUser}, what's the BIGGEST frustration or pain point that "${appName}" would solve? How do you know this is really what they need?`,
       `Describe exactly how a ${targetUser} would use "${appName}" step-by-step. What would the first 10 seconds look like?`,
       `What would make a ${targetUser} choose "${appName}" instead of what they currently do? What's the competitive advantage?`,
+      `How do you want the background colors, font colors, and text justification (left, center, or right aligned) formatted for "${appName}" to appeal to ${targetUser}?`,
       `If you had to charge ${targetUser} for "${appName}", what's the maximum they'd pay and why?`,
       `What's one technical limitation or "hard problem" in "${mainIdea}" that you're not sure how to solve for ${targetUser}?`,
       `How would you find and convince the first 10 ${targetUser} to actually try "${appName}"?`,
@@ -52,8 +53,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const data = await generateResponse.json()
+    const questions = data.questions || generateFallbackQuestions()
+    
+    // GUARANTEE the styling question is in the list - append if not present
+    const stylingQuestion = `How do you want the background colors, font colors, and text justification (left, center, or right aligned) formatted for "${appName}" to appeal to ${targetUser}?`
+    const hasStyleQuestion = questions.some((q: string) => 
+      q.toLowerCase().includes('background') || 
+      q.toLowerCase().includes('color') || 
+      q.toLowerCase().includes('text') || 
+      q.toLowerCase().includes('alignment') ||
+      q.toLowerCase().includes('formatting')
+    )
+    
+    if (!hasStyleQuestion && questions.length > 0) {
+      // Insert styling question as 4th question (after first 3)
+      questions.splice(Math.min(3, questions.length), 0, stylingQuestion)
+    }
+    
     return res.status(200).json({
-      questions: data.questions || generateFallbackQuestions(),
+      questions: questions,
     })
   } catch (err) {
     console.error('Error analyzing idea:', err)

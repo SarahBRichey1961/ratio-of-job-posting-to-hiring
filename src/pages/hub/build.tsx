@@ -771,8 +771,14 @@ export default function BuildTheDamnThing() {
                 {loading ? 'Generating prototype...' : '🎯 Generate Prototype'}
               </button>
               <button
+                onClick={() => setStep(2)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition"
+              >
+                ← Edit Idea
+              </button>
+              <button
                 onClick={handleReset}
-                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
+                className="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
               >
                 Start Over
               </button>
@@ -1041,14 +1047,20 @@ export default function BuildTheDamnThing() {
                 {loading ? '🚀 Building, Testing & Deploying...' : '🚀 Build It, Test It, Deploy It!'}
               </button>
               <button
-                onClick={handleReset}
-                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
+                onClick={() => setStep(2)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition"
               >
-                💡 Build Another Idea
+                ← Edit Form
+              </button>
+              <button
+                onClick={handleReset}
+                className="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
+              >
+                💡 Build Another
               </button>
               <Link
                 href="/hub"
-                className="flex-1 text-center bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
+                className="text-center bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition"
               >
                 Back to Hub
               </Link>
@@ -1116,6 +1128,12 @@ export default function BuildTheDamnThing() {
                 className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 px-6 rounded-lg transition"
               >
                 ← Back to Questions
+              </button>
+              <button
+                onClick={() => setStep(2)}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition"
+              >
+                ← Edit Idea
               </button>
               <button
                 onClick={handleReset}
