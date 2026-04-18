@@ -265,58 +265,7 @@ If the app needs to transform/rewrite user input using AI, ALWAYS use this backe
 - Response: { "success": true, "original": "...", "rewritten": "..." }
 - For grandparent letters: ALWAYS use rewriteStyle: "letter"
 
-SAVE/SEARCH DATABASE API (MUST BE USED FOR PERSISTENCE):
-For apps that save or search, use these EXACT APIs with FULL URLS (NOT relative paths):
-
-1. SAVE TO DATABASE:
-```javascript
-const response = await fetch('https://take-the-reins.ai/api/hub/app-submission-save', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    appName: '${appName}',
-    appIdea: '${appIdea}',
-    name: senderName,      // user's name
-    location: senderLocation,  // user's location (optional)
-    submissionType: 'letter',  // 'letter', 'poem', 'message', etc.
-    content: letterContent  // the full text to save
-  })
-});
-const data = await response.json();
-if (data.success) {
-  console.log('Saved! ID:', data.id);
-} else {
-  console.error('Save failed:', data.error);
-}
-```
-
-2. SEARCH DATABASE:
-```javascript
-const nameParam = encodeURIComponent(searchName || '');
-const locationParam = encodeURIComponent(searchLocation || '');
-const response = await fetch(`https://take-the-reins.ai/api/hub/app-submission-search?appName=${appName}&name=\${nameParam}&location=\${locationParam}&type=letter`);
-const data = await response.json();
-if (data.success) {
-  // data.results is array of {id, name, location, submissionType, preview, createdAt}
-  results.forEach(item => console.log(item));
-}
-```
-
-3. GET FULL SUBMISSION:
-```javascript
-const response = await fetch(`https://take-the-reins.ai/api/hub/app-submission/\${submissionId}`);
-const data = await response.json();
-if (data.success) {
-  console.log('Full content:', data.submission.content);
-}
-```
-
-CRITICAL REQUIREMENT:
-- ALWAYS use FULL URLS starting with https://take-the-reins.ai/api/hub/ 
-- NEVER use relative paths like /api/hub/
-- URLs in JavaScript must use backticks and ${} for string interpolation
-
-JAVASCRIPT CODE EXAMPLE for calling the rewrite API:
+JAVASCRIPT CODE EXAMPLE for calling the API:
 \`\`\`javascript
 async function rewriteWithAI(text, senderName, senderLocation) {
   try {
@@ -372,56 +321,18 @@ CRITICAL REQUIREMENTS:
 7. If answers mention BOTH → MUST include BOTH with tab navigation or menu switching
 8. Include navigation to switch between all feature sections
 9. Make it interactive and polished
-10. CRITICAL: Use ONLY inline CSS - NO external stylesheets or CDN resources
-    - DO NOT load Tailwind CSS from CDN (causes tracking prevention errors)
-    - DO NOT link to external fonts or resources
-    - Include ALL CSS directly in <style> tags in the <head>
-    - Create a professional UI with pure CSS (flexbox, grid, etc.) - no framework needed
-11. Include all CSS and JavaScript inline - no external files or CDN resources
-12. Make the UI professional and modern using pure CSS only
-13. CRITICAL: Include a favicon in the <head> section - use a data URI to avoid 404 errors:
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
-14. CRITICAL: ALL localStorage/sessionStorage access MUST be wrapped in try-catch blocks to handle tracking prevention:
-    Example: 
-    try {
-      localStorage.setItem('key', 'value');
-    } catch (e) {
-      console.warn('Storage unavailable (tracking prevention)');
-      // Use alternative storage like in-memory variables
-    }
-15. If the app transforms/rewrites text with AI, MUST integrate the API call above
-16. Show loading spinner with "Transforming..." message while waiting for API response
-17. Display the rewritten text prominently after API returns
-18. Include error handling if the API call fails (show error message to user)
-19. For save/search features: Use these DATABASE API endpoints (NOT localStorage):
-    - SAVE: POST https://take-the-reins.ai/api/hub/app-submission-save with body { appName, appIdea, name, location, submissionType, content }
-    - SEARCH: GET https://take-the-reins.ai/api/hub/app-submission-search?appName=[APP_NAME]&name=[optional]&location=[optional]&type=[optional]
-    - GET DETAIL: GET https://take-the-reins.ai/api/hub/app-submission/[id]
-20. For grandparent apps: Check if answers mention search/discovery and ALWAYS include that feature
-
-STYLING AND COLORS - CRITICAL:
-LOOK for styling answers in the USER ANSWERS section above. Find the answer that mentions "background color", "font color", or "text alignment".
-Extract those preferences and use them EXACTLY in your CSS:
-- If answer mentions specific colors (e.g., "dark blue background, white text") → use those EXACT colors
-- If answer mentions alignment (e.g., "center aligned", "left-aligned") → apply text-align to all content accordingly
-- If answer mentions a color scheme or theme → implement it throughout the UI
-- Create a color scheme based on these preferences and apply it to all backgrounds, text, buttons, and borders
-If styling answer is vague or not provided, use a professional dark theme with good contrast.
-
-API ENDPOINTS - CRITICAL:
-When calling backend APIs, MUST use FULL URLs starting with https://take-the-reins.ai/api/hub/
-NOT relative paths like /api/hub/
-- FULL URL for save: https://take-the-reins.ai/api/hub/app-submission-save
-- FULL URL for search: https://take-the-reins.ai/api/hub/app-submission-search
-- FULL URL for get detail: https://take-the-reins.ai/api/hub/app-submission
-Example JavaScript:
-```javascript
-const response = await fetch('https://take-the-reins.ai/api/hub/app-submission-save', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ appName: '${appName}', ... })
-});
-```
+10. Use Tailwind CSS from jsDelivr CDN (https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css) - production ready
+11. Include all CSS and JavaScript inline - no external files
+12. Make the UI professional and modern
+13. If the app transforms/rewrites text with AI, MUST integrate the API call above
+14. Show loading spinner with "Transforming..." message while waiting for API response
+15. Display the rewritten text prominently after API returns
+16. Include error handling if the API call fails (show error message to user)
+17. For save/search features: Use these DATABASE API endpoints (NOT localStorage):
+    - SAVE: POST /api/hub/app-submission-save with body { appName, appIdea, name, location, submissionType, content }
+    - SEARCH: GET /api/hub/app-submission-search?appName=[APP_NAME]&name=[optional]&location=[optional]&type=[optional]
+    - GET DETAIL: GET /api/hub/app-submission/[id]
+18. For grandparent apps: Check if answers mention search/discovery and ALWAYS include that feature
 
 IMPORTANT: This is the ACTUAL COMPLETE APP, not a demo or template. Users should be able to use EVERY FEATURE right away without switching apps or reloading.
 
@@ -431,9 +342,7 @@ Before you output the HTML, verify that your app includes:
 - [ ] All features mentioned in USER ANSWERS - check if answers mention "search", "write", "compose", "read", etc.
 - [ ] If a grandparent app mentions both writing AND searching: both features are present with clear navigation
 - [ ] Tab navigation or button navigation to switch between features (if multiple features)
-- [ ] Styling applied based on user's color/alignment preferences from the answers
-- [ ] localStorage implementation for persistence (with try-catch blocks)
-- [ ] API calls use FULL URLS to https://take-the-reins.ai/api/hub/ not relative paths
+- [ ] localStorage implementation for persistence
 - [ ] API integration if the app needs to rewrite/transform text
 - [ ] Error handling and loading states
 - [ ] Professional, polished UI
@@ -631,112 +540,58 @@ function generateReactViteApp(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${appName}</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-      color: #ffffff;
-      min-height: 100vh;
-    }
-    .container { max-width: 56rem; margin: 0 auto; padding: 4rem 1rem; }
-    .text-center { text-align: center; }
-    .mb-4 { margin-bottom: 1rem; }
-    .mb-6 { margin-bottom: 1.5rem; }
-    .mb-8 { margin-bottom: 2rem; }
-    .mb-12 { margin-bottom: 3rem; }
-    .mt-12 { margin-top: 3rem; }
-    .inline-block { display: inline-block; }
-    .grid { display: grid; }
-    .gap-4 { gap: 1rem; }
-    .gap-8 { gap: 2rem; }
-    .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-    .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
-    @media (max-width: 768px) {
-      .grid-cols-2, .grid-cols-3 { grid-template-columns: 1fr; }
-    }
-    h1 { font-size: 3rem; font-weight: bold; margin-bottom: 1rem; }
-    h2 { font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; color: #60a5fa; }
-    p { line-height: 1.6; }
-    .text-xl { font-size: 1.25rem; }
-    .text-lg { font-size: 1.125rem; }
-    .text-2xl { font-size: 1.5rem; }
-    .text-sm { font-size: 0.875rem; }
-    .text-slate-300 { color: #cbd5e1; }
-    .text-blue-400 { color: #60a5fa; }
-    .text-green-400 { color: #4ade80; }
-    .text-slate-400 { color: #94a3b8; }
-    .bg-slate-800-50 { background-color: rgba(30, 41, 59, 0.5); }
-    .bg-blue-900-30 { background-color: rgba(30, 58, 138, 0.3); }
-    .bg-slate-700-30 { background-color: rgba(51, 65, 85, 0.3); }
-    .bg-blue-600 { background-color: #2563eb; }
-    .bg-blue-600:hover { background-color: #1d4ed8; }
-    .border { border: 1px solid; }
-    .border-slate-700 { border-color: #334155; }
-    .border-blue-500-50 { border-color: rgba(59, 130, 246, 0.5); }
-    .border-slate-600 { border-color: #475569; }
-    .rounded-lg { border-radius: 0.5rem; }
-    .rounded-xl { border-radius: 0.75rem; }
-    .p-6 { padding: 1.5rem; }
-    .p-8 { padding: 2rem; }
-    .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
-    .px-8 { padding-left: 2rem; padding-right: 2rem; }
-    .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
-    .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
-    .text-white { color: #ffffff; }
-    .font-semibold { font-weight: 600; }
-    .transition { transition: all 0.2s ease; }
-    .cursor-pointer { cursor: pointer; }
-    .icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
   </style>
 </head>
-<body>
-  <div class="container">
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white min-h-screen">
+  <div class="max-w-4xl mx-auto px-4 py-16">
     <!-- Header -->
     <div class="text-center mb-12">
-      <div class="inline-block icon">🚀</div>
-      <h1>${appName}</h1>
+      <div class="inline-block mb-4 text-4xl">🚀</div>
+      <h1 class="text-5xl font-bold mb-4">${appName}</h1>
       <p class="text-xl text-slate-300 mb-8">${appIdea}</p>
-      <div class="inline-block bg-slate-800-50 border border-slate-600 rounded-lg p-6">
-        <p class="text-sm text-slate-300">🎯 Built for: <strong>${targetUser}</strong></p>
+      <div class="inline-block bg-slate-700/50 border border-slate-600 rounded-lg px-6 py-3">
+        <p class="text-sm text-slate-200">🎯 Built for: <strong>${targetUser}</strong></p>
       </div>
     </div>
 
     <!-- Main Content -->
-    <div class="grid gap-8 mb-12" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
-      <div class="bg-slate-800-50 border border-slate-700 rounded-xl p-8">
-        <h2 style="color: #60a5fa;">The Problem</h2>
-        <p class="text-slate-300">${problemSolved}</p>
+    <div class="grid md:grid-cols-2 gap-8 mb-12">
+      <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-8">
+        <h2 class="text-2xl font-bold mb-4 text-blue-400">The Problem</h2>
+        <p class="text-slate-300 leading-relaxed">${problemSolved}</p>
       </div>
-      <div class="bg-slate-800-50 border border-slate-700 rounded-xl p-8">
-        <h2 style="color: #4ade80;">The Solution</h2>
-        <p class="text-slate-300">${howItWorks}</p>
+      <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-8">
+        <h2 class="text-2xl font-bold mb-4 text-green-400">The Solution</h2>
+        <p class="text-slate-300 leading-relaxed">${howItWorks}</p>
       </div>
     </div>
 
     <!-- Status -->
-    <div class="bg-blue-900-30 border border-blue-500-50 rounded-xl p-8 text-center">
+    <div class="bg-blue-900/30 border border-blue-500/50 rounded-xl p-8 text-center">
       <p class="text-lg mb-4">⚙️ Your app is being built...</p>
       <p class="text-slate-300 mb-6">The AI-generated version of your app is processing. This is the placeholder while it builds.</p>
-      <button class="bg-blue-600 bg-blue-600:hover text-white font-semibold py-3 px-8 rounded-lg transition cursor-pointer" onclick="location.reload()">
+      <div class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition cursor-pointer">
         Refresh Page
-      </button>
+      </div>
     </div>
 
     <!-- Features Coming Soon -->
     <div class="mt-12">
-      <h2 class="text-2xl font-semibold mb-6 text-center">What's Coming</h2>
-      <div class="grid gap-4" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
-        <div class="bg-slate-700-30 border border-slate-600 rounded-lg p-6">
-          <div class="icon">✨</div>
+      <h2 class="text-2xl font-bold mb-6 text-center">What's Coming</h2>
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="bg-slate-700/30 border border-slate-600 rounded-lg p-6">
+          <div class="text-2xl mb-2">✨</div>
           <p class="text-slate-300">Custom built for your needs</p>
         </div>
-        <div class="bg-slate-700-30 border border-slate-600 rounded-lg p-6">
-          <div class="icon">⚡</div>
+        <div class="bg-slate-700/30 border border-slate-600 rounded-lg p-6">
+          <div class="text-2xl mb-2">⚡</div>
           <p class="text-slate-300">Fast and responsive</p>
         </div>
-        <div class="bg-slate-700-30 border border-slate-600 rounded-lg p-6">
-          <div class="icon">🔒</div>
+        <div class="bg-slate-700/30 border border-slate-600 rounded-lg p-6">
+          <div class="text-2xl mb-2">🔒</div>
           <p class="text-slate-300">Secure and reliable</p>
         </div>
       </div>
