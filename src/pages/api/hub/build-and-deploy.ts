@@ -220,13 +220,13 @@ FEATURE 1: WRITE/CREATE LETTERS/POEMS (if mentioned in answers):
    - Prominently display the AI-generated letter/poem
    - Include the personalization: "From your loving [Grandpa/Grandma] [Name] in [Location]"
    - Button: "Copy" - copy to clipboard
-   - Button: "Save" - SAVES TO DATABASE via API call to /api/hub/app-submission-save
+   - Button: "Save" - SAVES TO DATABASE via API call to https://take-the-reins.ai/api/hub/app-submission-save
    
 4. VIEW SAVED LETTERS/POEMS
    - Tab or section showing all previously saved items
-   - Call /api/hub/app-submission-search?appName=[APP_NAME]&name=[optional]&location=[optional]
+   - Call https://take-the-reins.ai/api/hub/app-submission-search?appName=[APP_NAME]&name=[optional]&location=[optional]
    - Display each with date created and a preview
-   - Click to view full text via /api/hub/app-submission/[id]
+   - Click to view full text via https://take-the-reins.ai/api/hub/app-submission/[id]
 
 FEATURE 2: SEARCH/BROWSE/DISCOVER LETTERS/POEMS (if mentioned in answers):
 If answers mention "search", "find", "browse", "discover", or "grandkids read letters":
@@ -234,12 +234,12 @@ If answers mention "search", "find", "browse", "discover", or "grandkids read le
    - Input field: "Search by grandparent name" - search by name
    - Input field: "Search by location" - search by city/state
    - Dropdown or filter: "Type" - Filter by Letter, Poem, or All
-   - Button: "Search" - calls /api/hub/app-submission-search?appName=[APP_NAME]&name=[name]&location=[location]&type=[type]
+   - Button: "Search" - calls https://take-the-reins.ai/api/hub/app-submission-search?appName=[APP_NAME]&name=[name]&location=[location]&type=[type]
    
 2. BROWSE ALL / SEARCH RESULTS
    - Displays results from database API call
    - Each item shows: Grandparent Name, Location, Type (Letter/Poem), Date, Preview (first 100 chars)
-   - Click to expand and load full text via /api/hub/app-submission/[id]
+   - Click to expand and load full text via https://take-the-reins.ai/api/hub/app-submission/[id]
    - Show "No results found" if search returns nothing
    
 3. VIEW FULL LETTER/POEM
@@ -309,7 +309,7 @@ REQUIREMENTS FOR AI REWRITING:
 6. Display both original and rewritten side-by-side if possible
 7. Make the "Transform/Rewrite" button functional and obvious
 8. Add "Copy" button so user can copy the generated letter
-9. Add "Save" button to save letter to DATABASE via /api/hub/app-submission-save
+9. Add "Save" button to save letter to DATABASE via https://take-the-reins.ai/api/hub/app-submission-save
 
 CRITICAL REQUIREMENTS:
 1. Generate a COMPLETE, WORKING single-file HTML+CSS+JavaScript app
@@ -328,11 +328,12 @@ CRITICAL REQUIREMENTS:
 14. Show loading spinner with "Transforming..." message while waiting for API response
 15. Display the rewritten text prominently after API returns
 16. Include error handling if the API call fails (show error message to user)
-17. For save/search features: Use these DATABASE API endpoints (NOT localStorage):
-    - SAVE: POST /api/hub/app-submission-save with body { appName, appIdea, name, location, submissionType, content }
-    - SEARCH: GET /api/hub/app-submission-search?appName=[APP_NAME]&name=[optional]&location=[optional]&type=[optional]
-    - GET DETAIL: GET /api/hub/app-submission/[id]
+17. For save/search features: Use these DATABASE API endpoints with FULL URLs (NEVER relative paths):
+    - SAVE: POST https://take-the-reins.ai/api/hub/app-submission-save with body { appName, appIdea, name, location, submissionType, content }
+    - SEARCH: GET https://take-the-reins.ai/api/hub/app-submission-search?appName=[APP_NAME]&name=[optional]&location=[optional]&type=[optional]
+    - GET DETAIL: GET https://take-the-reins.ai/api/hub/app-submission/[id]
 18. For grandparent apps: Check if answers mention search/discovery and ALWAYS include that feature
+19. CRITICAL: App is deployed to a Netlify subdomain (e.g., grandcall-123.netlify.app), so ALL API calls MUST use full HTTPS URLs to https://take-the-reins.ai/api/hub/ - NEVER use relative paths like /api/hub/...
 
 IMPORTANT: This is the ACTUAL COMPLETE APP, not a demo or template. Users should be able to use EVERY FEATURE right away without switching apps or reloading.
 
