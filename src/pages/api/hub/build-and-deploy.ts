@@ -334,6 +334,21 @@ CRITICAL REQUIREMENTS:
     - GET DETAIL: GET https://take-the-reins.ai/api/hub/app-submission/[id]
 18. For grandparent apps: Check if answers mention search/discovery and ALWAYS include that feature
 19. CRITICAL: App is deployed to a Netlify subdomain (e.g., grandcall-123.netlify.app), so ALL API calls MUST use full HTTPS URLs to https://take-the-reins.ai/api/hub/ - NEVER use relative paths like /api/hub/...
+20. CRITICAL - STORAGE ACCESS: ALL localStorage/sessionStorage access MUST be wrapped in try-catch blocks to handle tracking prevention:
+    Example:
+    \`\`\`javascript
+    try {
+      localStorage.setItem('key', 'value');
+      const val = localStorage.getItem('key');
+    } catch (e) {
+      console.warn('Storage unavailable (tracking prevention)');
+      // Use in-memory variables instead
+    }
+    \`\`\`
+21. CRITICAL - VARIABLE NAMING: NEVER use 'location' as a variable name - it conflicts with JavaScript's global window.location object. Use 'userLocation', 'submissionLocation', or 'userCity' instead.
+22. CRITICAL - FAVICON: MUST include a favicon using data URI to prevent 404 errors. Use this exact line in <head>:
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
+    DO NOT link to /favicon.ico or external favicon URLs.
 
 IMPORTANT: This is the ACTUAL COMPLETE APP, not a demo or template. Users should be able to use EVERY FEATURE right away without switching apps or reloading.
 
