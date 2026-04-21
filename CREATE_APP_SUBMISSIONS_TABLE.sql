@@ -43,6 +43,12 @@ CREATE INDEX IF NOT EXISTS idx_app_submissions_created
 -- Enable RLS (Row Level Security)
 ALTER TABLE public.app_submissions ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (safe cleanup)
+DROP POLICY IF EXISTS "allow_public_read_submissions" ON public.app_submissions;
+DROP POLICY IF EXISTS "allow_public_insert_submissions" ON public.app_submissions;
+DROP POLICY IF EXISTS "prevent_delete_submissions" ON public.app_submissions;
+DROP POLICY IF EXISTS "prevent_update_submissions" ON public.app_submissions;
+
 -- Allow anyone to READ submissions (public)
 CREATE POLICY "allow_public_read_submissions" ON public.app_submissions
   FOR SELECT USING (true);
