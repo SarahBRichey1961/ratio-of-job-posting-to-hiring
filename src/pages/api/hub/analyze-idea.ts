@@ -26,10 +26,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       `Describe exactly how a ${targetUser} would use "${appName}" step-by-step. What would the first 10 seconds look like?`,
       `What would make a ${targetUser} choose "${appName}" instead of what they currently do? What's the competitive advantage?`,
       `How do you want the background colors, font colors, and text justification (left, center, or right aligned) formatted for "${appName}" to appeal to ${targetUser}?`,
+      `Does "${appName}" need to save and retrieve data for users (like messages, profiles, lists, submissions, memories, or other information)? If yes, what specific fields or information should be searchable?`,
       `If you had to charge ${targetUser} for "${appName}", what's the maximum they'd pay and why?`,
       `What's one technical limitation or "hard problem" in "${mainIdea}" that you're not sure how to solve for ${targetUser}?`,
       `How would you find and convince the first 10 ${targetUser} to actually try "${appName}"?`,
-      `In one sentence: If "${appName}" is successful for ${targetUser}, what will be different in their life?`,
     ]
 
     // Call the dynamic question generator endpoint

@@ -48,10 +48,11 @@ Your questions should be:
 2. SPECIFIC TO THE EXACT PROBLEM mentioned (ask how to validate it, who else has tried solving it, what the biggest blocker is)
 3. SPECIFIC TO THE EXACT USE CASE (not generic features - ask about THIS app's unique features)
 4. INCLUDE AT LEAST ONE QUESTION ABOUT UI/DESIGN: Ask about preferred background colors, font colors, and text justification (left, center, or right aligned) for this app
-5. ABOUT: features specific to the target user, market validation, revenue model, differentiation, tech constraints, launch timeline
+5. INCLUDE AT LEAST ONE QUESTION ABOUT DATA: Ask "Does ${appName} need to save and retrieve data?" - and if YES, ask "What specific fields or information does ${appName} need to save and allow users to search for?"
+6. ABOUT: features specific to the target user, market validation, revenue model, differentiation, tech constraints, launch timeline
 
 Return ONLY a valid JSON array of 6-8 question strings. No markdown. No code blocks. Just the array.
-Example: ["Why did you choose to focus on this specific user segment?", "What feature would make grandparents most excited to use this?", "How should the app be styled visually for your users - what colors and text alignment would work best?", ...]`,
+Example: ["Why did you choose to focus on this specific user segment?", "What feature would make grandparents most excited to use this?", "How should the app be styled visually for your users - what colors and text alignment would work best?", "Does GrandCall need to save and retrieve data like recorded messages or contact lists?", "What specific fields would users search for in GrandCall - names, dates, relationships?", ...]`,
           },
           {
             role: 'user' as const,
