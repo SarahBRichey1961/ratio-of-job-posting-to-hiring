@@ -11,7 +11,7 @@
 ## Phase 2: Sandbox Webhook Setup ⏳
 - [ ] Go to PayPal Developer → Webhooks → Sandbox
 - [ ] Create new webhook
-- [ ] Set URL to: `https://takethereins.com/api/paypal/webhook`
+- [ ] Set URL to: `https://take-the-reins.ai/api/paypal/webhook`
 - [ ] Subscribe to: `CHECKOUT.ORDER.COMPLETED` + `CHECKOUT.ORDER.APPROVED`
 - [ ] Copy `PAYPAL_WEBHOOK_ID`
 
@@ -27,7 +27,7 @@
 - [ ] Trigger new deploy
 
 ## Phase 4: Canvas Testing ✅
-- [ ] Go to: https://takethereins.com/monetization/pricing
+- [ ] Go to: https://take-the-reins.ai/monetization/pricing
 - [ ] Click pricing button → Sign in if needed
 - [ ] Verify redirected to PayPal
 - [ ] Complete sandbox payment (use test PayPal account)
@@ -61,7 +61,7 @@ SELECT * FROM advertiser_accounts WHERE user_id = '<your-user-id>';
 ## Phase 8: Setup Production Webhook ⏳
 - [ ] In PayPal Dev Dashboard → Webhooks → **Live** tab
 - [ ] Create new webhook
-- [ ] Set URL to: `https://takethereins.com/api/paypal/webhook`
+- [ ] Set URL to: `https://take-the-reins.ai/api/paypal/webhook`
 - [ ] Subscribe to same events
 - [ ] Copy production `PAYPAL_WEBHOOK_ID`
 

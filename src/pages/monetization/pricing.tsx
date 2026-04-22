@@ -1,23 +1,39 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/router'
+
+// PayPal SDK Types
+declare global {
+  var paypal: any
+}
 
 export default function PricingPage() {
   const { session, isAuthenticated } = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const [paypalLoaded, setPaypalLoaded] = useState(false)
 
-  const handleCheckout = async (userType: 'sponsor' | 'advertiser', planType: 'monthly' | 'annual' | 'onetime') => {
+  // Load PayPal SDK
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !window.paypal) {
+      const script = document.createElement('script')
+      script.src = `https://www.paypal.com/sdk/js?client-id=${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}&currency=USD`
+      script.async = true
+      script.onload = () => setPaypalLoaded(true)
+      document.body.appendChild(script)
+    } else if (window.paypal) {
+      setPaypalLoaded(true)
+    }
+  }, [])
+
+  const createPayPalOrder = async (userType: 'sponsor' | 'advertiser', planType: 'monthly' | 'annual' | 'onetime') => {
     if (!isAuthenticated) {
       router.push('/auth/signup')
-      return
+      throw new Error('Not authenticated')
     }
-
-    setLoading(`${userType}-${planType}`)
-    setError('')
 
     try {
       const response = await fetch('/api/paypal/checkout', {
@@ -32,15 +48,97 @@ export default function PricingPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to start checkout')
+        throw new Error(data.error || 'Failed to create order')
       }
 
-      // Redirect to PayPal hosted checkout page
-      window.location.href = data.url
+      return data.id // PayPal Order ID
+    } catch (err) {
+      setError((err as Error).message)
+      throw err
+    }
+  }
+
+  const handlePayPalApprove = async (orderData: any, userType: 'sponsor' | 'advertiser', planType: 'monthly' | 'annual' | 'onetime') => {
+    try {
+      setLoading(`${userType}-${planType}`)
+
+      // Capture the payment
+      const response = await fetch('/api/paypal/capture', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ orderId: orderData.orderID }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to capture payment')
+      }
+
+      // Redirect to success page
+      router.push(`/monetization/checkout/success?userType=${userType}&planType=${planType}`)
     } catch (err) {
       setError((err as Error).message)
       setLoading(null)
     }
+  }
+
+  const PayPalButton = ({
+    userType,
+    planType,
+    price,
+  }: {
+    userType: 'sponsor' | 'advertiser'
+    planType: 'monthly' | 'annual' | 'onetime'
+    price: string
+  }) => {
+    useEffect(() => {
+      if (!paypalLoaded) return
+
+      const container = document.getElementById(`paypal-button-${userType}-${planType}`)
+      if (!container) return
+
+      // Clear any existing buttons
+      container.innerHTML = ''
+
+      window.paypal
+        .Buttons({
+          createOrder: async () => {
+            try {
+              const orderId = await createPayPalOrder(userType, planType)
+              return orderId
+            } catch (err) {
+              console.error('Order creation failed:', err)
+              throw err
+            }
+          },
+          onApprove: async (data: any) => {
+            await handlePayPalApprove(data, userType, planType)
+          },
+          onError: (err: any) => {
+            console.error('PayPal error:', err)
+            setError(err.message || 'Payment failed')
+          },
+          style: {
+            layout: 'vertical',
+            color: 'blue',
+            shape: 'rect',
+            label: 'paypal',
+          },
+        })
+        .render(`#paypal-button-${userType}-${planType}`)
+    }, [paypalLoaded, userType, planType])
+
+    return (
+      <div
+        id={`paypal-button-${userType}-${planType}`}
+        className="mt-4"
+        style={{ minHeight: '60px' }}
+      />
+    )
   }
 
   const PricingCard = ({
@@ -66,58 +164,67 @@ export default function PricingPage() {
       <h3 className="text-2xl font-bold text-white mb-2">{title}</h3>
       <p className="text-slate-400 mb-6">{description}</p>
 
-      <div className="space-y-4 mb-8">
+      <div className="space-y-6 mb-8">
         {/* Monthly */}
         {planTypes.includes('monthly') && (
           <div className="bg-slate-900/50 rounded-lg p-4">
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex justify-between items-center mb-4">
               <span className="text-white font-semibold">Monthly</span>
               <span className="text-2xl font-bold text-indigo-400">${monthly}/mo</span>
             </div>
-            <button
-              onClick={() => handleCheckout(userType, 'monthly')}
-              disabled={loading === `${userType}-monthly`}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition"
-            >
-              {loading === `${userType}-monthly` ? 'Processing...' : 'Choose Monthly'}
-            </button>
+            {!isAuthenticated ? (
+              <button
+                onClick={() => router.push('/auth/signup')}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition"
+              >
+                Sign Up to Continue
+              </button>
+            ) : (
+              <PayPalButton userType={userType} planType="monthly" price={monthly.toString()} />
+            )}
           </div>
         )}
 
         {/* Annual */}
         {planTypes.includes('annual') && (
           <div className="bg-slate-900/50 rounded-lg p-4 border border-green-600/30">
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex justify-between items-center mb-4">
               <div>
                 <span className="text-white font-semibold">Annual</span>
                 <span className="text-green-400 text-xs ml-2">(Save ~$387)</span>
               </div>
               <span className="text-2xl font-bold text-green-400">${annual}/yr</span>
             </div>
-            <button
-              onClick={() => handleCheckout(userType, 'annual')}
-              disabled={loading === `${userType}-annual`}
-              className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition"
-            >
-              {loading === `${userType}-annual` ? 'Processing...' : 'Choose Annual'}
-            </button>
+            {!isAuthenticated ? (
+              <button
+                onClick={() => router.push('/auth/signup')}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition"
+              >
+                Sign Up to Continue
+              </button>
+            ) : (
+              <PayPalButton userType={userType} planType="annual" price={annual.toString()} />
+            )}
           </div>
         )}
 
         {/* One-Time */}
         {planTypes.includes('onetime') && (
           <div className="bg-slate-900/50 rounded-lg p-4">
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex justify-between items-center mb-4">
               <span className="text-white font-semibold">One-Time</span>
               <span className="text-2xl font-bold text-slate-300">${onetime}</span>
             </div>
-            <button
-              onClick={() => handleCheckout(userType, 'onetime')}
-              disabled={loading === `${userType}-onetime`}
-              className="w-full bg-slate-700 hover:bg-slate-600 disabled:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition"
-            >
-              {loading === `${userType}-onetime` ? 'Processing...' : 'Choose One-Time'}
-            </button>
+            {!isAuthenticated ? (
+              <button
+                onClick={() => router.push('/auth/signup')}
+                className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition"
+              >
+                Sign Up to Continue
+              </button>
+            ) : (
+              <PayPalButton userType={userType} planType="onetime" price={onetime.toString()} />
+            )}
           </div>
         )}
       </div>
