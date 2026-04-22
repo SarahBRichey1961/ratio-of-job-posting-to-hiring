@@ -52,13 +52,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  console.log('[CHECKOUT] Checkout request received')
+
   if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
-    console.error('[PayPal] PAYPAL_CLIENT_ID or PAYPAL_CLIENT_SECRET not configured')
+    console.error('[CHECKOUT] PAYPAL_CLIENT_ID or PAYPAL_CLIENT_SECRET not configured')
     return res.status(500).json({ error: 'PayPal not configured on server' })
   }
 
   const authHeader = req.headers.authorization
   if (!authHeader?.startsWith('Bearer ')) {
+    console.error('[CHECKOUT] Missing or invalid auth header')
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
@@ -71,8 +74,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     authHeader.slice(7)
   )
   if (authError || !user) {
+    console.error('[CHECKOUT] Invalid auth token')
     return res.status(401).json({ error: 'Invalid token' })
   }
+
+  console.log(`[CHECKOUT] Authenticated user: ${user.id}`)
 
   const { userType, planType } = req.body as {
     userType: 'sponsor' | 'advertiser'
@@ -80,8 +86,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (!userType || !planType) {
+    console.error('[CHECKOUT] Missing userType or planType')
     return res.status(400).json({ error: 'Missing userType or planType' })
   }
+
+  console.log(`[CHECKOUT] Creating order: userType=${userType}, planType=${planType}`)
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://take-the-reins.ai'
   const returnUrl = `${baseUrl}/monetization/checkout/success?userType=${userType}&planType=${planType}`
@@ -91,9 +100,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const accessToken = await getAccessToken()
 
     const amount = PRICES[userType]?.[planType]
-    if (!amount) return res.status(400).json({ error: 'Invalid userType or planType' })
+    if (!amount) {
+      console.error(`[CHECKOUT] Invalid price for ${userType} ${planType}`)
+      return res.status(400).json({ error: 'Invalid userType or planType' })
+    }
 
     const description = DESCRIPTIONS[userType][planType]
+
+    console.log(`[CHECKOUT] Creating PayPal order: amount=${amount}, description=${description}`)
 
     const orderRes = await fetch(`${PAYPAL_BASE}/v2/checkout/orders`, {
       method: 'POST',
@@ -121,17 +135,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (!orderRes.ok) {
       const err = await orderRes.json()
-      console.error('[PayPal] Order creation error:', err)
+      console.error('[CHECKOUT] Order creation error:', err)
       return res.status(502).json({ error: 'Failed to create PayPal order' })
     }
 
     const order = await orderRes.json()
+    console.log(`[CHECKOUT] Order created successfully: ${order.id}`)
     
     // Return order ID for PayPal Smart Payment Buttons
     return res.status(200).json({ id: order.id })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal server error'
-    console.error('[PayPal] Checkout error:', message)
+    console.error('[CHECKOUT] Checkout error:', message)
     return res.status(500).json({ error: message })
   }
 }

@@ -19,13 +19,30 @@ export default function PricingPage() {
   // Load PayPal SDK
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.paypal) {
+      console.log(`[PAYPAL_SDK] CLIENT_ID=${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}`)
+      if (!process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID) {
+        console.error(`[PAYPAL_SDK] NEXT_PUBLIC_PAYPAL_CLIENT_ID is not set!`)
+        setError('PayPal is not configured. Please contact support.')
+        return
+      }
+      console.log(`[PAYPAL_SDK] Starting to load PayPal SDK with client-id...`)
       const script = document.createElement('script')
       script.src = `https://www.paypal.com/sdk/js?client-id=${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}&currency=USD`
       script.async = true
-      script.onload = () => setPaypalLoaded(true)
+      script.onload = () => {
+        console.log(`[PAYPAL_SDK] SDK loaded successfully`)
+        setPaypalLoaded(true)
+      }
+      script.onerror = () => {
+        console.error(`[PAYPAL_SDK] Failed to load PayPal SDK`)
+        setError('Failed to load PayPal. Please refresh the page.')
+      }
       document.body.appendChild(script)
     } else if (window.paypal) {
+      console.log(`[PAYPAL_SDK] PayPal SDK already loaded`)
       setPaypalLoaded(true)
+    } else {
+      console.error(`[PAYPAL_SDK] window is undefined`)
     }
   }, [])
 
@@ -36,6 +53,7 @@ export default function PricingPage() {
     }
 
     try {
+      console.log(`[PRICING] Creating PayPal order: userType=${userType}, planType=${planType}`)
       const response = await fetch('/api/paypal/checkout', {
         method: 'POST',
         headers: {
@@ -48,11 +66,14 @@ export default function PricingPage() {
       const data = await response.json()
 
       if (!response.ok) {
+        console.error(`[PRICING] Checkout failed: ${data.error}`)
         throw new Error(data.error || 'Failed to create order')
       }
 
+      console.log(`[PRICING] Order created successfully: orderId=${data.id}`)
       return data.id // PayPal Order ID
     } catch (err) {
+      console.error(`[PRICING] Error creating order:`, err)
       setError((err as Error).message)
       throw err
     }
@@ -60,6 +81,7 @@ export default function PricingPage() {
 
   const handlePayPalApprove = async (orderData: any, userType: 'sponsor' | 'advertiser', planType: 'monthly' | 'annual' | 'onetime') => {
     try {
+      console.log(`[PRICING] Payment approved: orderId=${orderData.orderID}, userType=${userType}, planType=${planType}`)
       setLoading(`${userType}-${planType}`)
 
       // Capture the payment
@@ -75,12 +97,15 @@ export default function PricingPage() {
       const data = await response.json()
 
       if (!response.ok) {
+        console.error(`[PRICING] Capture failed: ${data.error}`)
         throw new Error(data.error || 'Failed to capture payment')
       }
 
+      console.log(`[PRICING] Payment captured successfully, redirecting to success page`)
       // Redirect to success page
       router.push(`/monetization/checkout/success?userType=${userType}&planType=${planType}`)
     } catch (err) {
+      console.error(`[PRICING] Error in payment approval:`, err)
       setError((err as Error).message)
       setLoading(null)
     }
@@ -96,13 +121,26 @@ export default function PricingPage() {
     price: string
   }) => {
     useEffect(() => {
-      if (!paypalLoaded) return
+      if (!paypalLoaded) {
+        console.log(`[PAYPAL_BUTTON] PayPal SDK not loaded yet for ${userType}-${planType}`)
+        return
+      }
 
       const container = document.getElementById(`paypal-button-${userType}-${planType}`)
-      if (!container) return
+      if (!container) {
+        console.error(`[PAYPAL_BUTTON] Container not found for ${userType}-${planType}`)
+        return
+      }
+
+      console.log(`[PAYPAL_BUTTON] Rendering PayPal buttons for ${userType}-${planType}`)
 
       // Clear any existing buttons
       container.innerHTML = ''
+
+      if (!window.paypal) {
+        console.error(`[PAYPAL_BUTTON] window.paypal not defined!`)
+        return
+      }
 
       window.paypal
         .Buttons({
@@ -111,7 +149,7 @@ export default function PricingPage() {
               const orderId = await createPayPalOrder(userType, planType)
               return orderId
             } catch (err) {
-              console.error('Order creation failed:', err)
+              console.error('[PAYPAL_BUTTON] Order creation failed:', err)
               throw err
             }
           },
@@ -119,7 +157,7 @@ export default function PricingPage() {
             await handlePayPalApprove(data, userType, planType)
           },
           onError: (err: any) => {
-            console.error('PayPal error:', err)
+            console.error('[PAYPAL_BUTTON] PayPal error:', err)
             setError(err.message || 'Payment failed')
           },
           style: {
@@ -130,6 +168,9 @@ export default function PricingPage() {
           },
         })
         .render(`#paypal-button-${userType}-${planType}`)
+        .catch((err: any) => {
+          console.error(`[PAYPAL_BUTTON] Failed to render buttons: ${err}`)
+        })
     }, [paypalLoaded, userType, planType])
 
     return (
