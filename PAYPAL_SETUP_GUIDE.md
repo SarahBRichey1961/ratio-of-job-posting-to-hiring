@@ -54,7 +54,7 @@ All PayPal endpoints are built and ready. You just need to:
 2. Stay in **Sandbox** environment
 3. Go to **Webhooks** in left menu
 4. Click **Create Webhook**
-5. Webhook URL: `https://takethereeins.com/api/paypal/webhook`
+5. Webhook URL: `https://take-the-reins.ai/api/paypal/webhook`
    - **Note:** For testing locally, use ngrok or a tunnel service
 6. Subscribe to these events:
    - ✅ `CHECKOUT.ORDER.COMPLETED`
@@ -64,7 +64,7 @@ All PayPal endpoints are built and ready. You just need to:
 
 **For Production:**
 - Repeat steps for **Live** environment
-- Use production domain: `https://takethereins.com/api/paypal/webhook`
+- Use production domain: `https://take-the-reins.ai/api/paypal/webhook`
 
 ---
 
@@ -99,7 +99,7 @@ All PayPal endpoints are built and ready. You just need to:
 
 ### Test Sandbox Payment Flow
 
-1. Go to https://takethereins.com/monetization/pricing
+1. Go to https://take-the-reins.ai/monetization/pricing
 2. Click "Get Started" on any pricing plan
 3. Authenticate if needed
 4. You'll be redirected to PayPal
@@ -134,7 +134,7 @@ Once sandbox testing works:
 
 ### Create Production Webhook
 1. Go to Webhooks in **Live** environment
-2. Add webhook: `https://takethereins.com/api/paypal/webhook`
+2. Add webhook: `https://take-the-reins.ai/api/paypal/webhook`
 3. Subscribe to same events
 4. Copy Webhook ID
 

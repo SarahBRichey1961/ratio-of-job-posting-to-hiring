@@ -83,7 +83,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Missing userType or planType' })
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://takethereins.com'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://take-the-reins.ai'
   const returnUrl = `${baseUrl}/monetization/checkout/success?userType=${userType}&planType=${planType}`
   const cancelUrl = `${baseUrl}/monetization/pricing`
 
@@ -126,15 +126,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const order = await orderRes.json()
-    const approveLink = order.links?.find(
-      (l: { rel: string }) => l.rel === 'approve'
-    )?.href
-
-    if (!approveLink) {
-      return res.status(502).json({ error: 'No PayPal approval URL returned' })
-    }
-
-    return res.status(200).json({ url: approveLink })
+    
+    // Return order ID for PayPal Smart Payment Buttons
+    return res.status(200).json({ id: order.id })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal server error'
     console.error('[PayPal] Checkout error:', message)
