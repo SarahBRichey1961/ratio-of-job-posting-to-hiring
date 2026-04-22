@@ -15,10 +15,10 @@
   port = 3000
 
 [context.production]
-  environment = { NODE_ENV = "production", NEXT_PUBLIC_SUPABASE_URL = "https://eikhrkharihagaorqqcf.supabase.co", NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ" }
+  environment = { NODE_ENV = "production", NEXT_PUBLIC_SUPABASE_URL = "https://eikhrkharihagaorqqcf.supabase.co", NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ", NEXT_PUBLIC_PAYPAL_CLIENT_ID = "AZ1QA-kO8P5fX-IRWR7vD-yzLoS_PgaEs_xlzp0YFQhtTQUKTXzs1CJFELF3mMKWR8nnshN5XMEbyyRP" }
 
 [context.deploy-preview]
-  environment = { NODE_ENV = "production", NEXT_PUBLIC_SUPABASE_URL = "https://eikhrkharihagaorqqcf.supabase.co", NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ" }
+  environment = { NODE_ENV = "production", NEXT_PUBLIC_SUPABASE_URL = "https://eikhrkharihagaorqqcf.supabase.co", NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ", NEXT_PUBLIC_PAYPAL_CLIENT_ID = "AZ1QA-kO8P5fX-IRWR7vD-yzLoS_PgaEs_xlzp0YFQhtTQUKTXzs1CJFELF3mMKWR8nnshN5XMEbyyRP" }
 
 [context.branch-deploy]
-  environment = { NODE_ENV = "production", NEXT_PUBLIC_SUPABASE_URL = "https://eikhrkharihagaorqqcf.supabase.co", NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ" }
+  environment = { NODE_ENV = "production", NEXT_PUBLIC_SUPABASE_URL = "https://eikhrkharihagaorqqcf.supabase.co", NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ", NEXT_PUBLIC_PAYPAL_CLIENT_ID = "AZ1QA-kO8P5fX-IRWR7vD-yzLoS_PgaEs_xlzp0YFQhtTQUKTXzs1CJFELF3mMKWR8nnshN5XMEbyyRP" }
