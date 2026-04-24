@@ -50,9 +50,9 @@ interface PayPalCapture {
 // Mock environment variables
 const mockEnv = {
   PAYPAL_MODE: 'production',
-  PAYPAL_CLIENT_ID: 'AZ1QA-kO8P5fX-IRWR7vD-yzLoS_PgaEs_xlzp0YFQhtTQUKTXzs1CJFELF3mMKWR8nnshN5XMEbyyRP',
-  PAYPAL_CLIENT_SECRET: 'EDU9wfVstoIez2Jj3lv2q-lJwDPOHXwLkDBC8kNbU_0oahIbynjZsGrp9hZYIsKt1GghB82XuxxThcW5',
-  PAYPAL_WEBHOOK_ID: '***REMOVED***',
+  PAYPAL_CLIENT_ID: 'test-client-id-mock-value-123456789',
+  PAYPAL_CLIENT_SECRET: 'test-client-secret-mock-value-abcdefghij',
+  PAYPAL_WEBHOOK_ID: 'test-webhook-id-mock-value-xyz123',
   NEXT_PUBLIC_SUPABASE_URL: 'https://eikhrkharihagaorqqcf.supabase.co',
   SUPABASE_SERVICE_ROLE_KEY: 'test-key-12345',
   NEXT_PUBLIC_APP_URL: 'https://take-the-reins.ai'
