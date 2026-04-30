@@ -39,7 +39,7 @@ export default function PricingPage() {
       
       if (attempts >= maxAttempts) {
         console.error(`[PAYPAL_SCRIPT] PayPal not initialized after ${attempts} attempts`)
-        setPaypalError('PayPal SDK loaded but failed to initialize. Your browser may be blocking PayPal\'s storage access. Try disabling Enhanced Tracking Protection.')
+        setPaypalError('PayPal SDK could not initialize. This is usually caused by Enhanced Tracking Protection in Firefox. You can: 1) Disable tracking protection for this site, or 2) Contact us for alternative payment methods.')
         return
       }
       
@@ -254,8 +254,25 @@ export default function PricingPage() {
 
     if (!paypalLoaded) {
       return (
-        <div className="mt-4 bg-slate-700/50 rounded-lg p-4 text-center text-slate-400 text-sm">
-          Loading payment options...
+        <div className="mt-4 space-y-3">
+          <div className="bg-slate-700/50 rounded-lg p-4 text-center text-slate-400 text-sm">
+            Loading payment options...
+          </div>
+          {paypalError && (
+            <div className="bg-amber-900/30 border border-amber-700/50 rounded-lg p-3 text-amber-200 text-xs">
+              <div className="font-semibold mb-2">Payment Option Unavailable</div>
+              <div className="mb-2">{paypalError}</div>
+              <div className="text-amber-300">
+                <strong>To fix:</strong> In Firefox, click the shield icon to disable Enhanced Tracking Protection for this site, then refresh.
+              </div>
+              <a 
+                href="mailto:support@takethereins.com?subject=Payment%20Help" 
+                className="inline-block mt-2 text-amber-400 hover:text-amber-300 underline"
+              >
+                Or contact support for help
+              </a>
+            </div>
+          )}
         </div>
       )
     }

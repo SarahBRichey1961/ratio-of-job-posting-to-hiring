@@ -7,11 +7,7 @@ export default class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head>
-          {/* CSP Meta tag - allow PayPal and Supabase for tracking prevention bypass */}
-          <meta
-            httpEquiv="Content-Security-Policy"
-            content="script-src 'self' 'unsafe-inline' https://www.paypal.com https://www.googletagmanager.com; connect-src 'self' https://www.paypal.com https://api.paypal.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://www.google-analytics.com https://eikhrkharihagaorqqcf.supabase.co; frame-src https://www.paypal.com;"
-          />
+          {/* Headers for CSP are set in netlify.toml for better control */}
           
           {/* Google Analytics 4 */}
           {gaId && (
