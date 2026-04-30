@@ -26,17 +26,66 @@ export default function PricingPage() {
         return
       }
       console.log(`[PAYPAL_SDK] Starting to load PayPal SDK with client-id...`)
+      
+      // Build SDK URL with proper parameter encoding
+      const sdkParams = new URLSearchParams({
+        'client-id': process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
+        'currency': 'USD',
+        'intent': 'capture',
+        'components': 'buttons,funding',
+        'disable-funding': 'giropay,eps,bancontact', // Disable unsupported funding methods
+      })
+      
       const script = document.createElement('script')
-      script.src = `https://www.paypal.com/sdk/js?client-id=${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}&currency=USD&intent=capture&components=buttons,funding`
+      script.src = `https://www.paypal.com/sdk/js?${sdkParams.toString()}`
       script.async = true
-      script.onload = () => {
+      script.defer = true
+      
+      // Add attributes for CSP and privacy compliance
+      script.setAttribute('data-namespace', 'paypal_sdk')
+      script.setAttribute('crossorigin', 'anonymous')
+      script.setAttribute('referrerpolicy', 'no-referrer-when-downgrade')
+      
+      let retryCount = 0
+      const maxRetries = 3
+      
+      const handleError = () => {
+        console.error(`[PAYPAL_SDK] Failed to load PayPal SDK (attempt ${retryCount + 1}/${maxRetries})`)
+        retryCount++
+        
+        if (retryCount < maxRetries) {
+          console.log(`[PAYPAL_SDK] Retrying SDK load (${retryCount}/${maxRetries})...`)
+          // Remove old script
+          if (script.parentNode) {
+            script.parentNode.removeChild(script)
+          }
+          // Wait and retry
+          setTimeout(() => {
+            const newScript = script.cloneNode(true) as HTMLScriptElement
+            newScript.onerror = handleError
+            newScript.onload = handleLoad
+            document.body.appendChild(newScript)
+          }, 1000 * retryCount)
+        } else {
+          console.error(`[PAYPAL_SDK] Max retries reached. PayPal SDK failed to load.`)
+          setError('Failed to load PayPal after multiple attempts. This may be a browser privacy setting. Try disabling tracking protection or using an incognito window.')
+        }
+      }
+      
+      const handleLoad = () => {
         console.log(`[PAYPAL_SDK] SDK loaded successfully`)
-        setPaypalLoaded(true)
+        // Verify PayPal is actually available on window
+        if (window.paypal) {
+          setPaypalLoaded(true)
+        } else {
+          console.warn(`[PAYPAL_SDK] SDK loaded but window.paypal not found. Retrying...`)
+          handleError()
+        }
       }
-      script.onerror = () => {
-        console.error(`[PAYPAL_SDK] Failed to load PayPal SDK`)
-        setError('Failed to load PayPal. Please refresh the page.')
-      }
+      
+      script.onload = handleLoad
+      script.onerror = handleError
+      
       document.body.appendChild(script)
     } else if (window.paypal) {
       console.log(`[PAYPAL_SDK] PayPal SDK already loaded`)
@@ -120,6 +169,8 @@ export default function PricingPage() {
     planType: 'monthly' | 'annual' | 'onetime'
     price: string
   }) => {
+    const [renderError, setRenderError] = useState('')
+    
     useEffect(() => {
       if (!paypalLoaded) {
         console.log(`[PAYPAL_BUTTON] PayPal SDK not loaded yet for ${userType}-${planType}`)
@@ -137,48 +188,60 @@ export default function PricingPage() {
       // Clear any existing buttons
       container.innerHTML = ''
 
-      if (!window.paypal) {
-        console.error(`[PAYPAL_BUTTON] window.paypal not defined!`)
+      if (!window.paypal || !window.paypal.Buttons) {
+        console.error(`[PAYPAL_BUTTON] window.paypal or Buttons not defined!`)
+        setRenderError('PayPal SDK not fully loaded')
         return
       }
 
-      window.paypal
-        .Buttons({
-          createOrder: async () => {
-            try {
-              const orderId = await createPayPalOrder(userType, planType)
-              return orderId
-            } catch (err) {
-              console.error('[PAYPAL_BUTTON] Order creation failed:', err)
-              throw err
-            }
-          },
-          onApprove: async (data: any) => {
-            await handlePayPalApprove(data, userType, planType)
-          },
-          onError: (err: any) => {
-            console.error('[PAYPAL_BUTTON] PayPal error:', err)
-            setError(err.message || 'Payment failed')
-          },
-          style: {
-            layout: 'vertical',
-            color: 'blue',
-            shape: 'rect',
-            label: 'pay',
-          },
-        })
-        .render(`#paypal-button-${userType}-${planType}`)
-        .catch((err: any) => {
-          console.error(`[PAYPAL_BUTTON] Failed to render buttons: ${err}`)
-        })
+      try {
+        window.paypal
+          .Buttons({
+            createOrder: async () => {
+              try {
+                const orderId = await createPayPalOrder(userType, planType)
+                return orderId
+              } catch (err) {
+                console.error('[PAYPAL_BUTTON] Order creation failed:', err)
+                throw err
+              }
+            },
+            onApprove: async (data: any) => {
+              await handlePayPalApprove(data, userType, planType)
+            },
+            onError: (err: any) => {
+              console.error('[PAYPAL_BUTTON] PayPal error:', err)
+              setError(err.message || 'Payment failed')
+            },
+            style: {
+              layout: 'vertical',
+              color: 'blue',
+              shape: 'rect',
+              label: 'pay',
+            },
+          })
+          .render(`#paypal-button-${userType}-${planType}`)
+          .catch((err: any) => {
+            console.error(`[PAYPAL_BUTTON] Failed to render buttons: ${err}`)
+            setRenderError(`Failed to render payment button: ${err.message || err}`)
+          })
+      } catch (err) {
+        console.error(`[PAYPAL_BUTTON] Error creating buttons:`, err)
+        setRenderError(`Error setting up payment: ${err instanceof Error ? err.message : String(err)}`)
+      }
     }, [paypalLoaded, userType, planType])
 
     return (
-      <div
-        id={`paypal-button-${userType}-${planType}`}
-        className="mt-4"
-        style={{ minHeight: '60px' }}
-      />
+      <>
+        <div
+          id={`paypal-button-${userType}-${planType}`}
+          className="mt-4"
+          style={{ minHeight: '60px' }}
+        />
+        {renderError && (
+          <p className="text-red-400 text-sm mt-2">{renderError}</p>
+        )}
+      </>
     )
   }
 
