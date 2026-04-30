@@ -27,7 +27,7 @@ export default function PricingPage() {
       }
       console.log(`[PAYPAL_SDK] Starting to load PayPal SDK with client-id...`)
       const script = document.createElement('script')
-      script.src = `https://www.paypal.com/sdk/js?client-id=${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}&currency=USD&intent=capture&components=buttons,funding&disable-funding=giropay`
+      script.src = `https://www.paypal.com/sdk/js?client-id=${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}&currency=USD&intent=capture&components=buttons,funding`
       script.async = true
       script.onload = () => {
         console.log(`[PAYPAL_SDK] SDK loaded successfully`)
