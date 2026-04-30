@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
+import Script from 'next/script'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/router'
 
@@ -15,85 +16,53 @@ export default function PricingPage() {
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [paypalLoaded, setPaypalLoaded] = useState(false)
+  const [paypalError, setPaypalError] = useState('')
 
-  // Load PayPal SDK
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !window.paypal) {
-      console.log(`[PAYPAL_SDK] CLIENT_ID=${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}`)
-      if (!process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID) {
-        console.error(`[PAYPAL_SDK] NEXT_PUBLIC_PAYPAL_CLIENT_ID is not set!`)
-        setError('PayPal is not configured. Please contact support.')
-        return
-      }
-      console.log(`[PAYPAL_SDK] Starting to load PayPal SDK with client-id...`)
-      
-      // Build SDK URL with proper parameter encoding
-      const sdkParams = new URLSearchParams({
-        'client-id': process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
-        'currency': 'USD',
-        'intent': 'capture',
-        'components': 'buttons,funding',
-        'disable-funding': 'giropay,eps,bancontact', // Disable unsupported funding methods
-      })
-      
-      const script = document.createElement('script')
-      script.src = `https://www.paypal.com/sdk/js?${sdkParams.toString()}`
-      script.async = true
-      script.defer = true
-      
-      // Add attributes for CSP and privacy compliance
-      script.setAttribute('data-namespace', 'paypal_sdk')
-      script.setAttribute('crossorigin', 'anonymous')
-      script.setAttribute('referrerpolicy', 'no-referrer-when-downgrade')
-      
-      let retryCount = 0
-      const maxRetries = 3
-      
-      const handleError = () => {
-        console.error(`[PAYPAL_SDK] Failed to load PayPal SDK (attempt ${retryCount + 1}/${maxRetries})`)
-        retryCount++
-        
-        if (retryCount < maxRetries) {
-          console.log(`[PAYPAL_SDK] Retrying SDK load (${retryCount}/${maxRetries})...`)
-          // Remove old script
-          if (script.parentNode) {
-            script.parentNode.removeChild(script)
-          }
-          // Wait and retry
-          setTimeout(() => {
-            const newScript = script.cloneNode(true) as HTMLScriptElement
-            newScript.onerror = handleError
-            newScript.onload = handleLoad
-            document.body.appendChild(newScript)
-          }, 1000 * retryCount)
-        } else {
-          console.error(`[PAYPAL_SDK] Max retries reached. PayPal SDK failed to load.`)
-          setError('Failed to load PayPal after multiple attempts. This may be a browser privacy setting. Try disabling tracking protection or using an incognito window.')
-        }
-      }
-      
-      const handleLoad = () => {
-        console.log(`[PAYPAL_SDK] SDK loaded successfully`)
-        // Verify PayPal is actually available on window
-        if (window.paypal) {
-          setPaypalLoaded(true)
-        } else {
-          console.warn(`[PAYPAL_SDK] SDK loaded but window.paypal not found. Retrying...`)
-          handleError()
-        }
-      }
-      
-      script.onload = handleLoad
-      script.onerror = handleError
-      
-      document.body.appendChild(script)
-    } else if (window.paypal) {
-      console.log(`[PAYPAL_SDK] PayPal SDK already loaded`)
+  // Handle PayPal SDK load success
+  const handlePayPalScriptLoad = () => {
+    console.log(`[PAYPAL_SCRIPT] Next.js Script onLoad fired`)
+    if (window.paypal && window.paypal.Buttons) {
+      console.log(`[PAYPAL_SCRIPT] ✅ window.paypal.Buttons is available`)
       setPaypalLoaded(true)
+      setPaypalError('')
     } else {
-      console.error(`[PAYPAL_SDK] window is undefined`)
+      console.warn(`[PAYPAL_SCRIPT] Script loaded but window.paypal not available yet`)
+      // Try again after a short delay
+      setTimeout(() => {
+        if (window.paypal && window.paypal.Buttons) {
+          console.log(`[PAYPAL_SCRIPT] ✅ window.paypal.Buttons found after delay`)
+          setPaypalLoaded(true)
+          setPaypalError('')
+        } else {
+          console.error(`[PAYPAL_SCRIPT] window.paypal.Buttons NOT available`)
+          setPaypalError('PayPal SDK loaded but Buttons component not available')
+        }
+      }, 500)
     }
-  }, [])
+  }
+
+  const handlePayPalScriptError = (error: any) => {
+    console.error(`[PAYPAL_SCRIPT] Script load error:`, error)
+    setPaypalError(`Failed to load PayPal SDK: ${error?.message || 'Unknown error'}`)
+    setLoading(null)
+  }
+
+  // Build the PayPal SDK URL
+  const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID
+  const paypalSdkUrl = clientId 
+    ? `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture&components=buttons`
+    : null
+
+  if (!clientId) {
+    return (
+      <div className="min-h-screen bg-red-900/20 flex items-center justify-center">
+        <div className="bg-red-900/50 border border-red-600 rounded p-6 max-w-md">
+          <h1 className="text-red-300 font-bold mb-2">Configuration Error</h1>
+          <p className="text-red-200">PayPal Client ID is not configured. Please contact support.</p>
+        </div>
+      </div>
+    )
+  }
 
   const createPayPalOrder = async (userType: 'sponsor' | 'advertiser', planType: 'monthly' | 'annual' | 'onetime') => {
     if (!isAuthenticated) {
@@ -173,13 +142,14 @@ export default function PricingPage() {
     
     useEffect(() => {
       if (!paypalLoaded) {
-        console.log(`[PAYPAL_BUTTON] PayPal SDK not loaded yet for ${userType}-${planType}`)
+        console.log(`[PAYPAL_BUTTON] Waiting for PayPal SDK to load for ${userType}-${planType}`)
         return
       }
 
       const container = document.getElementById(`paypal-button-${userType}-${planType}`)
       if (!container) {
         console.error(`[PAYPAL_BUTTON] Container not found for ${userType}-${planType}`)
+        setRenderError('Payment button container not found')
         return
       }
 
@@ -190,27 +160,38 @@ export default function PricingPage() {
 
       if (!window.paypal || !window.paypal.Buttons) {
         console.error(`[PAYPAL_BUTTON] window.paypal or Buttons not defined!`)
-        setRenderError('PayPal SDK not fully loaded')
+        setRenderError('PayPal SDK not fully loaded. Please refresh the page.')
         return
       }
 
       try {
+        console.log(`[PAYPAL_BUTTON] Creating Buttons object for ${userType}-${planType}`)
         window.paypal
           .Buttons({
             createOrder: async () => {
               try {
+                console.log(`[PAYPAL_BUTTON] Creating order for ${userType}-${planType}`)
                 const orderId = await createPayPalOrder(userType, planType)
+                console.log(`[PAYPAL_BUTTON] Order created: ${orderId}`)
                 return orderId
               } catch (err) {
                 console.error('[PAYPAL_BUTTON] Order creation failed:', err)
+                setRenderError(`Failed to create order: ${err instanceof Error ? err.message : String(err)}`)
                 throw err
               }
             },
             onApprove: async (data: any) => {
-              await handlePayPalApprove(data, userType, planType)
+              try {
+                console.log(`[PAYPAL_BUTTON] Order approved, capturing payment...`)
+                await handlePayPalApprove(data, userType, planType)
+              } catch (err) {
+                console.error(`[PAYPAL_BUTTON] Approval handler error:`, err)
+                setRenderError(`Payment processing error: ${err instanceof Error ? err.message : String(err)}`)
+              }
             },
             onError: (err: any) => {
               console.error('[PAYPAL_BUTTON] PayPal error:', err)
+              setRenderError(`PayPal error: ${err.message || err}`)
               setError(err.message || 'Payment failed')
             },
             style: {
@@ -223,13 +204,21 @@ export default function PricingPage() {
           .render(`#paypal-button-${userType}-${planType}`)
           .catch((err: any) => {
             console.error(`[PAYPAL_BUTTON] Failed to render buttons: ${err}`)
-            setRenderError(`Failed to render payment button: ${err.message || err}`)
+            setRenderError(`Failed to render button: ${err instanceof Error ? err.message : String(err)}`)
           })
       } catch (err) {
         console.error(`[PAYPAL_BUTTON] Error creating buttons:`, err)
         setRenderError(`Error setting up payment: ${err instanceof Error ? err.message : String(err)}`)
       }
     }, [paypalLoaded, userType, planType])
+
+    if (!paypalLoaded) {
+      return (
+        <div className="mt-4 bg-slate-700/50 rounded-lg p-4 text-center text-slate-400 text-sm">
+          Loading payment options...
+        </div>
+      )
+    }
 
     return (
       <>
@@ -353,6 +342,17 @@ export default function PricingPage() {
         <meta name="description" content="Sponsor or advertise on Take The Reins" />
       </Head>
 
+      {/* Load PayPal SDK using Next.js Script component */}
+      {paypalSdkUrl && (
+        <Script
+          src={paypalSdkUrl}
+          strategy="afterInteractive"
+          onLoad={handlePayPalScriptLoad}
+          onError={handlePayPalScriptError}
+          data-namespace="paypal_sdk"
+        />
+      )}
+
       {/* Navigation */}
       <nav className="bg-slate-800/50 backdrop-blur border-b border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
@@ -390,6 +390,21 @@ export default function PricingPage() {
         {error && (
           <div className="mb-8 bg-red-600/20 border border-red-600/50 text-red-200 px-6 py-4 rounded-lg">
             {error}
+          </div>
+        )}
+
+        {paypalError && (
+          <div className="mb-8 bg-orange-600/20 border border-orange-600/50 text-orange-200 px-6 py-4 rounded-lg">
+            <div className="font-semibold mb-1">PayPal Loading Issue:</div>
+            <div>{paypalError}</div>
+            <div className="text-xs mt-2 text-orange-300">Try refreshing the page. If the problem persists, disable browser tracking protection.</div>
+          </div>
+        )}
+
+        {!paypalLoaded && !paypalError && (
+          <div className="mb-8 bg-indigo-600/20 border border-indigo-600/50 text-indigo-200 px-6 py-4 rounded-lg flex items-center gap-3">
+            <div className="animate-spin w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full"></div>
+            <span>Loading payment options...</span>
           </div>
         )}
 
