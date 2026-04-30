@@ -21,24 +21,37 @@ export default function PricingPage() {
   // Handle PayPal SDK load success
   const handlePayPalScriptLoad = () => {
     console.log(`[PAYPAL_SCRIPT] Next.js Script onLoad fired`)
-    if (window.paypal && window.paypal.Buttons) {
-      console.log(`[PAYPAL_SCRIPT] ✅ window.paypal.Buttons is available`)
-      setPaypalLoaded(true)
-      setPaypalError('')
-    } else {
-      console.warn(`[PAYPAL_SCRIPT] Script loaded but window.paypal not available yet`)
-      // Try again after a short delay
-      setTimeout(() => {
-        if (window.paypal && window.paypal.Buttons) {
-          console.log(`[PAYPAL_SCRIPT] ✅ window.paypal.Buttons found after delay`)
-          setPaypalLoaded(true)
-          setPaypalError('')
-        } else {
-          console.error(`[PAYPAL_SCRIPT] window.paypal.Buttons NOT available`)
-          setPaypalError('PayPal SDK loaded but Buttons component not available')
-        }
-      }, 500)
+    
+    // PayPal SDK might not be immediately available due to storage blocking
+    // Use aggressive polling to wait for initialization
+    let attempts = 0
+    const maxAttempts = 50 // Try for up to 2.5 seconds (50 * 50ms)
+    
+    const checkPayPal = () => {
+      attempts++
+      
+      if (window.paypal && window.paypal.Buttons) {
+        console.log(`[PAYPAL_SCRIPT] ✅ window.paypal.Buttons available (attempt ${attempts})`)
+        setPaypalLoaded(true)
+        setPaypalError('')
+        return
+      }
+      
+      if (attempts >= maxAttempts) {
+        console.error(`[PAYPAL_SCRIPT] PayPal not initialized after ${attempts} attempts`)
+        setPaypalError('PayPal SDK loaded but failed to initialize. Your browser may be blocking PayPal\'s storage access. Try disabling Enhanced Tracking Protection.')
+        return
+      }
+      
+      if (attempts === 1) {
+        console.warn(`[PAYPAL_SCRIPT] window.paypal.Buttons not available, polling...`)
+      }
+      
+      // Retry after 50ms
+      setTimeout(checkPayPal, 50)
     }
+    
+    checkPayPal()
   }
 
   const handlePayPalScriptError = (error: any) => {
@@ -139,6 +152,7 @@ export default function PricingPage() {
     price: string
   }) => {
     const [renderError, setRenderError] = useState('')
+    const [isRendering, setIsRendering] = useState(false)
     
     useEffect(() => {
       if (!paypalLoaded) {
@@ -154,62 +168,88 @@ export default function PricingPage() {
       }
 
       console.log(`[PAYPAL_BUTTON] Rendering PayPal buttons for ${userType}-${planType}`)
+      setIsRendering(true)
 
       // Clear any existing buttons
       container.innerHTML = ''
 
-      if (!window.paypal || !window.paypal.Buttons) {
-        console.error(`[PAYPAL_BUTTON] window.paypal or Buttons not defined!`)
-        setRenderError('PayPal SDK not fully loaded. Please refresh the page.')
-        return
-      }
+      // Poll for window.paypal.Buttons since it might not be immediately available
+      let pollAttempts = 0
+      const maxPollAttempts = 20
+      
+      const attemptRender = () => {
+        pollAttempts++
+        
+        if (!window.paypal || !window.paypal.Buttons) {
+          if (pollAttempts < maxPollAttempts) {
+            console.log(`[PAYPAL_BUTTON] Waiting for window.paypal.Buttons (attempt ${pollAttempts}/${maxPollAttempts})`)
+            setTimeout(attemptRender, 100)
+            return
+          } else {
+            console.error(`[PAYPAL_BUTTON] window.paypal.Buttons not available after ${maxPollAttempts} attempts`)
+            setRenderError('PayPal SDK not fully initialized. Try refreshing the page.')
+            setIsRendering(false)
+            return
+          }
+        }
 
-      try {
-        console.log(`[PAYPAL_BUTTON] Creating Buttons object for ${userType}-${planType}`)
-        window.paypal
-          .Buttons({
-            createOrder: async () => {
-              try {
-                console.log(`[PAYPAL_BUTTON] Creating order for ${userType}-${planType}`)
-                const orderId = await createPayPalOrder(userType, planType)
-                console.log(`[PAYPAL_BUTTON] Order created: ${orderId}`)
-                return orderId
-              } catch (err) {
-                console.error('[PAYPAL_BUTTON] Order creation failed:', err)
-                setRenderError(`Failed to create order: ${err instanceof Error ? err.message : String(err)}`)
-                throw err
-              }
-            },
-            onApprove: async (data: any) => {
-              try {
-                console.log(`[PAYPAL_BUTTON] Order approved, capturing payment...`)
-                await handlePayPalApprove(data, userType, planType)
-              } catch (err) {
-                console.error(`[PAYPAL_BUTTON] Approval handler error:`, err)
-                setRenderError(`Payment processing error: ${err instanceof Error ? err.message : String(err)}`)
-              }
-            },
-            onError: (err: any) => {
-              console.error('[PAYPAL_BUTTON] PayPal error:', err)
-              setRenderError(`PayPal error: ${err.message || err}`)
-              setError(err.message || 'Payment failed')
-            },
-            style: {
-              layout: 'vertical',
-              color: 'blue',
-              shape: 'rect',
-              label: 'pay',
-            },
-          })
-          .render(`#paypal-button-${userType}-${planType}`)
-          .catch((err: any) => {
-            console.error(`[PAYPAL_BUTTON] Failed to render buttons: ${err}`)
-            setRenderError(`Failed to render button: ${err instanceof Error ? err.message : String(err)}`)
-          })
-      } catch (err) {
-        console.error(`[PAYPAL_BUTTON] Error creating buttons:`, err)
-        setRenderError(`Error setting up payment: ${err instanceof Error ? err.message : String(err)}`)
+        if (pollAttempts > 1) {
+          console.log(`[PAYPAL_BUTTON] window.paypal.Buttons found on attempt ${pollAttempts}`)
+        }
+
+        try {
+          console.log(`[PAYPAL_BUTTON] Creating Buttons object for ${userType}-${planType}`)
+          window.paypal
+            .Buttons({
+              createOrder: async () => {
+                try {
+                  console.log(`[PAYPAL_BUTTON] Creating order for ${userType}-${planType}`)
+                  const orderId = await createPayPalOrder(userType, planType)
+                  console.log(`[PAYPAL_BUTTON] Order created: ${orderId}`)
+                  return orderId
+                } catch (err) {
+                  console.error('[PAYPAL_BUTTON] Order creation failed:', err)
+                  setRenderError(`Failed to create order: ${err instanceof Error ? err.message : String(err)}`)
+                  throw err
+                }
+              },
+              onApprove: async (data: any) => {
+                try {
+                  console.log(`[PAYPAL_BUTTON] Order approved, capturing payment...`)
+                  await handlePayPalApprove(data, userType, planType)
+                } catch (err) {
+                  console.error(`[PAYPAL_BUTTON] Approval handler error:`, err)
+                  setRenderError(`Payment processing error: ${err instanceof Error ? err.message : String(err)}`)
+                }
+              },
+              onError: (err: any) => {
+                console.error('[PAYPAL_BUTTON] PayPal error:', err)
+                setRenderError(`PayPal error: ${err.message || err}`)
+                setError(err.message || 'Payment failed')
+              },
+              style: {
+                layout: 'vertical',
+                color: 'blue',
+                shape: 'rect',
+                label: 'pay',
+              },
+            })
+            .render(`#paypal-button-${userType}-${planType}`)
+            .catch((err: any) => {
+              console.error(`[PAYPAL_BUTTON] Failed to render buttons: ${err}`)
+              setRenderError(`Failed to render button: ${err instanceof Error ? err.message : String(err)}`)
+              setIsRendering(false)
+            })
+          
+          setIsRendering(false)
+        } catch (err) {
+          console.error(`[PAYPAL_BUTTON] Error creating buttons:`, err)
+          setRenderError(`Error setting up payment: ${err instanceof Error ? err.message : String(err)}`)
+          setIsRendering(false)
+        }
       }
+      
+      attemptRender()
     }, [paypalLoaded, userType, planType])
 
     if (!paypalLoaded) {
@@ -222,6 +262,11 @@ export default function PricingPage() {
 
     return (
       <>
+        {isRendering && (
+          <div className="mt-4 bg-slate-700/50 rounded-lg p-4 text-center text-slate-400 text-sm">
+            Initializing payment button...
+          </div>
+        )}
         <div
           id={`paypal-button-${userType}-${planType}`}
           className="mt-4"

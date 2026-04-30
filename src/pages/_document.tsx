@@ -7,6 +7,12 @@ export default class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head>
+          {/* CSP Meta tag - allow PayPal SDK to access storage (needed for tracking prevention bypass) */}
+          <meta
+            httpEquiv="Content-Security-Policy"
+            content="script-src 'self' 'unsafe-inline' https://www.paypal.com https://www.googletagmanager.com; connect-src 'self' https://www.paypal.com https://api.paypal.com https://www.google-analytics.com; frame-src https://www.paypal.com;"
+          />
+          
           {/* Google Analytics 4 */}
           {gaId && (
             <>
