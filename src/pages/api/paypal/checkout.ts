@@ -142,8 +142,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const order = await orderRes.json()
     console.log(`[CHECKOUT] Order created successfully: ${order.id}`)
     
-    // Return order ID for PayPal Smart Payment Buttons
-    return res.status(200).json({ id: order.id })
+    // Find the approval link for hosted checkout
+    const approvalLink = order.links?.find((link: any) => link.rel === 'approve')
+    
+    // Return order ID and approval URL for flexible checkout options
+    return res.status(200).json({ 
+      id: order.id,
+      approval_url: approvalLink?.href || null
+    })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal server error'
     console.error('[CHECKOUT] Checkout error:', message)

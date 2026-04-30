@@ -153,6 +153,31 @@ export default function PricingPage() {
   }) => {
     const [renderError, setRenderError] = useState('')
     const [isRendering, setIsRendering] = useState(false)
+    const [isCheckingOut, setIsCheckingOut] = useState(false)
+    
+    const handleDirectCheckout = async () => {
+      try {
+        setIsCheckingOut(true)
+        const response = await fetch('/api/paypal/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userType, planType }),
+        })
+        const data = await response.json()
+        
+        if (data.approval_url) {
+          // Redirect to PayPal's hosted checkout
+          window.location.href = data.approval_url
+        } else {
+          setRenderError('Failed to create checkout session')
+        }
+      } catch (error) {
+        console.error('Checkout error:', error)
+        setRenderError('Payment initialization failed')
+      } finally {
+        setIsCheckingOut(false)
+      }
+    }
     
     useEffect(() => {
       if (!paypalLoaded) {
@@ -262,12 +287,23 @@ export default function PricingPage() {
             <div className="bg-amber-900/30 border border-amber-700/50 rounded-lg p-3 text-amber-200 text-xs">
               <div className="font-semibold mb-2">Payment Option Unavailable</div>
               <div className="mb-2">{paypalError}</div>
-              <div className="text-amber-300">
-                <strong>To fix:</strong> In Firefox, click the shield icon to disable Enhanced Tracking Protection for this site, then refresh.
+              <div className="text-amber-300 mb-3">
+                <strong>Try these options:</strong>
+                <ul className="list-disc ml-4 mt-1 text-amber-300">
+                  <li>In Firefox: Click the shield icon → disable Enhanced Tracking Protection → refresh</li>
+                  <li>Or use the button below to pay directly through PayPal</li>
+                </ul>
               </div>
+              <button
+                onClick={handleDirectCheckout}
+                disabled={isCheckingOut}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white font-semibold py-2 px-4 rounded text-sm transition"
+              >
+                {isCheckingOut ? 'Processing...' : 'Pay with PayPal'}
+              </button>
               <a 
                 href="mailto:support@takethereins.com?subject=Payment%20Help" 
-                className="inline-block mt-2 text-amber-400 hover:text-amber-300 underline"
+                className="inline-block mt-2 text-amber-400 hover:text-amber-300 underline text-xs"
               >
                 Or contact support for help
               </a>
