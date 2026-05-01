@@ -20,31 +20,59 @@ export default function PricingPage() {
 
   // Handle PayPal SDK load success
   const handlePayPalScriptLoad = () => {
-    console.log(`[PAYPAL_SCRIPT] Next.js Script onLoad fired`)
+    console.log(`[PAYPAL_SCRIPT] Next.js Script onLoad fired, checking PayPal SDK...`)
+    console.log(`[PAYPAL_SCRIPT] window.paypal exists: ${typeof window.paypal !== 'undefined'}`)
     
-    // PayPal SDK might not be immediately available due to storage blocking
+    // PayPal SDK might not be immediately available due to storage blocking or network delay
     // Use aggressive polling to wait for initialization
     let attempts = 0
-    const maxAttempts = 50 // Try for up to 2.5 seconds (50 * 50ms)
+    const maxAttempts = 100 // Try for up to 5 seconds (100 * 50ms)
+    
+    // Hard timeout: After 3 seconds, show fallback regardless
+    const hardTimeout = setTimeout(() => {
+      if (!paypalLoaded) {
+        console.warn(`[PAYPAL_SCRIPT] Hard timeout (3s) reached, showing fallback`)
+        setPaypalError('PayPal SDK is taking too long to load. Using fallback payment option.')
+      }
+    }, 3000)
     
     const checkPayPal = () => {
       attempts++
       
+      // Check if PayPal SDK is fully initialized
       if (window.paypal && window.paypal.Buttons) {
-        console.log(`[PAYPAL_SCRIPT] ✅ window.paypal.Buttons available (attempt ${attempts})`)
+        console.log(`[PAYPAL_SCRIPT] ✅ window.paypal.Buttons available (attempt ${attempts}/${maxAttempts})`)
+        clearTimeout(hardTimeout)
         setPaypalLoaded(true)
         setPaypalError('')
         return
       }
       
-      if (attempts >= maxAttempts) {
-        console.error(`[PAYPAL_SCRIPT] PayPal not initialized after ${attempts} attempts`)
-        setPaypalError('PayPal SDK could not initialize. This is usually caused by Enhanced Tracking Protection in Firefox. You can: 1) Disable tracking protection for this site, or 2) Contact us for alternative payment methods.')
-        return
+      // Log state at certain intervals for debugging
+      if (attempts === 1 || attempts % 10 === 0) {
+        const paypalExists = typeof window.paypal !== 'undefined'
+        const buttonsExists = window.paypal?.Buttons ? 'yes' : 'no'
+        console.log(`[PAYPAL_SCRIPT] Attempt ${attempts}: window.paypal=${paypalExists}, Buttons=${buttonsExists}`)
       }
       
-      if (attempts === 1) {
-        console.warn(`[PAYPAL_SCRIPT] window.paypal.Buttons not available, polling...`)
+      if (attempts >= maxAttempts) {
+        console.error(`[PAYPAL_SCRIPT] ❌ PayPal not initialized after ${attempts} attempts`)
+        console.error(`[PAYPAL_SCRIPT] Final state: window.paypal=${typeof window.paypal !== 'undefined'}, Buttons=${window.paypal?.Buttons ? 'yes' : 'no'}`)
+        clearTimeout(hardTimeout)
+        
+        // Determine error cause
+        let errorMsg = ''
+        if (typeof window.paypal === 'undefined') {
+          errorMsg = 'PayPal SDK failed to load. This is usually due to browser tracking protection or a network issue.'
+        } else if (!window.paypal.Buttons) {
+          errorMsg = 'PayPal SDK loaded but Buttons component is not available. Your browser may be blocking it.'
+        } else {
+          errorMsg = 'PayPal SDK initialization failed. Please refresh the page.'
+        }
+        
+        setPaypalError(errorMsg)
+        console.warn(`[PAYPAL_SCRIPT] Fallback payment option will be shown with "Continue to PayPal Payment" button`)
+        return
       }
       
       // Retry after 50ms
@@ -56,14 +84,15 @@ export default function PricingPage() {
 
   const handlePayPalScriptError = (error: any) => {
     console.error(`[PAYPAL_SCRIPT] Script load error:`, error)
-    setPaypalError(`Failed to load PayPal SDK: ${error?.message || 'Unknown error'}`)
+    console.error(`[PAYPAL_SCRIPT] Error details:`, { message: error?.message, code: error?.code, type: error?.type })
+    setPaypalError(`Failed to load PayPal SDK: ${error?.message || 'Unknown error'}. Try refreshing the page or disabling browser tracking protection.`)
     setLoading(null)
   }
 
-  // Build the PayPal SDK URL
+  // Build the PayPal SDK URL with better loading strategy
   const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID
   const paypalSdkUrl = clientId 
-    ? `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture&components=buttons`
+    ? `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture&components=buttons&disable-funding=credit,paylater`
     : null
 
   if (!clientId) {
@@ -83,29 +112,46 @@ export default function PricingPage() {
       throw new Error('Not authenticated')
     }
 
+    if (!session?.access_token) {
+      throw new Error('No authentication token available')
+    }
+
     try {
       console.log(`[PRICING] Creating PayPal order: userType=${userType}, planType=${planType}`)
+      
+      // Add timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+      
       const response = await fetch('/api/paypal/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ userType, planType }),
+        signal: controller.signal,
       })
 
+      clearTimeout(timeoutId)
       const data = await response.json()
 
       if (!response.ok) {
-        console.error(`[PRICING] Checkout failed: ${data.error}`)
-        throw new Error(data.error || 'Failed to create order')
+        console.error(`[PRICING] Checkout failed: ${response.status} - ${data.error}`)
+        if (response.status === 401) {
+          throw new Error('Authentication failed. Please try logging in again.')
+        }
+        throw new Error(data.error || `Failed to create order (${response.status})`)
       }
 
       console.log(`[PRICING] Order created successfully: orderId=${data.id}`)
       return data.id // PayPal Order ID
-    } catch (err) {
-      console.error(`[PRICING] Error creating order:`, err)
-      setError((err as Error).message)
+    } catch (err: any) {
+      console.error('[PRICING] Order creation error:', err)
+      
+      if (err.name === 'AbortError') {
+        throw new Error('Payment request timed out. Please try again.')
+      }
       throw err
     }
   }
@@ -115,6 +161,10 @@ export default function PricingPage() {
       console.log(`[PRICING] Payment approved: orderId=${orderData.orderID}, userType=${userType}, planType=${planType}`)
       setLoading(`${userType}-${planType}`)
 
+      // Add timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout for capture
+
       // Capture the payment
       const response = await fetch('/api/paypal/capture', {
         method: 'POST',
@@ -123,21 +173,28 @@ export default function PricingPage() {
           'Authorization': `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({ orderId: orderData.orderID }),
+        signal: controller.signal,
       })
 
+      clearTimeout(timeoutId)
       const data = await response.json()
 
       if (!response.ok) {
-        console.error(`[PRICING] Capture failed: ${data.error}`)
-        throw new Error(data.error || 'Failed to capture payment')
+        console.error(`[PRICING] Capture failed: ${response.status} - ${data.error}`)
+        throw new Error(data.error || `Failed to capture payment (${response.status})`)
       }
 
       console.log(`[PRICING] Payment captured successfully, redirecting to success page`)
       // Redirect to success page
       router.push(`/monetization/checkout/success?userType=${userType}&planType=${planType}`)
-    } catch (err) {
+    } catch (err: any) {
       console.error(`[PRICING] Error in payment approval:`, err)
-      setError((err as Error).message)
+      
+      if (err.name === 'AbortError') {
+        setError('Payment capture timed out. Please refresh and try again.')
+      } else {
+        setError((err as Error).message || 'Payment processing failed')
+      }
       setLoading(null)
     }
   }
@@ -155,25 +212,61 @@ export default function PricingPage() {
     const [isRendering, setIsRendering] = useState(false)
     const [isCheckingOut, setIsCheckingOut] = useState(false)
     
+    // Diagnostic logging
+    useEffect(() => {
+      console.log(`[PAYPAL_BUTTON] ${userType}-${planType} state: paypalLoaded=${paypalLoaded}, paypalError="${paypalError}"`)
+    }, [paypalLoaded, paypalError, userType, planType])
+    
     const handleDirectCheckout = async () => {
       try {
         setIsCheckingOut(true)
+        
+        // Add request timeout
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+        
         const response = await fetch('/api/paypal/checkout', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || ''}`,
+          },
           body: JSON.stringify({ userType, planType }),
+          signal: controller.signal,
         })
+        
+        clearTimeout(timeoutId)
+        
+        if (!response.ok) {
+          console.error(`[CHECKOUT] Response error: ${response.status} ${response.statusText}`)
+          const errorData = await response.json()
+          throw new Error(errorData.error || `Payment initialization failed (${response.status})`)
+        }
+        
         const data = await response.json()
         
         if (data.approval_url) {
           // Redirect to PayPal's hosted checkout
+          console.log('[CHECKOUT] Redirecting to PayPal approval URL')
           window.location.href = data.approval_url
+        } else if (data.id) {
+          // Fallback: redirect to PayPal manually
+          console.warn('[CHECKOUT] No approval_url, using order ID to redirect')
+          window.location.href = `https://www.${process.env.PAYPAL_MODE === 'sandbox' ? 'sandbox.' : ''}paypal.com/checkoutnow?token=${data.id}`
         } else {
-          setRenderError('Failed to create checkout session')
+          throw new Error('Failed to create checkout session - no approval URL returned')
         }
-      } catch (error) {
-        console.error('Checkout error:', error)
-        setRenderError('Payment initialization failed')
+      } catch (error: any) {
+        clearTimeout(undefined)
+        console.error('[CHECKOUT] Error:', error)
+        
+        if (error.name === 'AbortError') {
+          setRenderError('Payment request timed out. Please try again.')
+        } else if (!session?.access_token) {
+          setRenderError('Please sign in to continue with payment.')
+        } else {
+          setRenderError(`Payment initialization failed: ${error.message}`)
+        }
       } finally {
         setIsCheckingOut(false)
       }
@@ -277,38 +370,55 @@ export default function PricingPage() {
       attemptRender()
     }, [paypalLoaded, userType, planType])
 
+    // Show fallback if there's an error, regardless of loading state
+    if (paypalError) {
+      return (
+        <div className="mt-4 space-y-3">
+          <div className="bg-amber-900/40 border-2 border-amber-600/60 rounded-lg p-4 text-amber-100">
+            <div className="font-bold mb-3 text-base flex items-center gap-2">
+              <span>⚠️</span> Browser Blocking Payment
+            </div>
+            <div className="mb-4 text-sm leading-relaxed bg-amber-950/40 p-3 rounded border border-amber-700/30">
+              Your browser's tracking protection is preventing PayPal from loading. This is a security feature, but it blocks payments. You can still pay using the button below.
+            </div>
+            <div className="mb-4 text-xs space-y-2">
+              <div className="font-semibold text-amber-300 mb-2">🔧 Quick Fix (Optional):</div>
+              <div className="space-y-2 text-amber-200">
+                <div>
+                  <strong>Firefox:</strong> Click the shield icon 🛡️ in the address bar → "Disable protection on this site" → Refresh
+                </div>
+                <div>
+                  <strong>Safari:</strong> Menu → Preferences → Privacy → Uncheck "Prevent cross-site tracking" → Refresh
+                </div>
+                <div>
+                  <strong>Chrome:</strong> This shouldn't happen in Chrome - try using Incognito mode
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={handleDirectCheckout}
+              disabled={isCheckingOut}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white font-bold py-3 px-4 rounded-lg text-base transition"
+            >
+              {isCheckingOut ? '⏳ Processing...' : '💳 Continue to PayPal Payment'}
+            </button>
+            <a 
+              href="mailto:support@take-the-reins.ai?subject=Payment%20Help&body=I'm%20having%20trouble%20with%20PayPal%20payment%20on%20the%20pricing%20page" 
+              className="block mt-3 text-center text-amber-400 hover:text-amber-300 underline text-xs hover:underline transition"
+            >
+              💬 Having issues? Contact support
+            </a>
+          </div>
+        </div>
+      )
+    }
+    
     if (!paypalLoaded) {
       return (
         <div className="mt-4 space-y-3">
-          <div className="bg-slate-700/50 rounded-lg p-4 text-center text-slate-400 text-sm">
-            Loading payment options...
+          <div className="bg-slate-700/50 rounded-lg p-4 text-center text-slate-400 text-sm animate-pulse">
+            ⏳ Loading payment options...
           </div>
-          {paypalError && (
-            <div className="bg-amber-900/30 border border-amber-700/50 rounded-lg p-3 text-amber-200 text-xs">
-              <div className="font-semibold mb-2">Payment Option Unavailable</div>
-              <div className="mb-2">{paypalError}</div>
-              <div className="text-amber-300 mb-3">
-                <strong>Try these options:</strong>
-                <ul className="list-disc ml-4 mt-1 text-amber-300">
-                  <li>In Firefox: Click the shield icon → disable Enhanced Tracking Protection → refresh</li>
-                  <li>Or use the button below to pay directly through PayPal</li>
-                </ul>
-              </div>
-              <button
-                onClick={handleDirectCheckout}
-                disabled={isCheckingOut}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white font-semibold py-2 px-4 rounded text-sm transition"
-              >
-                {isCheckingOut ? 'Processing...' : 'Pay with PayPal'}
-              </button>
-              <a 
-                href="mailto:support@takethereins.com?subject=Payment%20Help" 
-                className="inline-block mt-2 text-amber-400 hover:text-amber-300 underline text-xs"
-              >
-                Or contact support for help
-              </a>
-            </div>
-          )}
         </div>
       )
     }
@@ -448,6 +558,7 @@ export default function PricingPage() {
           onLoad={handlePayPalScriptLoad}
           onError={handlePayPalScriptError}
           data-namespace="paypal_sdk"
+          async={true}
         />
       )}
 
@@ -492,10 +603,22 @@ export default function PricingPage() {
         )}
 
         {paypalError && (
-          <div className="mb-8 bg-orange-600/20 border border-orange-600/50 text-orange-200 px-6 py-4 rounded-lg">
-            <div className="font-semibold mb-1">PayPal Loading Issue:</div>
-            <div>{paypalError}</div>
-            <div className="text-xs mt-2 text-orange-300">Try refreshing the page. If the problem persists, disable browser tracking protection.</div>
+          <div className="mb-8 bg-red-900/30 border-2 border-red-600/70 text-red-200 px-6 py-4 rounded-lg">
+            <div className="font-bold mb-2 text-lg flex items-center gap-2">
+              <span>⚠️</span> Payment System Notice
+            </div>
+            <div className="mb-3 text-sm">{paypalError}</div>
+            <div className="text-xs bg-red-900/20 p-4 rounded-lg mt-3 border border-red-700/30 space-y-2">
+              <strong className="block text-red-300 mb-2">✅ How to Fix:</strong>
+              <div className="text-red-100 space-y-1">
+                <div><strong>Firefox Users:</strong> Click the shield 🛡️ next to the URL → "Disable protection on this site" → Refresh page</div>
+                <div><strong>Safari Users:</strong> Menu (top-left) → Preferences → Privacy tab → Uncheck "Prevent cross-site tracking" → Refresh</div>
+                <div><strong>Chrome Users:</strong> Try Incognito mode (Ctrl+Shift+N), or use the button below</div>
+              </div>
+              <div className="text-red-300 mt-3 font-semibold">
+                ℹ️ The "Pay with PayPal" button below will work regardless of browser settings
+              </div>
+            </div>
           </div>
         )}
 
