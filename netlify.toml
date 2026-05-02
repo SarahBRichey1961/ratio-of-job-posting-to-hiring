@@ -2,7 +2,7 @@
   command = "npm ci --legacy-peer-deps --no-fund && npm run build"
   functions = "netlify/functions"
   publish = ".next"
-  environment = { SECRETS_SCAN_OMIT_KEYS = "PAYPAL_WEBHOOK_ID" }
+  environment = { SECRETS_SCAN_OMIT_KEYS = "PAYPAL_WEBHOOK_ID,PAYPAL_CLIENT_SECRET,SUPABASE_SERVICE_ROLE_KEY" }
 
 [functions]
   external_node_modules = ["*"]
@@ -16,13 +16,13 @@
   port = 3000
 
 [context.production]
-  environment = { NODE_ENV = "production", NEXT_PUBLIC_SUPABASE_URL = "https://eikhrkharihagaorqqcf.supabase.co", NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ", NEXT_PUBLIC_PAYPAL_CLIENT_ID = "AZ1QA-kO8P5fX-IRWR7vD-yzLoS_PgaEs_xlzp0YFQhtTQUKTXzs1CJFELF3mMKWR8nnshN5XMEbyyRP", PAYPAL_MODE = "production", PAYPAL_CLIENT_ID = "AZ1QA-kO8P5fX-IRWR7vD-yzLoS_PgaEs_xlzp0YFQhtTQUKTXzs1CJFELF3mMKWR8nnshN5XMEbyyRP", PAYPAL_CLIENT_SECRET = "${PAYPAL_CLIENT_SECRET}", PAYPAL_WEBHOOK_ID = "${PAYPAL_WEBHOOK_ID}", NEXT_PUBLIC_APP_URL = "https://take-the-reins.ai", SUPABASE_SERVICE_ROLE_KEY = "${SUPABASE_SERVICE_ROLE_KEY}" }
+  environment = { NODE_ENV = "production", NEXT_PUBLIC_SUPABASE_URL = "https://eikhrkharihagaorqqcf.supabase.co", NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ", NEXT_PUBLIC_PAYPAL_CLIENT_ID = "AZ1QA-kO8P5fX-IRWR7vD-yzLoS_PgaEs_xlzp0YFQhtTQUKTXzs1CJFELF3mMKWR8nnshN5XMEbyyRP", PAYPAL_MODE = "production", PAYPAL_CLIENT_ID = "AZ1QA-kO8P5fX-IRWR7vD-yzLoS_PgaEs_xlzp0YFQhtTQUKTXzs1CJFELF3mMKWR8nnshN5XMEbyyRP", NEXT_PUBLIC_APP_URL = "https://take-the-reins.ai" }
 
 [context.deploy-preview]
-  environment = { NODE_ENV = "production", NEXT_PUBLIC_SUPABASE_URL = "https://eikhrkharihagaorqqcf.supabase.co", NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ", NEXT_PUBLIC_PAYPAL_CLIENT_ID = "AZ1QA-kO8P5fX-IRWR7vD-yzLoS_PgaEs_xlzp0YFQhtTQUKTXzs1CJFELF3mMKWR8nnshN5XMEbyyRP", PAYPAL_MODE = "production", PAYPAL_CLIENT_ID = "AZ1QA-kO8P5fX-IRWR7vD-yzLoS_PgaEs_xlzp0YFQhtTQUKTXzs1CJFELF3mMKWR8nnshN5XMEbyyRP", PAYPAL_CLIENT_SECRET = "${PAYPAL_CLIENT_SECRET}", PAYPAL_WEBHOOK_ID = "${PAYPAL_WEBHOOK_ID}", NEXT_PUBLIC_APP_URL = "https://take-the-reins.ai", SUPABASE_SERVICE_ROLE_KEY = "${SUPABASE_SERVICE_ROLE_KEY}" }
+  environment = { NODE_ENV = "production", NEXT_PUBLIC_SUPABASE_URL = "https://eikhrkharihagaorqqcf.supabase.co", NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ", NEXT_PUBLIC_PAYPAL_CLIENT_ID = "AZ1QA-kO8P5fX-IRWR7vD-yzLoS_PgaEs_xlzp0YFQhtTQUKTXzs1CJFELF3mMKWR8nnshN5XMEbyyRP", PAYPAL_MODE = "production", PAYPAL_CLIENT_ID = "AZ1QA-kO8P5fX-IRWR7vD-yzLoS_PgaEs_xlzp0YFQhtTQUKTXzs1CJFELF3mMKWR8nnshN5XMEbyyRP", NEXT_PUBLIC_APP_URL = "https://take-the-reins.ai" }
 
 [context.branch-deploy]
-  environment = { NODE_ENV = "production", NEXT_PUBLIC_SUPABASE_URL = "https://eikhrkharihagaorqqcf.supabase.co", NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ", NEXT_PUBLIC_PAYPAL_CLIENT_ID = "AZ1QA-kO8P5fX-IRWR7vD-yzLoS_PgaEs_xlzp0YFQhtTQUKTXzs1CJFELF3mMKWR8nnshN5XMEbyyRP", PAYPAL_MODE = "production", PAYPAL_CLIENT_ID = "AZ1QA-kO8P5fX-IRWR7vD-yzLoS_PgaEs_xlzp0YFQhtTQUKTXzs1CJFELF3mMKWR8nnshN5XMEbyyRP", PAYPAL_CLIENT_SECRET = "${PAYPAL_CLIENT_SECRET}", PAYPAL_WEBHOOK_ID = "${PAYPAL_WEBHOOK_ID}", NEXT_PUBLIC_APP_URL = "https://take-the-reins.ai", SUPABASE_SERVICE_ROLE_KEY = "${SUPABASE_SERVICE_ROLE_KEY}" }
+  environment = { NODE_ENV = "production", NEXT_PUBLIC_SUPABASE_URL = "https://eikhrkharihagaorqqcf.supabase.co", NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_hav_kQ90n--HDGddxsCQgQ_SblKkcnZ", NEXT_PUBLIC_PAYPAL_CLIENT_ID = "AZ1QA-kO8P5fX-IRWR7vD-yzLoS_PgaEs_xlzp0YFQhtTQUKTXzs1CJFELF3mMKWR8nnshN5XMEbyyRP", PAYPAL_MODE = "production", PAYPAL_CLIENT_ID = "AZ1QA-kO8P5fX-IRWR7vD-yzLoS_PgaEs_xlzp0YFQhtTQUKTXzs1CJFELF3mMKWR8nnshN5XMEbyyRP", NEXT_PUBLIC_APP_URL = "https://take-the-reins.ai" }
 
 # Redirect all traffic to the custom domain
 [[redirects]]
