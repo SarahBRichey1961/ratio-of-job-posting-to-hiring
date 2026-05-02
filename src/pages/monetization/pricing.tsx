@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
-import Script from 'next/script'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/router'
 
@@ -18,78 +17,7 @@ export default function PricingPage() {
   const [paypalLoaded, setPaypalLoaded] = useState(false)
   const [paypalError, setPaypalError] = useState('')
 
-  // Handle PayPal SDK load success
-  const handlePayPalScriptLoad = () => {
-    console.log(`[PAYPAL_SCRIPT] Next.js Script onLoad fired, checking PayPal SDK...`)
-    console.log(`[PAYPAL_SCRIPT] window.paypal exists: ${typeof window.paypal !== 'undefined'}`)
-    
-    // PayPal SDK might not be immediately available due to storage blocking or network delay
-    // Use aggressive polling to wait for initialization
-    let attempts = 0
-    const maxAttempts = 100 // Try for up to 5 seconds (100 * 50ms)
-    
-    // Hard timeout: After 3 seconds, show fallback regardless
-    const hardTimeout = setTimeout(() => {
-      if (!paypalLoaded) {
-        console.warn(`[PAYPAL_SCRIPT] Hard timeout (3s) reached, showing fallback`)
-        setPaypalError('PayPal SDK is taking too long to load. Using fallback payment option.')
-      }
-    }, 3000)
-    
-    const checkPayPal = () => {
-      attempts++
-      
-      // Check if PayPal SDK is fully initialized
-      if (window.paypal && window.paypal.Buttons) {
-        console.log(`[PAYPAL_SCRIPT] ✅ window.paypal.Buttons available (attempt ${attempts}/${maxAttempts})`)
-        clearTimeout(hardTimeout)
-        setPaypalLoaded(true)
-        setPaypalError('')
-        return
-      }
-      
-      // Log state at certain intervals for debugging
-      if (attempts === 1 || attempts % 10 === 0) {
-        const paypalExists = typeof window.paypal !== 'undefined'
-        const buttonsExists = window.paypal?.Buttons ? 'yes' : 'no'
-        console.log(`[PAYPAL_SCRIPT] Attempt ${attempts}: window.paypal=${paypalExists}, Buttons=${buttonsExists}`)
-      }
-      
-      if (attempts >= maxAttempts) {
-        console.error(`[PAYPAL_SCRIPT] ❌ PayPal not initialized after ${attempts} attempts`)
-        console.error(`[PAYPAL_SCRIPT] Final state: window.paypal=${typeof window.paypal !== 'undefined'}, Buttons=${window.paypal?.Buttons ? 'yes' : 'no'}`)
-        clearTimeout(hardTimeout)
-        
-        // Determine error cause
-        let errorMsg = ''
-        if (typeof window.paypal === 'undefined') {
-          errorMsg = 'PayPal SDK failed to load. This is usually due to browser tracking protection or a network issue.'
-        } else if (!window.paypal.Buttons) {
-          errorMsg = 'PayPal SDK loaded but Buttons component is not available. Your browser may be blocking it.'
-        } else {
-          errorMsg = 'PayPal SDK initialization failed. Please refresh the page.'
-        }
-        
-        setPaypalError(errorMsg)
-        console.warn(`[PAYPAL_SCRIPT] Fallback payment option will be shown with "Continue to PayPal Payment" button`)
-        return
-      }
-      
-      // Retry after 50ms
-      setTimeout(checkPayPal, 50)
-    }
-    
-    checkPayPal()
-  }
-
-  const handlePayPalScriptError = (error: any) => {
-    console.error(`[PAYPAL_SCRIPT] Script load error:`, error)
-    console.error(`[PAYPAL_SCRIPT] Error details:`, { message: error?.message, code: error?.code, type: error?.type })
-    setPaypalError(`Failed to load PayPal SDK: ${error?.message || 'Unknown error'}. Try refreshing the page or disabling browser tracking protection.`)
-    setLoading(null)
-  }
-
-  // Build the PayPal SDK URL with better loading strategy
+  // Build the PayPal SDK URL - declare early so useEffect can access it
   const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID
   const paypalSdkUrl = clientId 
     ? `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture&components=buttons&disable-funding=credit,paylater`
@@ -104,6 +32,142 @@ export default function PricingPage() {
         </div>
       </div>
     )
+  }
+
+  // Load PayPal SDK - use direct script injection (proven working method)
+  useEffect(() => {
+    // Don't load if already loaded
+    if (typeof window !== 'undefined' && !window.paypal) {
+      console.log(`[PAYPAL_SCRIPT] Injecting PayPal SDK script directly...`)
+      
+      const script = document.createElement('script')
+      script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture&components=buttons&disable-funding=credit,paylater`
+      script.async = true
+      
+      script.onload = () => {
+        console.log(`[PAYPAL_SCRIPT] Script onload fired`)
+        handlePayPalScriptLoad()
+      }
+      
+      script.onerror = (error) => {
+        console.error(`[PAYPAL_SCRIPT] Script onerror fired:`, error)
+        handlePayPalScriptError(error)
+      }
+      
+      // Add to head instead of body for faster loading
+      document.head.appendChild(script)
+      console.log(`[PAYPAL_SCRIPT] Script appended to document.head`)
+    } else if (window.paypal) {
+      console.log(`[PAYPAL_SCRIPT] window.paypal already exists`)
+      handlePayPalScriptLoad()
+    }
+  }, [clientId])
+
+  // Handle PayPal SDK load success - with deeper diagnostics
+  const handlePayPalScriptLoad = () => {
+    console.log(`[PAYPAL_SCRIPT] Next.js Script onLoad fired, checking PayPal SDK...`)
+    console.log(`[PAYPAL_SCRIPT] Client ID: ${clientId}`)
+    console.log(`[PAYPAL_SCRIPT] SDK URL: ${paypalSdkUrl}`)
+    
+    // Check for any errors that might have been thrown
+    try {
+      // Force a check for window.paypal in a different way
+      const hasPaypal = 'paypal' in window
+      const paypalType = typeof (window as any).paypal
+      console.log(`[PAYPAL_SCRIPT] window.paypal exists (hasOwnProperty): ${hasPaypal}`)
+      console.log(`[PAYPAL_SCRIPT] window.paypal type: ${paypalType}`)
+      console.log(`[PAYPAL_SCRIPT] window keys with 'pay': ${Object.keys(window).filter(k => k.toLowerCase().includes('pay'))}`)
+    } catch (e) {
+      console.error(`[PAYPAL_SCRIPT] Error checking window.paypal:`, e)
+    }
+    
+    // Verify script tag is actually in the DOM
+    const scriptTag = document.querySelector(`script[src*="paypal.com/sdk"]`)
+    if (!scriptTag) {
+      console.error(`[PAYPAL_SCRIPT] Script tag not found in DOM after onLoad!`)
+      setPaypalError('PayPal SDK script failed to load from network.')
+      // Still attempt polling in case it loads later
+    } else {
+      console.log(`[PAYPAL_SCRIPT] Script tag found in DOM: ${scriptTag.getAttribute('src')}`)
+    }
+    
+    console.log(`[PAYPAL_SCRIPT] window.paypal exists: ${typeof window.paypal !== 'undefined'}`)
+    
+    // PayPal SDK might not be immediately available due to storage blocking or network delay
+    // Use aggressive polling to wait for initialization
+    let attempts = 0
+    const maxAttempts = 200 // Try for up to 10 seconds (200 * 50ms)
+    let hardTimeoutReached = false
+    
+    // Hard timeout: After 5 seconds, show fallback regardless
+    const hardTimeout = setTimeout(() => {
+      hardTimeoutReached = true
+      if (!paypalLoaded) {
+        console.warn(`[PAYPAL_SCRIPT] Hard timeout (5s) reached, showing fallback`)
+        setPaypalError('PayPal SDK is taking too long to load. Using fallback payment option.')
+      }
+    }, 5000)
+    
+    const checkPayPal = () => {
+      attempts++
+      
+      // Check if PayPal SDK is fully initialized
+      if (window.paypal && window.paypal.Buttons) {
+        console.log(`[PAYPAL_SCRIPT] ✅ window.paypal.Buttons available (attempt ${attempts}/${maxAttempts})`)
+        clearTimeout(hardTimeout)
+        setPaypalLoaded(true)
+        setPaypalError('')
+        return
+      }
+      
+      // Log state at certain intervals for debugging
+      if (attempts === 1 || attempts === 5 || attempts === 10 || attempts % 20 === 0) {
+        const paypalExists = typeof window.paypal !== 'undefined'
+        const buttonsExists = window.paypal?.Buttons ? 'yes' : 'no'
+        const scriptLoaded = !!document.querySelector(`script[src*="paypal.com/sdk"]`)
+        console.log(`[PAYPAL_SCRIPT] Attempt ${attempts}: script=${scriptLoaded}, window.paypal=${paypalExists}, Buttons=${buttonsExists}`)
+      }
+      
+      if (attempts >= maxAttempts) {
+        console.error(`[PAYPAL_SCRIPT] ❌ PayPal not initialized after ${attempts} attempts`)
+        console.error(`[PAYPAL_SCRIPT] Final state: window.paypal=${typeof window.paypal !== 'undefined'}, Buttons=${window.paypal?.Buttons ? 'yes' : 'no'}`)
+        clearTimeout(hardTimeout)
+        
+        // Check if script ever loaded
+        const scriptInDom = !!document.querySelector(`script[src*="paypal.com/sdk"]`)
+        
+        // Determine error cause
+        let errorMsg = ''
+        if (!scriptInDom) {
+          errorMsg = 'PayPal SDK script failed to load from CDN. This is usually due to network blocking or browser tracking protection.'
+        } else if (typeof window.paypal === 'undefined') {
+          errorMsg = 'PayPal SDK script loaded but did not initialize. Your browser may be blocking localStorage or cookies.'
+        } else if (!window.paypal.Buttons) {
+          errorMsg = 'PayPal SDK loaded but Buttons component is not available. Your browser may be blocking it.'
+        } else {
+          errorMsg = 'PayPal SDK initialization failed. Please refresh the page.'
+        }
+        
+        setPaypalError(errorMsg)
+        console.warn(`[PAYPAL_SCRIPT] Fallback payment option will be shown with "Continue to PayPal Payment" button`)
+        return
+      }
+      
+      // Retry after 50ms, but stop if hard timeout reached
+      if (!hardTimeoutReached) {
+        setTimeout(checkPayPal, 50)
+      }
+    }
+    
+    checkPayPal()
+  }
+
+  const handlePayPalScriptError = (error: any) => {
+    console.error(`[PAYPAL_SCRIPT] Script load error:`, error)
+    console.error(`[PAYPAL_SCRIPT] Error details:`, { message: error?.message, code: error?.code, type: error?.type })
+    console.error(`[PAYPAL_SCRIPT] Error stack:`, error?.stack)
+    setPaypalError(`Failed to load PayPal SDK: ${error?.message || 'Unknown error'}. Verify your PayPal credentials are valid.`)
+    setLoading(null)
   }
 
   const createPayPalOrder = async (userType: 'sponsor' | 'advertiser', planType: 'monthly' | 'annual' | 'onetime') => {
@@ -291,9 +355,9 @@ export default function PricingPage() {
       // Clear any existing buttons
       container.innerHTML = ''
 
-      // Poll for window.paypal.Buttons since it might not be immediately available
+      // Poll for window.paypal.Buttons with longer timeout
       let pollAttempts = 0
-      const maxPollAttempts = 20
+      const maxPollAttempts = 50 // 5 seconds with 100ms intervals
       
       const attemptRender = () => {
         pollAttempts++
@@ -342,8 +406,11 @@ export default function PricingPage() {
               },
               onError: (err: any) => {
                 console.error('[PAYPAL_BUTTON] PayPal error:', err)
-                setRenderError(`PayPal error: ${err.message || err}`)
-                setError(err.message || 'Payment failed')
+                setRenderError(`Payment error: ${err?.message || err}. Please try again or use the fallback option.`)
+              },
+              onCancel: (data: any) => {
+                console.log(`[PAYPAL_BUTTON] Payment cancelled`)
+                setRenderError('')
               },
               style: {
                 layout: 'vertical',
@@ -353,13 +420,16 @@ export default function PricingPage() {
               },
             })
             .render(`#paypal-button-${userType}-${planType}`)
+            .then(() => {
+              console.log(`[PAYPAL_BUTTON] ✅ Buttons rendered successfully for ${userType}-${planType}`)
+              setIsRendering(false)
+              setRenderError('')
+            })
             .catch((err: any) => {
-              console.error(`[PAYPAL_BUTTON] Failed to render buttons: ${err}`)
-              setRenderError(`Failed to render button: ${err instanceof Error ? err.message : String(err)}`)
+              console.error(`[PAYPAL_BUTTON] Render error for ${userType}-${planType}:`, err)
+              setRenderError(`Failed to render payment button: ${err instanceof Error ? err.message : String(err)}`)
               setIsRendering(false)
             })
-          
-          setIsRendering(false)
         } catch (err) {
           console.error(`[PAYPAL_BUTTON] Error creating buttons:`, err)
           setRenderError(`Error setting up payment: ${err instanceof Error ? err.message : String(err)}`)
@@ -379,34 +449,42 @@ export default function PricingPage() {
               <span>⚠️</span> Browser Blocking Payment
             </div>
             <div className="mb-4 text-sm leading-relaxed bg-amber-950/40 p-3 rounded border border-amber-700/30">
-              Your browser's tracking protection is preventing PayPal from loading. This is a security feature, but it blocks payments. You can still pay using the button below.
+              {paypalError}
             </div>
             <div className="mb-4 text-xs space-y-2">
-              <div className="font-semibold text-amber-300 mb-2">🔧 Quick Fix (Optional):</div>
+              <div className="font-semibold text-amber-300 mb-2">🔧 What You Can Do:</div>
               <div className="space-y-2 text-amber-200">
                 <div>
-                  <strong>Firefox:</strong> Click the shield icon 🛡️ in the address bar → "Disable protection on this site" → Refresh
+                  <strong>Firefox Users:</strong> Click the shield icon 🛡️ in the address bar → "Disable protection on this site" → Refresh page
                 </div>
                 <div>
-                  <strong>Safari:</strong> Menu → Preferences → Privacy → Uncheck "Prevent cross-site tracking" → Refresh
+                  <strong>Safari Users:</strong> Menu → Preferences → Privacy tab → Uncheck "Prevent cross-site tracking" → Refresh
                 </div>
                 <div>
-                  <strong>Chrome:</strong> This shouldn't happen in Chrome - try using Incognito mode
+                  <strong>Chrome/Edge Users:</strong> Try Incognito mode (Ctrl+Shift+N) or clear your browser cache
                 </div>
               </div>
             </div>
-            <button
-              onClick={handleDirectCheckout}
-              disabled={isCheckingOut}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white font-bold py-3 px-4 rounded-lg text-base transition"
-            >
-              {isCheckingOut ? '⏳ Processing...' : '💳 Continue to PayPal Payment'}
-            </button>
+            <div className="space-y-2">
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2 px-4 rounded-lg transition text-sm"
+              >
+                🔄 Refresh Page
+              </button>
+              <button
+                onClick={handleDirectCheckout}
+                disabled={isCheckingOut}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white font-bold py-3 px-4 rounded-lg text-base transition"
+              >
+                {isCheckingOut ? '⏳ Processing...' : '💳 Continue to PayPal Payment'}
+              </button>
+            </div>
             <a 
-              href="mailto:support@take-the-reins.ai?subject=Payment%20Help&body=I'm%20having%20trouble%20with%20PayPal%20payment%20on%20the%20pricing%20page" 
-              className="block mt-3 text-center text-amber-400 hover:text-amber-300 underline text-xs hover:underline transition"
+              href="mailto:support@take-the-reins.ai?subject=Payment%20Help&body=I'm%20having%20trouble%20with%20PayPal%20payment%20on%20the%20pricing%20page.%20Browser:%20[INSERT]" 
+              className="block mt-3 text-center text-amber-400 hover:text-amber-300 underline text-xs transition"
             >
-              💬 Having issues? Contact support
+              💬 Still having issues? Contact support
             </a>
           </div>
         </div>
@@ -549,18 +627,6 @@ export default function PricingPage() {
         <title>Pricing - Take The Reins</title>
         <meta name="description" content="Sponsor or advertise on Take The Reins" />
       </Head>
-
-      {/* Load PayPal SDK using Next.js Script component */}
-      {paypalSdkUrl && (
-        <Script
-          src={paypalSdkUrl}
-          strategy="afterInteractive"
-          onLoad={handlePayPalScriptLoad}
-          onError={handlePayPalScriptError}
-          data-namespace="paypal_sdk"
-          async={true}
-        />
-      )}
 
       {/* Navigation */}
       <nav className="bg-slate-800/50 backdrop-blur border-b border-slate-700">
